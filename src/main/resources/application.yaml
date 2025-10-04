@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: community
+
+  datasource:
+    url: ${DB_URL}
+    username: root
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+
+  security:
+    user:
+      name: user
+      password: temp
+
+# 로깅 설정 (Phase 1 간단한 설정)
+logging:
+  level:
+    root: INFO
+    com.ktb.community: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{40} : %msg%n"
+
+# JWT 설정
+jwt:
+  secret: your-256-bit-secret-key-change-this-in-production-environment-please
+  access-token-validity: 1800000  # 30분 (밀리초)
+  refresh-token-validity: 604800000  # 7일 (밀리초)
+
+server:
+  port: 8080
