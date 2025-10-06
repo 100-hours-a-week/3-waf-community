@@ -383,15 +383,17 @@ offset: 시작 위치 (0부터), limit: 한 번에 가져올 개수
 - 429: Too Many Requests (Rate Limit)
 - 500: Internal Server Error (서버 오류)
 
-**공통 메시지 코드**
-- `input_data_validation_failed` (400): 입력 데이터 검증 실패
-- `token_not_valid` (401): 유효하지 않은 토큰
-- `not_authorized` (403): 권한 없음
-- `resource_not_found` (404): 리소스를 찾을 수 없음
-- `post_not_found` (404): 게시글을 찾을 수 없음
-- `resource_already_exists` (409): 리소스 중복
-- `too_many_requests` (429): 요청 횟수 초과
-- `internal_server_error` (500): 서버 내부 오류
+**에러 코드 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
+
+**주요 에러 코드:**
+- **인증 (AUTH)**: AUTH-001 (Invalid credentials), AUTH-002 (Invalid token), AUTH-004 (Invalid refresh token)
+- **사용자 (USER)**: USER-001 (Not found), USER-002 (Email exists), USER-003 (Nickname exists), USER-004 (Password policy), USER-005 (Account inactive)
+- **게시글 (POST)**: POST-001 (Not found), POST-002 (Owner mismatch), POST-003 (Already deleted)
+- **댓글 (COMMENT)**: COMMENT-001 (Not found), COMMENT-002 (Owner mismatch)
+- **좋아요 (LIKE)**: LIKE-001 (Already liked), LIKE-002 (Like not found)
+- **공통 (COMMON)**: COMMON-001 (Invalid input), COMMON-999 (Server error)
+
+**전체 에러 코드:** `src/main/java/com/ktb/community/exception/ErrorCode.java` 참조 (35개)
 
 ### 응답 예시
 
@@ -410,9 +412,9 @@ offset: 시작 위치 (0부터), limit: 한 번에 가져올 개수
 **오류 예시:**
 ```json
 {
-  "message": "resource_already_exists",
+  "message": "USER-002",
   "data": {
-    "field": ["email"]
+    "details": "Email already exists: test@example.com"
   },
   "timestamp": "2025-10-01T14:30:00"
 }

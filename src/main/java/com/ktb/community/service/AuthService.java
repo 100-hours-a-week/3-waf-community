@@ -6,9 +6,8 @@ import com.ktb.community.dto.response.AuthResponse;
 import com.ktb.community.entity.User;
 import com.ktb.community.entity.UserToken;
 import com.ktb.community.enums.UserStatus;
-import com.ktb.community.exception.DuplicateResourceException;
-import com.ktb.community.exception.InvalidRequestException;
-import com.ktb.community.exception.UnauthorizedException;
+import com.ktb.community.exception.BusinessException;
+import com.ktb.community.exception.ErrorCode;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.repository.UserTokenRepository;
 import com.ktb.community.security.JwtTokenProvider;
@@ -45,17 +44,20 @@ public class AuthService {
     public AuthResponse signup(SignupRequest request) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
-            throw new DuplicateResourceException("email", request.getEmail());
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, 
+                    "Email already exists: " + request.getEmail());
         }
         
         // 닉네임 중복 확인
         if (userRepository.existsByNickname(request.getNickname())) {
-            throw new DuplicateResourceException("nickname", request.getNickname());
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS, 
+                    "Nickname already exists: " + request.getNickname());
         }
         
         // 비밀번호 정책 검증
         if (!PasswordValidator.isValid(request.getPassword())) {
-            throw new InvalidRequestException(PasswordValidator.getPolicyDescription());
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
+                    PasswordValidator.getPolicyDescription());
         }
         
         // 비밀번호 암호화
@@ -79,16 +81,16 @@ public class AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
         
         // 비밀번호 확인
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new UnauthorizedException("Invalid email or password");
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
         
         // 계정 상태 확인
         if (user.getUserStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Account is not active");
+            throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
         }
         
         log.info("User logged in: {}", user.getEmail());
@@ -115,16 +117,16 @@ public class AuthService {
     public AuthResponse refreshAccessToken(String refreshToken) {
         // Refresh Token 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new UnauthorizedException("Invalid refresh token");
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
         
         // DB에서 토큰 확인
         UserToken userToken = userTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
         
         // 만료 확인
         if (userToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new UnauthorizedException("Refresh token expired");
+            throw new BusinessException(ErrorCode.TOKEN_EXPIRED);
         }
         
         // 사용자 조회

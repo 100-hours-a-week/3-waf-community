@@ -354,29 +354,27 @@ public void deleteComment(Long commentId, Long userId) {
 
 ## 8. 예외 처리
 
-**계층:**
-```
-CustomException (추상)
-  ├── ResourceNotFoundException (404)
-  ├── DuplicateResourceException (409)
-  ├── UnauthorizedException (401)
-  ├── ForbiddenException (403)
-  └── TooManyRequestsException (429)
-```
+**구조:**
+- **ErrorCode enum**: 에러 정보 중앙 관리 (35개 에러 코드)
+- **BusinessException**: 통합 예외 클래스
+- **GlobalExceptionHandler**: 중앙 예외 처리
+
+**ErrorCode 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
 
 **GlobalExceptionHandler:**
 ```java
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotFound(...) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(ApiResponse.error(ex.getMessage()));
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
+        ErrorCode errorCode = ex.getErrorCode();
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }
-    // 기타: DuplicateResourceException (409), 
-    // MethodArgumentNotValidException (400), Exception (500)
+    // 기타: MethodArgumentNotValidException (400), Exception (500)
 }
 ```
+
+**참조**: `src/main/java/com/ktb/community/exception/ErrorCode.java` (35개 에러 정의)
 
 ---
 

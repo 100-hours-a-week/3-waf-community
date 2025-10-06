@@ -5,10 +5,8 @@ import com.ktb.community.dto.request.UpdateProfileRequest;
 import com.ktb.community.dto.response.UserResponse;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.UserStatus;
-import com.ktb.community.exception.DuplicateResourceException;
-import com.ktb.community.exception.ForbiddenException;
-import com.ktb.community.exception.InvalidRequestException;
-import com.ktb.community.exception.ResourceNotFoundException;
+import com.ktb.community.exception.BusinessException;
+import com.ktb.community.exception.ErrorCode;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +33,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
+                        "User not found with id: " + userId));
         
         return UserResponse.from(user);
     }
@@ -49,16 +48,18 @@ public class UserService {
     public UserResponse updateProfile(Long userId, Long authenticatedUserId, UpdateProfileRequest request) {
         // 권한 확인
         if (!userId.equals(authenticatedUserId)) {
-            throw new ForbiddenException("You can only update your own profile");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
+                        "User not found with id: " + userId));
         
         // 닉네임 변경 시 중복 확인
         if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
             if (userRepository.existsByNickname(request.getNickname())) {
-                throw new DuplicateResourceException("nickname", request.getNickname());
+                throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS, 
+                        "Nickname already exists: " + request.getNickname());
             }
             user.updateNickname(request.getNickname());
         }
@@ -84,20 +85,22 @@ public class UserService {
     public void changePassword(Long userId, Long authenticatedUserId, ChangePasswordRequest request) {
         // 권한 확인
         if (!userId.equals(authenticatedUserId)) {
-            throw new ForbiddenException("You can only change your own password");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
+                        "User not found with id: " + userId));
         
         // 비밀번호 확인 일치 검증
         if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
-            throw new InvalidRequestException("Password confirmation does not match");
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
         
         // 비밀번호 정책 검증
         if (!PasswordValidator.isValid(request.getNewPassword())) {
-            throw new InvalidRequestException(PasswordValidator.getPolicyDescription());
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
+                    PasswordValidator.getPolicyDescription());
         }
         
         // 비밀번호 암호화 및 업데이트
@@ -116,11 +119,12 @@ public class UserService {
     public void deactivateAccount(Long userId, Long authenticatedUserId) {
         // 권한 확인
         if (!userId.equals(authenticatedUserId)) {
-            throw new ForbiddenException("You can only deactivate your own account");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
+                        "User not found with id: " + userId));
         
         // 상태 변경 (Soft Delete)
         user.updateStatus(UserStatus.INACTIVE);
@@ -134,7 +138,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public Long findUserIdByEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
+                        "User not found with email: " + email));
         return user.getUserId();
     }
 }

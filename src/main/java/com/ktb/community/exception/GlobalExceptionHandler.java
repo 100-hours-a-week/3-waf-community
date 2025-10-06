@@ -22,6 +22,24 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     
     /**
+     * BusinessException 통합 처리
+     * ErrorCode에서 HTTP 상태 자동 매핑
+     * 
+     * @param ex BusinessException
+     * @return ErrorCode에 정의된 HTTP 상태 코드와 에러 응답
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
+        ErrorCode errorCode = ex.getErrorCode();
+        log.warn("Business exception: {} - {}", errorCode.getCode(), ex.getMessage());
+        
+        ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
+        ApiResponse<ErrorDetails> response = ApiResponse.error(errorCode.getCode(), errorDetails);
+        
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+    }
+
+    /**
      * 유효성 검증 실패 예외 처리 (@Valid, @Validated)
      * 
      * @param ex MethodArgumentNotValidException
