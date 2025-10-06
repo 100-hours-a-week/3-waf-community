@@ -34,18 +34,8 @@ public class PostStats {
     @Column(name = "view_count", nullable = false)
     private Integer viewCount = 0;
 
-    @Column(name = "last_updated", nullable = false)
+    @Column(name = "last_updated", nullable = false, insertable = false, updatable = false)
     private LocalDateTime lastUpdated;
-
-    @PrePersist
-    protected void onCreate() {
-        this.lastUpdated = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.lastUpdated = LocalDateTime.now();
-    }
 
     @Builder
     public PostStats(Post post) {

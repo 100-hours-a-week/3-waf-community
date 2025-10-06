@@ -3,8 +3,6 @@ package com.ktb.community.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 /**
  * 이미지 엔티티
  * DDL: images 테이블
@@ -14,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
-public class Image {
+public class Image extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,14 +27,6 @@ public class Image {
 
     @Column(name = "original_filename", length = 255)
     private String originalFilename;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
 
     @Builder
     public Image(String imageUrl, Integer fileSize, String originalFilename) {

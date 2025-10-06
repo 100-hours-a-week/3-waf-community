@@ -4,7 +4,6 @@ import com.ktb.community.enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +16,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(exclude = {"user", "comments", "postLikes", "stats", "postImages"})
-public class Post {
+public class Post extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,12 +32,6 @@ public class Post {
     @Enumerated(EnumType.STRING)
     @Column(name = "post_status", nullable = false, columnDefinition = "ENUM('ACTIVE', 'DELETED', 'DRAFT') DEFAULT 'ACTIVE'")
     private PostStatus postStatus = PostStatus.ACTIVE;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     // 작성자 (N:1)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -57,17 +50,6 @@ public class Post {
 
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY)
     private List<PostImage> postImages = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 
     @Builder
     public Post(String postTitle, String postContent, User user) {

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(exclude = {"user"})
-public class UserToken {
+public class UserToken extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,9 +27,6 @@ public class UserToken {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @Column(name = "user_agent", length = 255)
     private String userAgent;
 
@@ -40,11 +37,6 @@ public class UserToken {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
 
     @Builder
     public UserToken(String token, LocalDateTime expiresAt, String userAgent, String ipAddress, User user) {
