@@ -22,8 +22,8 @@
 
 **응답:**
 - 200: `login_success` → access_token, refresh_token 반환
-- 401: `invalid_credentials` (잘못된 인증 정보)
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
+- 400/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -36,8 +36,8 @@
 
 **응답:**
 - 200: `logout_success`
-- 401: `invalid_refresh_token` (유효하지 않은 리프레시 토큰)
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 401: AUTH-004 (Invalid refresh token)
+- 400/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -50,8 +50,8 @@
 
 **응답:**
 - 200: `token_refreshed` → access_token 반환
-- 401: `invalid_refresh_token`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 401: AUTH-004 (Invalid refresh token)
+- 400/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -67,8 +67,9 @@
 
 **응답:**
 - 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
-- 409: `resource_already_exists` → data.field: ["email"] or ["nickname"]
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 409: USER-002 (Email exists), USER-003 (Nickname exists)
+- 400: USER-004 (Password policy)
+- 400/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -79,7 +80,8 @@
 
 **응답:**
 - 200: `get_profile_success` → image, nickname, email 반환
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: USER-001 (User not found)
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -94,8 +96,9 @@
 
 **응답:**
 - 200: `update_profile_success` → 수정된 정보 반환
-- 409: `resource_already_exists` (닉네임 중복)
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: USER-001 (User not found)
+- 409: USER-003 (Nickname exists)
+- 401/403/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -110,8 +113,9 @@
 
 **응답:**
 - 200: `update_password_success`
-- 400: 비밀번호 정책 위반 또는 불일치
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: USER-001 (User not found)
+- 400: USER-004 (Password policy), USER-006 (Password mismatch)
+- 401/403/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -126,7 +130,8 @@
 
 **응답:**
 - 200: `account_deactivated_success`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: USER-001 (User not found)
+- 401/403/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -139,7 +144,7 @@
 
 **응답:**
 - 200: `get_posts_success` → posts[], pagination.total_count
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 400/500: [공통 에러 코드](#응답-코드) 참조
 
 **데이터 구조:**
 ```json
@@ -164,8 +169,8 @@
 
 **응답:**
 - 200: `get_post_detail_success` → 게시글 상세 정보 (작성자 정보 포함)
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found)
+- 500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -181,7 +186,8 @@
 
 **응답:**
 - 201: `create_post_success` → postId 반환
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: IMAGE-001 (Image not found)
+- 400/401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -197,9 +203,9 @@
 
 **응답:**
 - 200: `update_post_success` → 수정된 정보 반환
-- 403: `not_authorized` (작성자가 아님)
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found), IMAGE-001 (Image not found)
+- 403: POST-002 (Owner mismatch)
+- 400/401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -214,9 +220,9 @@
 
 **응답:**
 - 204: 삭제 성공 (응답 body 없음)
-- 403: `not_authorized`
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found)
+- 403: POST-002 (Owner mismatch)
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -233,8 +239,9 @@
 
 **응답:**
 - 201: `upload_image_success` → image_id, image_url 반환
-- 413: `file_too_large`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 413: IMAGE-002 (File too large)
+- 400: IMAGE-003 (Invalid file type)
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -249,8 +256,8 @@
 
 **응답:**
 - 200: `get_comments_success` → comments[], pagination.total_count
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found)
+- 400/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -265,8 +272,8 @@
 
 **응답:**
 - 201: `create_comment_success` → commentId, comment, author 반환
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found)
+- 400/401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -281,9 +288,9 @@
 
 **응답:**
 - 200: `update_comment_success` → 수정된 댓글 정보 반환
-- 403: `not_authorized`
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found), COMMENT-001 (Comment not found)
+- 403: COMMENT-002 (Owner mismatch)
+- 400/401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -300,9 +307,9 @@
 
 **응답:**
 - 204: 삭제 성공 (응답 body 없음)
-- 403: `not_authorized`
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found), COMMENT-001 (Comment not found)
+- 403: COMMENT-002 (Owner mismatch)
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -315,9 +322,9 @@
 
 **응답:**
 - 200: `like_success` → like count 반환
-- 404: `post_not_found`
-- 409: `already_liked`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found)
+- 409: LIKE-001 (Already liked)
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -328,8 +335,8 @@
 
 **응답:**
 - 200: `unlike_success` → like count 반환
-- 404: `post_not_found`
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 404: POST-001 (Post not found), LIKE-002 (Like not found)
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -342,7 +349,7 @@
 
 **응답:**
 - 200: `get_liked_posts_success` → posts[], pagination.total_count
-- 기타: [공통 응답 코드](#응답-코드) 참조
+- 401/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
 
@@ -385,13 +392,49 @@ offset: 시작 위치 (0부터), limit: 한 번에 가져올 개수
 
 **에러 코드 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
 
-**주요 에러 코드:**
-- **인증 (AUTH)**: AUTH-001 (Invalid credentials), AUTH-002 (Invalid token), AUTH-004 (Invalid refresh token)
-- **사용자 (USER)**: USER-001 (Not found), USER-002 (Email exists), USER-003 (Nickname exists), USER-004 (Password policy), USER-005 (Account inactive)
-- **게시글 (POST)**: POST-001 (Not found), POST-002 (Owner mismatch), POST-003 (Already deleted)
-- **댓글 (COMMENT)**: COMMENT-001 (Not found), COMMENT-002 (Owner mismatch)
-- **좋아요 (LIKE)**: LIKE-001 (Already liked), LIKE-002 (Like not found)
-- **공통 (COMMON)**: COMMON-001 (Invalid input), COMMON-999 (Server error)
+**도메인별 에러 코드:**
+
+#### AUTH 에러 코드 {#auth-에러-코드}
+- AUTH-001: Invalid credentials (잘못된 인증 정보)
+- AUTH-002: Invalid token (유효하지 않은 토큰)
+- AUTH-003: Token expired (토큰 만료)
+- AUTH-004: Invalid refresh token (유효하지 않은 리프레시 토큰)
+
+#### USER 에러 코드 {#user-에러-코드}
+- USER-001: Not found (사용자를 찾을 수 없음)
+- USER-002: Email exists (이메일 중복)
+- USER-003: Nickname exists (닉네임 중복)
+- USER-004: Password policy (비밀번호 정책 위반)
+- USER-005: Account inactive (계정 비활성화)
+- USER-006: Password mismatch (비밀번호 불일치)
+- USER-007: Unauthorized access (권한 없음)
+
+#### POST 에러 코드 {#post-에러-코드}
+- POST-001: Not found (게시글을 찾을 수 없음)
+- POST-002: Owner mismatch (작성자 불일치)
+- POST-003: Already deleted (이미 삭제됨)
+- POST-004: Invalid status (유효하지 않은 상태)
+
+#### COMMENT 에러 코드 {#comment-에러-코드}
+- COMMENT-001: Not found (댓글을 찾을 수 없음)
+- COMMENT-002: Owner mismatch (작성자 불일치)
+- COMMENT-003: Already deleted (이미 삭제됨)
+
+#### LIKE 에러 코드 {#like-에러-코드}
+- LIKE-001: Already liked (이미 좋아요함)
+- LIKE-002: Like not found (좋아요를 찾을 수 없음)
+
+#### IMAGE 에러 코드 {#image-에러-코드}
+- IMAGE-001: Not found (이미지를 찾을 수 없음)
+- IMAGE-002: File too large (파일 크기 초과)
+- IMAGE-003: Invalid file type (유효하지 않은 파일 형식)
+
+#### COMMON 에러 코드 {#common-에러-코드}
+- COMMON-001: Invalid input (입력 데이터 검증 실패)
+- COMMON-002: Resource not found (리소스를 찾을 수 없음)
+- COMMON-003: Resource conflict (리소스 충돌)
+- COMMON-004: Too many requests (요청 횟수 초과)
+- COMMON-999: Server error (서버 내부 오류)
 
 **전체 에러 코드:** `src/main/java/com/ktb/community/exception/ErrorCode.java` 참조 (35개)
 
