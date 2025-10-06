@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed for fields: {} - {}", fields, details);
         
         ErrorDetails errorDetails = ErrorDetails.of(fields, details);
-        ApiResponse<ErrorDetails> response = ApiResponse.error("input_data_validation_failed", errorDetails);
+        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INVALID_INPUT.getCode(), errorDetails);
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
         log.warn("Illegal argument: {}", ex.getMessage());
         
         ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
-        ApiResponse<ErrorDetails> response = ApiResponse.error("invalid_request", errorDetails);
+        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INVALID_INPUT.getCode(), errorDetails);
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
         log.warn("Illegal state: {}", ex.getMessage());
         
         ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
-        ApiResponse<ErrorDetails> response = ApiResponse.error("invalid_state", errorDetails);
+        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INVALID_INPUT.getCode(), errorDetails);
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -115,7 +115,7 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error occurred", ex);
         
         ErrorDetails errorDetails = ErrorDetails.of("An unexpected error occurred");
-        ApiResponse<ErrorDetails> response = ApiResponse.error("internal_server_error", errorDetails);
+        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
@@ -133,7 +133,7 @@ public class GlobalExceptionHandler {
         log.error("Null pointer exception occurred", ex);
         
         ErrorDetails errorDetails = ErrorDetails.of("A required value was null");
-        ApiResponse<ErrorDetails> response = ApiResponse.error("internal_server_error", errorDetails);
+        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
