@@ -60,12 +60,33 @@ public class User extends BaseTimeEntity {
     private List<UserToken> tokens = new ArrayList<>();
 
     @Builder
-    public User(String email, String passwordHash, String nickname, UserRole role, Image profileImage) {
+    public User(String email, String passwordHash, String nickname, UserRole role, Long imageId) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.nickname = nickname;
         this.role = role != null ? role : UserRole.USER;
         this.userStatus = UserStatus.ACTIVE;
-        this.profileImage = profileImage;
+        // imageId는 Phase 4에서 Image 엔티티 연동 시 사용
+    }
+
+    /**
+     * 닉네임 수정
+     */
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    /**
+     * 비밀번호 수정
+     */
+    public void updatePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    /**
+     * 사용자 상태 변경
+     */
+    public void updateStatus(UserStatus userStatus) {
+        this.userStatus = userStatus;
     }
 }

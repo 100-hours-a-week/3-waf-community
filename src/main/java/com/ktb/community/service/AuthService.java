@@ -1,0 +1,168 @@
+package com.ktb.community.service;
+
+import com.ktb.community.dto.request.LoginRequest;
+import com.ktb.community.dto.request.SignupRequest;
+import com.ktb.community.dto.response.AuthResponse;
+import com.ktb.community.entity.User;
+import com.ktb.community.entity.UserToken;
+import com.ktb.community.enums.UserStatus;
+import com.ktb.community.exception.DuplicateResourceException;
+import com.ktb.community.exception.InvalidRequestException;
+import com.ktb.community.exception.UnauthorizedException;
+import com.ktb.community.repository.UserRepository;
+import com.ktb.community.repository.UserTokenRepository;
+import com.ktb.community.security.JwtTokenProvider;
+import com.ktb.community.util.PasswordValidator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+/**
+ * 인증 서비스
+ * LLD.md Section 7.1, PRD.md FR-AUTH-001~004 참조
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+    
+    private final UserRepository userRepository;
+    private final UserTokenRepository userTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    
+    /**
+     * 회원가입 (FR-AUTH-001)
+     * - 이메일/닉네임 중복 확인
+     * - 비밀번호 정책 검증
+     * - 자동 로그인 (토큰 발급)
+     */
+    @Transactional
+    public AuthResponse signup(SignupRequest request) {
+        // 이메일 중복 확인
+        if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
+            throw new DuplicateResourceException("email", request.getEmail());
+        }
+        
+        // 닉네임 중복 확인
+        if (userRepository.existsByNickname(request.getNickname())) {
+            throw new DuplicateResourceException("nickname", request.getNickname());
+        }
+        
+        // 비밀번호 정책 검증
+        if (!PasswordValidator.isValid(request.getPassword())) {
+            throw new InvalidRequestException(PasswordValidator.getPolicyDescription());
+        }
+        
+        // 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        
+        // 사용자 생성 (imageId는 Phase 4에서 구현)
+        User user = request.toEntity(encodedPassword, null);
+        User savedUser = userRepository.save(user);
+        
+        log.info("User registered: {}", savedUser.getEmail());
+        
+        // 자동 로그인 - 토큰 발급
+        return generateTokens(savedUser);
+    }
+    
+    /**
+     * 로그인 (FR-AUTH-002)
+     * - 이메일/비밀번호 검증
+     * - 계정 상태 확인 (ACTIVE만 허용)
+     */
+    @Transactional
+    public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+        
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+        
+        // 계정 상태 확인
+        if (user.getUserStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Account is not active");
+        }
+        
+        log.info("User logged in: {}", user.getEmail());
+        
+        return generateTokens(user);
+    }
+    
+    /**
+     * 로그아웃 (FR-AUTH-003)
+     * - Refresh Token DB에서 삭제
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        userTokenRepository.deleteByToken(refreshToken);
+        log.info("User logged out");
+    }
+    
+    /**
+     * Access Token 재발급 (FR-AUTH-004)
+     * - Refresh Token 유효성 검증
+     * - 새 Access Token 발급
+     */
+    @Transactional(readOnly = true)
+    public AuthResponse refreshAccessToken(String refreshToken) {
+        // Refresh Token 검증
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new UnauthorizedException("Invalid refresh token");
+        }
+        
+        // DB에서 토큰 확인
+        UserToken userToken = userTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
+        
+        // 만료 확인
+        if (userToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new UnauthorizedException("Refresh token expired");
+        }
+        
+        // 사용자 조회
+        User user = userToken.getUser();
+        
+        // 새 Access Token 발급
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+        
+        log.info("Access token refreshed for user: {}", user.getEmail());
+        
+        return AuthResponse.accessOnly(accessToken);
+    }
+    
+    /**
+     * 토큰 생성 및 저장 (공통 메서드)
+     */
+    private AuthResponse generateTokens(User user) {
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+        
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getUserId());
+        
+        // Refresh Token DB 저장
+        UserToken userToken = UserToken.builder()
+                .token(refreshToken)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .user(user)
+                .build();
+        
+        userTokenRepository.save(userToken);
+        
+        return AuthResponse.of(accessToken, refreshToken);
+    }
+}
