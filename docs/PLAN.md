@@ -12,7 +12,7 @@
 
 **Phase 1 완료** ✅  
 **Phase 2 진행 중** 🔄 (Week 2-3)  
-Progress: █████░░░░░ 50%
+Progress: ████████░░ 80%
 
 ---
 
@@ -63,26 +63,26 @@ Progress: █████░░░░░ 50%
 ### 체크리스트
 
 **인증 시스템:**
-- [ ] JwtTokenProvider (토큰 생성/검증)
-- [ ] UserToken 엔티티 (RDB 토큰 관리)
-- [ ] Spring Security 설정 (필터 체인)
-- [ ] BCryptPasswordEncoder (비밀번호 암호화)
+- [x] JwtTokenProvider (토큰 생성/검증)
+- [x] UserToken 엔티티 (RDB 토큰 관리)
+- [x] Spring Security 설정 (필터 체인)
+- [x] BCryptPasswordEncoder (비밀번호 암호화)
 
 **API 구현:**
-- [ ] 인증 API 5개 (POST /auth/login, /auth/logout, /auth/refresh_token 등)
-- [ ] 사용자 API 4개 (POST /users/signup, GET/PATCH /users/{id} 등)
+- [x] 인증 API 3개 (POST /auth/login, /auth/logout, /auth/refresh_token)
+- [x] 사용자 API 5개 (POST /users/signup, GET/PATCH /users/{id}, /users/{id}/password 등)
 - 상세 스펙: **@docs/API.md Section 1-2**
 
 **비즈니스 로직:**
-- [ ] 비밀번호 정책 검증 (8-20자, 대/소/특수문자)
-- [ ] 이메일/닉네임 중복 확인
+- [x] 비밀번호 정책 검증 (8-20자, 대/소/특수문자)
+- [x] 이메일/닉네임 중복 확인
 - [ ] Rate Limiting (분당 100회)
 
 **동시성 제어:**
-- [ ] PostStatsRepository 원자적 UPDATE 메서드
+- [x] PostStatsRepository 원자적 UPDATE 메서드
   - incrementViewCount(), incrementLikeCount(), decrementLikeCount()
   - incrementCommentCount(), decrementCommentCount()
-- [ ] Service 계층 통합
+- [ ] Service 계층 통합 (Phase 3에서 PostService, CommentService, LikeService 구현 시)
 - 상세: **@docs/LLD.md Section 7.2, 12.3**
 
 **테스트:**
