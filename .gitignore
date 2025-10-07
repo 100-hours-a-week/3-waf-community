@@ -41,3 +41,5 @@ out/
 .claude/
 CLAUDE.md
 AGENTS.md
+# Environment variables
+.env

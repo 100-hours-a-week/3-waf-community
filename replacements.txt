@@ -1,0 +1,2 @@
+jdbc:mysql://localhost:3306/community?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8==>${DB_URL}
+root===>${DB_USERNAME}
