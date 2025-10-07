@@ -131,5 +131,16 @@ public class UserService {
         
         log.info("User account deactivated: {}", user.getEmail());
     }
+
+    /**
+     * 이메일로 사용자 ID 조회 (Controller 인증용)
+     */
+    @Transactional(readOnly = true)
+    public Long findUserIdByEmail(String email) {
+        return userRepository.findByEmail(email.toLowerCase().trim())
+                .map(User::getUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
+                        "User not found with email: " + email));
+    }
     
 }

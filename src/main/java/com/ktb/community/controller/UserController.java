@@ -10,6 +10,7 @@ import com.ktb.community.service.AuthService;
 import com.ktb.community.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
  * 사용자 컨트롤러
  * API.md Section 2 참조
  */
+@Slf4j
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -98,10 +100,20 @@ public class UserController {
     
     /**
      * Authentication에서 사용자 ID 추출
-     * JWT subject가 userId이고, UserDetails username도 userId로 설정됨
+     * JWT 인증: username = userId (숫자)
+     * 기타 인증: username = email (fallback to DB lookup)
      */
     private Long extractUserIdFromAuthentication(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return Long.parseLong(userDetails.getUsername());
+        String username = userDetails.getUsername();
+        
+        // JWT 인증 경로: username이 userId인 경우 (빠른 경로)
+        try {
+            return Long.parseLong(username);
+        } catch (NumberFormatException e) {
+            // 테스트 환경 등: username이 email인 경우 (fallback)
+            log.debug("Username is not numeric (likely email), falling back to DB lookup: {}", username);
+            return userService.findUserIdByEmail(username);
+        }
     }
 }
