@@ -98,15 +98,10 @@ public class UserController {
     
     /**
      * Authentication에서 사용자 ID 추출
-     * CustomUserDetailsService.loadUserById()로 설정된 UserDetails의 username은 email
+     * JWT subject가 userId이고, UserDetails username도 userId로 설정됨
      */
     private Long extractUserIdFromAuthentication(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String email = userDetails.getUsername();
-        
-        // CustomUserDetailsService에서 email을 username으로 설정했으므로
-        // UserRepository를 통해 userId를 조회
-        // TODO: 성능 개선 - JWT에 userId를 claim으로 추가하고 직접 추출하는 방식 고려
-        return userService.findUserIdByEmail(email);
+        return Long.parseLong(userDetails.getUsername());
     }
 }

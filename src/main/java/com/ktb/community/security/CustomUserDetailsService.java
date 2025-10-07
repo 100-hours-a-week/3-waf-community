@@ -46,8 +46,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
         
+        // username을 userId로 설정 (JWT subject와 일치)
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
+                .username(String.valueOf(user.getUserId()))
                 .password(user.getPasswordHash())
                 .authorities(Collections.singletonList(
                         new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
