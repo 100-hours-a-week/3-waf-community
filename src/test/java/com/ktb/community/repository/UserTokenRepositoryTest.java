@@ -3,7 +3,6 @@ package com.ktb.community.repository;
 import com.ktb.community.entity.User;
 import com.ktb.community.entity.UserToken;
 import com.ktb.community.enums.UserRole;
-import com.ktb.community.enums.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,7 @@ class UserTokenRepositoryTest {
                 .passwordHash("hashedPassword")
                 .nickname("testuser")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.ACTIVE)
+                
                 .build();
         entityManager.persist(testUser);
 

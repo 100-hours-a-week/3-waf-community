@@ -5,7 +5,6 @@ import com.ktb.community.dto.request.UpdateProfileRequest;
 import com.ktb.community.dto.response.UserResponse;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.UserRole;
-import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.exception.ErrorCode;
 import com.ktb.community.repository.UserRepository;
@@ -47,12 +46,12 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
                 .nickname("testuser")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -88,16 +87,17 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         Long authenticatedUserId = 1L;
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setNickname("newnickname");
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .nickname("newnickname")
+                .build();
 
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
                 .nickname("oldnickname")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.existsByNickname("newnickname")).thenReturn(false);
@@ -119,14 +119,16 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         Long authenticatedUserId = 1L;
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setNickname("existingnick");
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .nickname("existingnick")
+                .build();
 
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
                 .nickname("oldnickname")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.existsByNickname("existingnick")).thenReturn(true);
@@ -146,15 +148,17 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setNewPassword("NewPass123!");
-        request.setNewPasswordConfirm("NewPass123!");
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .newPassword("NewPass123!")
+                .newPasswordConfirm("NewPass123!")
+                .build();
 
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
                 .passwordHash("oldPasswordHash")
+                .nickname("testuser")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("NewPass123!")).thenReturn("newEncodedPassword");
@@ -173,14 +177,17 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setNewPassword("weak"); // 정책 위반
-        request.setNewPasswordConfirm("weak");
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .newPassword("weak") // 정책 위반
+                .newPasswordConfirm("weak")
+                .build();
 
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
+                .nickname("testuser")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -199,14 +206,17 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setNewPassword("NewPass123!");
-        request.setNewPasswordConfirm("DifferentPass123!"); // 불일치
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .newPassword("NewPass123!")
+                .newPasswordConfirm("DifferentPass123!") // 불일치
+                .build();
 
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
+                .nickname("testuser")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -227,11 +237,11 @@ class UserServiceTest {
         Long authenticatedUserId = 1L;
 
         User user = User.builder()
-                .userId(userId)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
                 .nickname("testuser")
-                .userStatus(UserStatus.ACTIVE)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -249,19 +259,14 @@ class UserServiceTest {
         // Given
         Long userId = 1L;
         Long authenticatedUserId = 2L; // 다른 사용자
-
-        User user = User.builder()
-                .userId(userId)
-                .email("test@example.com")
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        
+        // 권한 체크 실패 시 DB 조회 안 함 (stubbing 불필요)
 
         // When & Then
         assertThatThrownBy(() -> userService.deactivateAccount(userId, authenticatedUserId))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED_ACCESS);
 
-        verify(userRepository).findById(userId);
+        verify(userRepository, never()).findById(userId);
     }
 }

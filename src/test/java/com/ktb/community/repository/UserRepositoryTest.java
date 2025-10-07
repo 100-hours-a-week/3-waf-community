@@ -36,7 +36,7 @@ class UserRepositoryTest {
                 .passwordHash("hashedPassword")
                 .nickname("testuser")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.ACTIVE)
+                
                 .build();
 
         entityManager.persist(testUser);
@@ -64,8 +64,8 @@ class UserRepositoryTest {
                 .passwordHash("hashedPassword")
                 .nickname("inactiveuser")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.INACTIVE)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(inactiveUser, "userStatus", UserStatus.INACTIVE);
         entityManager.persist(inactiveUser);
         entityManager.flush();
 

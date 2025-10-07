@@ -55,23 +55,23 @@ class AuthServiceTest {
     @DisplayName("회원가입 성공 - 토큰 발급")
     void signup_Success() {
         // Given
-        SignupRequest request = new SignupRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("Test1234!");
-        request.setNickname("testuser");
+        SignupRequest request = SignupRequest.builder()
+                .email("test@example.com")
+                .password("Test1234!")
+                .nickname("testuser")
+                .build();
 
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByNickname(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
 
         User savedUser = User.builder()
-                .userId(1L)
                 .email("test@example.com")
                 .passwordHash("encodedPassword")
                 .nickname("testuser")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(savedUser, "userId", 1L);
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         when(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString()))
@@ -95,10 +95,11 @@ class AuthServiceTest {
     @DisplayName("회원가입 실패 - 이메일 중복")
     void signup_EmailExists_ThrowsException() {
         // Given
-        SignupRequest request = new SignupRequest();
-        request.setEmail("duplicate@example.com");
-        request.setPassword("Test1234!");
-        request.setNickname("testuser");
+        SignupRequest request = SignupRequest.builder()
+                .email("duplicate@example.com")
+                .password("Test1234!")
+                .nickname("testuser")
+                .build();
 
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
@@ -114,10 +115,11 @@ class AuthServiceTest {
     @DisplayName("회원가입 실패 - 닉네임 중복")
     void signup_NicknameExists_ThrowsException() {
         // Given
-        SignupRequest request = new SignupRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("Test1234!");
-        request.setNickname("duplicatenick");
+        SignupRequest request = SignupRequest.builder()
+                .email("test@example.com")
+                .password("Test1234!")
+                .nickname("duplicatenick")
+                .build();
 
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByNickname(anyString())).thenReturn(true);
@@ -134,10 +136,11 @@ class AuthServiceTest {
     @DisplayName("회원가입 실패 - 비밀번호 정책 위반")
     void signup_InvalidPassword_ThrowsException() {
         // Given
-        SignupRequest request = new SignupRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("weak"); // 정책 위반
-        request.setNickname("testuser");
+        SignupRequest request = SignupRequest.builder()
+                .email("test@example.com")
+                .password("weak")
+                .nickname("testuser")
+                .build();
 
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByNickname(anyString())).thenReturn(false);
@@ -154,18 +157,18 @@ class AuthServiceTest {
     @DisplayName("로그인 성공 - 토큰 발급")
     void login_Success() {
         // Given
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("Test1234!");
+        LoginRequest request = LoginRequest.builder()
+                .email("test@example.com")
+                .password("Test1234!")
+                .build();
 
         User user = User.builder()
-                .userId(1L)
                 .email("test@example.com")
                 .passwordHash("encodedPassword")
                 .nickname("testuser")
                 .role(UserRole.USER)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", 1L);
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
@@ -189,16 +192,17 @@ class AuthServiceTest {
     @DisplayName("로그인 실패 - 잘못된 비밀번호")
     void login_WrongPassword_ThrowsException() {
         // Given
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("wrongPassword");
+        LoginRequest request = LoginRequest.builder()
+                .email("test@example.com")
+                .password("wrongPassword")
+                .build();
 
         User user = User.builder()
-                .userId(1L)
                 .email("test@example.com")
                 .passwordHash("encodedPassword")
-                .userStatus(UserStatus.ACTIVE)
+                .nickname("testuser")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", 1L);
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
@@ -215,16 +219,18 @@ class AuthServiceTest {
     @DisplayName("로그인 실패 - 비활성 계정")
     void login_InactiveAccount_ThrowsException() {
         // Given
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@example.com");
-        request.setPassword("Test1234!");
+        LoginRequest request = LoginRequest.builder()
+                .email("test@example.com")
+                .password("Test1234!")
+                .build();
 
         User inactiveUser = User.builder()
-                .userId(1L)
                 .email("test@example.com")
                 .passwordHash("encodedPassword")
-                .userStatus(UserStatus.INACTIVE) // 비활성 상태
+                .nickname("testuser")
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(inactiveUser, "userId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(inactiveUser, "userStatus", UserStatus.INACTIVE); // 비활성 상태
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(inactiveUser));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
@@ -257,10 +263,12 @@ class AuthServiceTest {
         String refreshToken = "valid-refresh-token";
 
         User user = User.builder()
-                .userId(1L)
                 .email("test@example.com")
+                .passwordHash("hashedPassword")
+                .nickname("testuser")
                 .role(UserRole.USER)
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", 1L);
 
         UserToken userToken = UserToken.builder()
                 .token(refreshToken)
