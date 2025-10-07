@@ -36,7 +36,7 @@ logging:
 
 # JWT 설정
 jwt:
-  secret: your-256-bit-secret-key-change-this-in-production-environment-please
+  secret: ${JWT_SECRET}
   access-token-validity: 1800000  # 30분 (밀리초)
   refresh-token-validity: 604800000  # 7일 (밀리초)
 
