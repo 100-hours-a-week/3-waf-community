@@ -1,5 +1,6 @@
 package com.ktb.community.controller;
 
+import com.ktb.community.config.RateLimit;
 import com.ktb.community.dto.ApiResponse;
 import com.ktb.community.dto.request.LoginRequest;
 import com.ktb.community.dto.request.RefreshTokenRequest;
@@ -28,6 +29,7 @@ public class AuthController {
      * POST /auth/login
      */
     @PostMapping("/login")
+    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("login_success", response));
@@ -38,6 +40,7 @@ public class AuthController {
      * POST /auth/logout
      */
     @PostMapping("/logout")
+    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("logout_success"));
@@ -48,6 +51,7 @@ public class AuthController {
      * POST /auth/refresh_token
      */
     @PostMapping("/refresh_token")
+    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refreshAccessToken(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("token_refreshed", response));

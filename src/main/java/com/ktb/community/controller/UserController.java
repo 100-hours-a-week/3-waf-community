@@ -1,5 +1,6 @@
 package com.ktb.community.controller;
 
+import com.ktb.community.config.RateLimit;
 import com.ktb.community.dto.ApiResponse;
 import com.ktb.community.dto.request.ChangePasswordRequest;
 import com.ktb.community.dto.request.SignupRequest;
@@ -35,6 +36,7 @@ public class UserController {
      * POST /users/signup or POST /users
      */
     @PostMapping({"/signup", ""})
+    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<AuthResponse>> signup(@Valid @RequestBody SignupRequest request) {
         AuthResponse response = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
