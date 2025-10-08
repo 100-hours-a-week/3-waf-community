@@ -1,5 +1,6 @@
 package com.ktb.community.exception;
 
+import com.ktb.community.enums.ErrorCode;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 

@@ -6,7 +6,7 @@ import com.ktb.community.dto.response.UserResponse;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
-import com.ktb.community.exception.ErrorCode;
+import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;

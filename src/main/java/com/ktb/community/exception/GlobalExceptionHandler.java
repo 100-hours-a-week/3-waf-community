@@ -1,6 +1,7 @@
 package com.ktb.community.exception;
 
 import com.ktb.community.dto.ApiResponse;
+import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.dto.ErrorDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

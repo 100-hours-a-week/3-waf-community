@@ -1,4 +1,4 @@
-package com.ktb.community.exception;
+package com.ktb.community.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

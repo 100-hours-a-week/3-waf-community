@@ -6,7 +6,7 @@ import com.ktb.community.dto.response.UserResponse;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.UserRole;
 import com.ktb.community.exception.BusinessException;
-import com.ktb.community.exception.ErrorCode;
+import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -8,7 +8,7 @@ import com.ktb.community.entity.UserToken;
 import com.ktb.community.enums.UserRole;
 import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
-import com.ktb.community.exception.ErrorCode;
+import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.repository.UserTokenRepository;
 import com.ktb.community.security.JwtTokenProvider;

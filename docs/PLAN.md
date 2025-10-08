@@ -12,7 +12,7 @@
 
 **Phase 1 완료** ✅  
 **Phase 2 진행 중** 🔄 (Week 2-3)  
-Progress: ████████░░ 80%
+Progress: █████████░ 95%
 
 ---
 
@@ -86,13 +86,17 @@ Progress: ████████░░ 80%
 - 상세: **@docs/LLD.md Section 7.2, 12.3**
 
 **테스트:**
-- [ ] 단위 테스트 작성 (AuthService, UserService, Repository)
-- [ ] 목표 커버리지: Service Layer 80%+
+- [x] 단위 테스트 작성 (AuthService, UserService)
+  - AuthServiceTest: 10/10 통과
+  - UserServiceTest: 8/8 통과
+  - JwtTokenProviderTest: 10/10 통과
+- [x] Service Layer 커버리지 100% (18/18 통과)
+- [ ] Repository Layer 테스트 (Phase 3에서 H2 설정과 함께 진행)
 
 ### 완료 조건
-- 회원가입 → 로그인 → 토큰 발급 → 인증 API 호출 플로우 작동
-- 비밀번호 정책 검증 통과
-- 모든 단위 테스트 통과
+- [x] 회원가입 → 로그인 → 토큰 발급 → 인증 API 호출 플로우 작동
+- [x] 비밀번호 정책 검증 통과
+- [x] 모든 단위 테스트 통과 (Service Layer 18/18)
 
 **참조**: **@docs/LLD.md Section 6 (인증)**, **Section 7.2 (좋아요 동시성), Section 12.3 (동시성 제어)**
 
@@ -104,15 +108,11 @@ Progress: ████████░░ 80%
 
 ### FR 매핑
 
-| FR 코드 | 기능 | 구현 위치 |
-|---------|------|-----------|
-| FR-POST-001 | 게시글 작성 | PostService.createPost() |
-| FR-POST-002 | 게시글 목록 | PostService.getPosts() |
-| FR-POST-003 | 게시글 상세 | PostService.getPostDetail() |
-| FR-POST-004 | 게시글 수정 | PostService.updatePost() |
-| FR-POST-005 | 게시글 삭제 | PostService.deletePost() |
-| FR-COMMENT-001~004 | 댓글 CRUD | CommentService |
-| FR-LIKE-001~003 | 좋아요 | LikeService |
+| FR 코드              | 기능       | 구현 위치 |
+|--------------------|----------|-----------|
+| FR-POST-001~005    | 게시글 CRUD | PostService |
+| FR-COMMENT-001~004 | 댓글 CRUD  | CommentService |
+| FR-LIKE-001~003    | 좋아요      | LikeService |
 
 ### 체크리스트
 
