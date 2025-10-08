@@ -16,9 +16,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Rate Limiting AOP
@@ -34,11 +36,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitAspect {
     
     /**
-     * 클라이언트별 Bucket 캐시
-     * Key: IP 또는 IP:userId
-     * Value: Bucket4j Bucket
+     * 클라이언트별 Bucket 캐시 (Caffeine)
+     * - 자동 만료: 10분 미사용 시 삭제
+     * - 최대 크기: 10,000개
+     * - Key: 메서드명:IP 또는 메서드명:IP:userId
+     * - Value: Bucket4j Bucket
      */
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+        .expireAfterAccess(10, TimeUnit.MINUTES)
+        .maximumSize(10_000)
+        .build();
     
     /**
      * @RateLimit 어노테이션이 붙은 메서드 가로채기
@@ -50,11 +57,11 @@ public class RateLimitAspect {
      */
     @Around("@annotation(rateLimit)")
     public Object rateLimit(ProceedingJoinPoint pjp, RateLimit rateLimit) throws Throwable {
-        String clientKey = getClientKey();
+        String clientKey = getClientKey(pjp);
         int requestsPerMinute = rateLimit.requestsPerMinute();
         
         // 클라이언트별 Bucket 생성 또는 가져오기
-        Bucket bucket = buckets.computeIfAbsent(clientKey, k -> createBucket(requestsPerMinute));
+        Bucket bucket = buckets.get(clientKey, k -> createBucket(requestsPerMinute));
         
         // 토큰 획득 시도
         if (!bucket.tryConsume(1)) {
@@ -91,17 +98,21 @@ public class RateLimitAspect {
      * 
      * @return 클라이언트 키
      */
-    private String getClientKey() {
+    private String getClientKey(ProceedingJoinPoint pjp) {
+        String methodName = pjp.getSignature().getName();
         HttpServletRequest request = getCurrentRequest();
         String ip = getClientIp(request);
         
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         
+        String userKey;
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            return ip + ":" + auth.getName(); // IP:userId
+            userKey = ip + ":" + auth.getName(); // IP:userId
+        } else {
+            userKey = ip; // 비인증 사용자는 IP만
         }
         
-        return ip; // 비인증 사용자는 IP만
+        return methodName + ":" + userKey; // 메서드명:IP 또는 메서드명:IP:userId
     }
     
     /**

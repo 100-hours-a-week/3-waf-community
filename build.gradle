@@ -46,7 +46,10 @@ dependencies {
 
 	// Rate Limiting (Bucket4j)
 	implementation 'com.bucket4j:bucket4j-core:8.10.1'
-	
+
+	// Cache (Caffeine)
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
 	// AOP
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 

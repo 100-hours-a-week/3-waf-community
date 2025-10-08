@@ -374,7 +374,7 @@ public class GlobalExceptionHandler {
 }
 ```
 
-**참조**: `src/main/java/com/ktb/community/exception/ErrorCode.java` (35개 에러 정의)
+**참조**: `src/main/java/com/ktb/community/enums/ErrorCode.java` (35개 에러 정의)
 
 ---
 

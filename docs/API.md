@@ -436,7 +436,7 @@ offset: 시작 위치 (0부터), limit: 한 번에 가져올 개수
 - COMMON-004: Too many requests (요청 횟수 초과)
 - COMMON-999: Server error (서버 내부 오류)
 
-**전체 에러 코드:** `src/main/java/com/ktb/community/exception/ErrorCode.java` 참조 (35개)
+**전체 에러 코드:** `src/main/java/com/ktb/community/enums/ErrorCode.java` 참조 (35개)
 
 ### 응답 예시
 
