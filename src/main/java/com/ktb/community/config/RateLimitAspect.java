@@ -39,7 +39,7 @@ public class RateLimitAspect {
      * 클라이언트별 Bucket 캐시 (Caffeine)
      * - 자동 만료: 10분 미사용 시 삭제
      * - 최대 크기: 10,000개
-     * - Key: 메서드명:IP 또는 메서드명:IP:userId
+     * - Key: FQCN.methodName:IP 또는 FQCN.methodName:IP:userId
      * - Value: Bucket4j Bucket
      */
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
@@ -93,15 +93,16 @@ public class RateLimitAspect {
     
     /**
      * 클라이언트 식별 키 생성
-     * - 엔드포인트별 격리: ClassName.methodName 포함
-     * - 인증된 사용자: ClassName.methodName:IP:userId
-     * - 비인증 사용자: ClassName.methodName:IP
+     * - 엔드포인트별 격리: FQCN.methodName 포함
+     * - 인증된 사용자: FQCN.methodName:IP:userId
+     * - 비인증 사용자: FQCN.methodName:IP
+     * - 예: "com.ktb.community.controller.AuthController.login:192.168.1.1:user@example.com"
      * 
      * @param pjp 메서드 실행 지점
      * @return 클라이언트 키
      */
     private String getClientKey(ProceedingJoinPoint pjp) {
-        String methodName = pjp.getSignature().getDeclaringType().getSimpleName() 
+        String methodName = pjp.getSignature().getDeclaringTypeName() 
                           + "." + pjp.getSignature().getName();
         HttpServletRequest request = getCurrentRequest();
         String ip = getClientIp(request);
@@ -115,7 +116,7 @@ public class RateLimitAspect {
             userKey = ip; // 비인증 사용자는 IP만
         }
         
-        return methodName + ":" + userKey; // 메서드명:IP 또는 메서드명:IP:userId
+        return methodName + ":" + userKey; // FQCN.methodName:IP 또는 FQCN.methodName:IP:userId
     }
     
     /**
