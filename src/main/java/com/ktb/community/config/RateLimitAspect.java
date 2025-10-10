@@ -93,13 +93,16 @@ public class RateLimitAspect {
     
     /**
      * 클라이언트 식별 키 생성
-     * - 인증된 사용자: IP:userId
-     * - 비인증 사용자: IP
+     * - 엔드포인트별 격리: ClassName.methodName 포함
+     * - 인증된 사용자: ClassName.methodName:IP:userId
+     * - 비인증 사용자: ClassName.methodName:IP
      * 
+     * @param pjp 메서드 실행 지점
      * @return 클라이언트 키
      */
     private String getClientKey(ProceedingJoinPoint pjp) {
-        String methodName = pjp.getSignature().getName();
+        String methodName = pjp.getSignature().getDeclaringType().getSimpleName() 
+                          + "." + pjp.getSignature().getName();
         HttpServletRequest request = getCurrentRequest();
         String ip = getClientIp(request);
         
