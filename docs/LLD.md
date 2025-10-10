@@ -2,10 +2,10 @@
 
 ## 문서 정보
 
-| 항목 | 내용 |
-|------|------|
-| 프로젝트명 | KTB Community Platform |
-| 버전 | 1.2 |
+| 항목 | 내용                        |
+|------|---------------------------|
+| 프로젝트명 | KTB Community Platform    |
+| 버전 | 1.4                       |
 | 문서 유형 | Low Level Design Document |
 
 ---
@@ -15,7 +15,8 @@
 **백엔드:** Spring Boot 3.5.6, Java 24, Gradle 8.x  
 **데이터베이스:** MySQL 8.0+, JPA (Hibernate), HikariCP  
 **보안:** Spring Security, JWT, BCrypt  
-**추후:** AWS S3 (이미지), Redis (토큰 캐싱)
+**Storage:** AWS S3 (이미지 직접 저장, Free Tier)  
+**추후:** Redis (토큰 캐싱)
 
 **패키지 루트:** `com.ktb.community`
 
@@ -204,7 +205,7 @@ public class PasswordValidator {
 @Component
 public class RateLimitAspect {
     // Caffeine Cache: 10분 미사용 시 자동 삭제, 최대 10,000개
-    private final Cache&lt;String, Bucket&gt; buckets = Caffeine.newBuilder()
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
         .expireAfterAccess(10, TimeUnit.MINUTES)
         .maximumSize(10_000)
         .build();
@@ -213,19 +214,19 @@ public class RateLimitAspect {
     public Object rateLimit(ProceedingJoinPoint pjp, RateLimit rateLimit) throws Throwable {
         String clientKey = getClientKey(pjp);
         int requestsPerMinute = rateLimit.requestsPerMinute();
-        
+
         // Token Bucket: 600ms마다 1개 토큰 refill
-        Bucket bucket = buckets.get(clientKey, k -&gt; createBucket(requestsPerMinute));
-        
+        Bucket bucket = buckets.get(clientKey, k -> createBucket(requestsPerMinute));
+
         if (!bucket.tryConsume(1)) {
             throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
         }
         return pjp.proceed();
     }
-    
+
     // 키 예시: "com.ktb.community.controller.AuthController.login:192.168.1.1:user@example.com"
     private String getClientKey(ProceedingJoinPoint pjp) {
-        String methodName = pjp.getSignature().getDeclaringTypeName() 
+        String methodName = pjp.getSignature().getDeclaringTypeName()
                           + "." + pjp.getSignature().getName();
         // ... IP + userId 조합
         return methodName + ":" + userKey;
@@ -267,6 +268,22 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
     // 통계 초기화
     postStatsRepository.save(PostStats.builder()
         .post(saved).likeCount(0).commentCount(0).viewCount(0).build());
+    
+    // 이미지 연결 (image_id가 있을 경우)
+    if (request.getImageId() != null) {
+        Image image = imageRepository.findById(request.getImageId())
+            .orElseThrow(() -> new ResourceNotFoundException("Image not found"));
+        
+        // expires_at 클리어 (영구 보존)
+        image.clearExpiresAt();
+        
+        PostImage postImage = PostImage.builder()
+            .post(saved)
+            .image(image)
+            .displayOrder(1)
+            .build();
+        postImageRepository.save(postImage);
+    }
     
     return PostResponse.from(saved);
 }
@@ -381,29 +398,213 @@ public void deleteComment(Long commentId, Long userId) {
 
 ---
 
-## 8. 예외 처리
+### 7.5 이미지 업로드 흐름 (S3 직접 연동)
 
-**구조:**
-- **ErrorCode enum**: 에러 정보 중앙 관리 (28개 에러 코드)
-- **BusinessException**: 통합 예외 클래스
-- **GlobalExceptionHandler**: 중앙 예외 처리
+**2단계 업로드 패턴:**
 
-**ErrorCode 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
+```
+Phase 1: 이미지 업로드
+Client → POST /images (multipart/form-data)
+    ↓
+ImageService → 파일 검증 (크기, 형식, Magic Number)
+    ↓
+S3Client → AWS S3 업로드 (community-images-dev bucket)
+    ↓
+ImageRepository → DB 저장 (image_url, file_size, expires_at)
+    ↓
+Client ← { image_id: 123, image_url: "https://..." }
 
-**GlobalExceptionHandler:**
+Phase 2: 비즈니스 로직에서 사용
+Client → POST /posts { "title": "...", "image_id": 123 }
+    ↓
+PostService → image_id 검증 (ImageRepository.existsById)
+    ↓
+Image → expires_at 클리어 (영구 보존)
+    ↓
+PostImageRepository → 연결 테이블 저장 (post_id, image_id, display_order)
+```
+
+**핵심 패턴:**
 ```java
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
-        ErrorCode errorCode = ex.getErrorCode();
-        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+@Service
+public class ImageService {
+    private final S3Client s3Client;
+    private final ImageRepository imageRepository;
+    
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
+    
+    @Transactional
+    public ImageResponse uploadImage(MultipartFile file) {
+        // 1. 파일 검증 (형식과 Magic Number만, 크기는 서버 레벨에서 제어)
+        validateFile(file);
+        
+        // 2. S3 업로드
+        String s3Key = generateS3Key(file.getOriginalFilename());
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(s3Key)
+            .contentType(file.getContentType())
+            .build();
+        
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
+        
+        // 3. DB 저장 (expires_at = 1시간 후)
+        Image image = Image.builder()
+            .imageUrl(String.format("https://%s.s3.ap-northeast-2.amazonaws.com/%s", 
+                                    bucketName, s3Key))
+            .fileSize(file.getSize())
+            .originalFilename(file.getOriginalFilename())
+            .expiresAt(LocalDateTime.now().plusHours(1))  // 1시간 TTL
+            .build();
+        
+        Image saved = imageRepository.save(image);
+        
+        return ImageResponse.from(saved);
     }
-    // 기타: MethodArgumentNotValidException (400), Exception (500)
+    
+    /**
+     * 파일 검증
+     * 파일 크기는 Spring Boot multipart 설정에서 제어 (5MB)
+     * 여기서는 형식과 Magic Number만 검증
+     */
+    private void validateFile(MultipartFile file) {
+        // 형식 검증 (MIME type)
+        String contentType = file.getContentType();
+        if (!Arrays.asList("image/jpeg", "image/png", "image/gif").contains(contentType)) {
+            throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
+        }
+        
+        // Magic Number 검증 (실제 파일 내용 확인)
+        try {
+            byte[] bytes = file.getBytes();
+            if (!isValidImageMagicNumber(bytes)) {
+                throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
+            }
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    private String generateS3Key(String originalFilename) {
+        String uuid = UUID.randomUUID().toString();
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        return String.format("images/%s/%s%s", 
+                           LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")),
+                           uuid, extension);
+    }
 }
 ```
 
+**고아 이미지 처리 (Phase 4):**
+- **업로드 시**: `expires_at = NOW() + 1시간` 설정
+- **사용 시**: `image.clearExpiresAt()` 호출로 expires_at = NULL (영구 보존)
+- **배치 작업**: 매일 새벽 expires_at < NOW() 조건으로 S3 + DB 삭제
+- **인덱스**: `idx_images_expires` 활용으로 빠른 조회
+
+**장점:**
+- **관심사 분리**: 이미지 처리 로직 독립, 비즈니스 로직 단순화
+- **재사용성**: 프로필/게시글 이미지 동일 API 사용
+- **확장성**: S3 → CDN 전환 시 ImageService만 수정
+- **에러 명확성**: 업로드 실패 vs 비즈니스 로직 실패 구분
+
+**참조**: **@docs/API.md Section 4.1** (이미지 업로드 API), **@docs/DDL.md** (images 테이블)
+
+---
+
+## 8. 예외 처리
+
+### 8.1 예외 처리 구조
+
+**3-Layer 아키텍처:**
+- **ErrorCode enum**: 에러 정보 중앙 관리 (28개 에러 코드)
+- **BusinessException**: 통합 예외 클래스 (ErrorCode 래핑)
+- **GlobalExceptionHandler**: 중앙 예외 처리 (@RestControllerAdvice)
+
+**ErrorCode 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
+
 **참조**: `src/main/java/com/ktb/community/enums/ErrorCode.java` (28개 에러 정의)
+
+---
+
+### 8.2 예외 핸들러 목록
+
+| 핸들러 | 예외 타입 | HTTP 상태 | 설명 |
+|--------|-----------|-----------|------|
+| handleBusinessException | BusinessException | ErrorCode 기반 | 비즈니스 로직 에러 (통합) |
+| handleMaxUploadSizeExceeded | MaxUploadSizeExceededException | 413 | 파일 크기 초과 (Phase 3.5) |
+| handleValidationException | MethodArgumentNotValidException | 400 | DTO 검증 실패 (@Valid) |
+| handleIllegalArgumentException | IllegalArgumentException | 400 | 잘못된 요청 파라미터 |
+| handleIllegalStateException | IllegalStateException | 400 | 비즈니스 로직 오류 |
+| handleGeneralException | Exception | 500 | 예상하지 못한 서버 오류 |
+| handleNullPointerException | NullPointerException | 500 | Null 참조 오류 |
+
+---
+
+### 8.3 핵심 패턴
+
+**BusinessException (통합 에러 처리):**
+```java
+@ExceptionHandler(BusinessException.class)
+public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
+    ErrorCode errorCode = ex.getErrorCode();
+    log.warn("Business exception: {} - {}", errorCode.getCode(), ex.getMessage());
+    
+    ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
+    ApiResponse<ErrorDetails> response = ApiResponse.error(errorCode.getCode(), errorDetails);
+    
+    return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+}
+```
+
+**MaxUploadSizeExceededException (Phase 3.5 추가 예정):**
+```java
+/**
+ * 파일 크기 초과 예외 처리 (서버 레벨)
+ * Spring Boot multipart max-file-size 초과 시 발생
+ * IMAGE-002 에러 코드로 통일하여 클라이언트에 일관된 응답 제공
+ */
+@ExceptionHandler(MaxUploadSizeExceededException.class)
+public ResponseEntity<ApiResponse<ErrorDetails>> handleMaxUploadSizeExceeded(
+        MaxUploadSizeExceededException ex) {
+    
+    log.warn("File size exceeded: {}", ex.getMessage());
+    
+    ErrorDetails errorDetails = ErrorDetails.of("File size exceeds 5MB limit");
+    ApiResponse<ErrorDetails> response = ApiResponse.error(
+        ErrorCode.FILE_TOO_LARGE.getCode(), errorDetails);
+    
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
+}
+```
+
+**DTO 검증 실패 (Bean Validation):**
+```java
+@ExceptionHandler(MethodArgumentNotValidException.class)
+public ResponseEntity<ApiResponse<ErrorDetails>> handleValidationException(
+        MethodArgumentNotValidException ex) {
+    
+    String details = ex.getBindingResult().getFieldErrors().stream()
+        .map(FieldError::getDefaultMessage)
+        .collect(Collectors.joining(", "));
+    
+    ErrorDetails errorDetails = ErrorDetails.of(details);
+    ApiResponse<ErrorDetails> response = ApiResponse.error(
+        ErrorCode.INVALID_INPUT.getCode(), errorDetails);
+    
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+}
+```
+
+**사용 예시:**
+```java
+// Service Layer
+if (userRepository.existsByEmail(email)) {
+    throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+}
+
+// 자동 변환: EMAIL_ALREADY_EXISTS → HTTP 409 + "USER-002" 응답
+```
 
 ---
 
@@ -447,6 +648,11 @@ spring:
     password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: 10
+  servlet:
+    multipart:
+      max-file-size: 5MB        # 단일 이미지 파일 크기 제한
+      max-request-size: 10MB    # 전체 요청 크기 제한 (향후 다중 이미지 대비)
+      enabled: true
   jpa:
     hibernate:
       ddl-auto: validate  # 운영: validate
@@ -457,11 +663,22 @@ jwt:
   access-token-validity: 1800000   # 30분
   refresh-token-validity: 604800000 # 7일
 
+# AWS S3 설정 (Phase 3.5+)
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}              # S3 버킷 이름
+    region: ${AWS_REGION:ap-northeast-2}  # AWS 리전 (기본: 서울)
+    # AWS SDK는 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY 환경 변수 자동 인식
+
 rate-limit:
   requests-per-minute: 100
 ```
 
-**환경 변수 필수:** `DB_PASSWORD`, `JWT_SECRET`
+**환경 변수:**
+- **Phase 1-2 (필수)**: `DB_PASSWORD`, `JWT_SECRET`
+- **Phase 3.5+ (필수)**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`
+
+**참고**: AWS SDK는 표준 환경 변수를 자동 인식하므로 application.yaml에 명시적으로 credential을 넣지 않음
 
 ---
 
@@ -582,3 +799,4 @@ JWT_SECRET=<256bit 이상 시크릿>
 | 2025-10-04 | 1.1 | Claude Code 최적화 (참조 기반, 섹션 재구조화) |
 | 2025-10-04 | 1.2 | 핵심 섹션 완전 복원 (6.4, 6.5, 12.3) |
 | 2025-10-04 | 1.3 | Section 7.4 댓글 작성 흐름 추가 (참조 무결성 복원) |
+| 2025-10-10 | 1.4 | HTML 이스케이프 코드 수정 (Section 6.5) |

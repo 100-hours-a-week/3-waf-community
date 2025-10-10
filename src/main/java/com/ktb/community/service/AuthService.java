@@ -63,10 +63,19 @@ public class AuthService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         
-        // 사용자 생성 (imageId는 Phase 4에서 구현)
-        User user = request.toEntity(encodedPassword, null);
+        // 사용자 생성
+        User user = request.toEntity(encodedPassword);
         User savedUser = userRepository.save(user);
-        
+
+        // 프로필 이미지 설정 (Phase 3.5+에서 구현)
+        if (request.getProfileImageId() != null) {
+            // TODO: Phase 3.5+ ImageRepository 추가 후 구현
+            // Image image = imageRepository.findById(request.getProfileImageId())
+            //     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            // savedUser.updateProfileImage(image);
+            log.info("Profile image requested for signup (Phase 3.5+): imageId={}", request.getProfileImageId());
+        }
+
         log.info("User registered: {}", savedUser.getEmail());
         
         // 자동 로그인 - 토큰 발급

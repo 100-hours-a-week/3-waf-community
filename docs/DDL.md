@@ -5,8 +5,10 @@ image_url VARCHAR(2048) NOT NULL,
 file_size INT UNSIGNED,              
 original_filename VARCHAR(255),      
 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+expires_at TIMESTAMP NULL DEFAULT NULL,  -- 고아 이미지 관리용 (Phase 4 배치에서 사용)
 
-    PRIMARY KEY(image_id)
+    PRIMARY KEY(image_id),
+    KEY idx_images_expires (expires_at)     -- 만료된 이미지 조회용 인덱스
 );
 
 -- 유저 테이블

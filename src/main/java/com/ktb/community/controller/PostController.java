@@ -1,0 +1,167 @@
+package com.ktb.community.controller;
+
+import com.ktb.community.config.RateLimit;
+import com.ktb.community.dto.ApiResponse;
+import com.ktb.community.dto.request.PostCreateRequest;
+import com.ktb.community.dto.request.PostUpdateRequest;
+import com.ktb.community.dto.response.PostResponse;
+import com.ktb.community.service.LikeService;
+import com.ktb.community.service.PostService;
+import com.ktb.community.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+/**
+ * 게시글 컨트롤러
+ * API.md Section 3, 6 참조
+ */
+@Slf4j
+@RestController
+@RequestMapping("/posts")
+@RequiredArgsConstructor
+public class PostController {
+
+    private final PostService postService;
+    private final LikeService likeService;
+    private final UserService userService;
+
+    /**
+     * 게시글 목록 조회 (API.md Section 3.1)
+     * GET /posts?offset=0&limit=10&sort=latest
+     */
+    @GetMapping
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getPosts(
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "latest") String sort
+    ) {
+        Map<String, Object> result = postService.getPosts(offset, limit, sort);
+        return ResponseEntity.ok(ApiResponse.success("get_posts_success", result));
+    }
+
+    /**
+     * 게시글 상세 조회 (API.md Section 3.2)
+     * GET /posts/{postId}
+     */
+    @GetMapping("/{postId}")
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<PostResponse>> getPostDetail(@PathVariable Long postId) {
+        PostResponse post = postService.getPostDetail(postId);
+        return ResponseEntity.ok(ApiResponse.success("get_post_detail_success", post));
+    }
+
+    /**
+     * 게시글 작성 (API.md Section 3.3)
+     * POST /posts
+     * Authorization: Bearer {access_token}
+     */
+    @PostMapping
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<PostResponse>> createPost(
+            @Valid @RequestBody PostCreateRequest request,
+            Authentication authentication
+    ) {
+        Long userId = getUserId(authentication);
+        PostResponse post = postService.createPost(request, userId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("create_post_success", post));
+    }
+
+    /**
+     * 게시글 수정 (API.md Section 3.4)
+     * PATCH /posts/{postId}
+     * Authorization: Bearer {access_token}
+     */
+    @PatchMapping("/{postId}")
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<PostResponse>> updatePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody PostUpdateRequest request,
+            Authentication authentication
+    ) {
+        Long userId = getUserId(authentication);
+        PostResponse post = postService.updatePost(postId, request, userId);
+        return ResponseEntity.ok(ApiResponse.success("update_post_success", post));
+    }
+
+    /**
+     * 게시글 삭제 (API.md Section 3.5)
+     * DELETE /posts/{postId}
+     * Authorization: Bearer {access_token}
+     */
+    @DeleteMapping("/{postId}")
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<Void>> deletePost(
+            @PathVariable Long postId,
+            Authentication authentication
+    ) {
+        Long userId = getUserId(authentication);
+        postService.deletePost(postId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 게시글 좋아요 (API.md Section 6.1)
+     * POST /posts/{postId}/like
+     * Authorization: Bearer {access_token}
+     */
+    @PostMapping("/{postId}/like")
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> addLike(
+            @PathVariable Long postId,
+            Authentication authentication
+    ) {
+        Long userId = getUserId(authentication);
+        Map<String, Integer> result = likeService.addLike(postId, userId);
+        return ResponseEntity.ok(ApiResponse.success("like_success", result));
+    }
+
+    /**
+     * 게시글 좋아요 취소 (API.md Section 6.2)
+     * DELETE /posts/{postId}/like
+     * Authorization: Bearer {access_token}
+     */
+    @DeleteMapping("/{postId}/like")
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> removeLike(
+            @PathVariable Long postId,
+            Authentication authentication
+    ) {
+        Long userId = getUserId(authentication);
+        Map<String, Integer> result = likeService.removeLike(postId, userId);
+        return ResponseEntity.ok(ApiResponse.success("unlike_success", result));
+    }
+
+    /**
+     * 내가 좋아요한 게시글 목록 조회 (API.md Section 6.3)
+     * GET /users/me/likes?offset=0&limit=10
+     * Authorization: Bearer {access_token}
+     */
+    @GetMapping("/users/me/likes")
+    @RateLimit(requestsPerMinute = 100)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getLikedPosts(
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            Authentication authentication
+    ) {
+        Long userId = getUserId(authentication);
+        Map<String, Object> result = likeService.getLikedPosts(userId, offset, limit);
+        return ResponseEntity.ok(ApiResponse.success("get_liked_posts_success", result));
+    }
+
+    /**
+     * 인증된 사용자 ID 추출
+     */
+    private Long getUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return userService.findUserIdByEmail(email);
+    }
+}

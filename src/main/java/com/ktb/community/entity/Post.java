@@ -52,10 +52,46 @@ public class Post extends BaseTimeEntity {
     private List<PostImage> postImages = new ArrayList<>();
 
     @Builder
-    public Post(String postTitle, String postContent, User user) {
-        this.postTitle = postTitle;
-        this.postContent = postContent;
+    public Post(String title, String content, PostStatus status, User user) {
+        this.postTitle = title;
+        this.postContent = content;
+        this.postStatus = status != null ? status : PostStatus.ACTIVE;
         this.user = user;
-        this.postStatus = PostStatus.ACTIVE;
+    }
+
+    /**
+     * 제목 수정
+     */
+    public void updateTitle(String title) {
+        this.postTitle = title;
+    }
+
+    /**
+     * 내용 수정
+     */
+    public void updateContent(String content) {
+        this.postContent = content;
+    }
+
+    /**
+     * 상태 변경
+     */
+    public void updateStatus(PostStatus status) {
+        this.postStatus = status;
+    }
+
+    /**
+     * Getter 별칭 (PostResponse에서 사용)
+     */
+    public String getTitle() {
+        return this.postTitle;
+    }
+
+    public String getContent() {
+        return this.postContent;
+    }
+
+    public PostStatus getStatus() {
+        return this.postStatus;
     }
 }

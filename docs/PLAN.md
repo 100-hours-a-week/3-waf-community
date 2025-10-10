@@ -12,7 +12,6 @@
 
 **Phase 1 완료** ✅
 **Phase 2 완료** ✅ (Week 2-3)
-Progress: ██████████ 100%
 
 ---
 
@@ -22,8 +21,9 @@ Progress: ██████████ 100%
 |-------|------|------|---------|------|
 | Phase 1 | 1 | 기반 설정 | - | ✅ 완료 |
 | Phase 2 | 2-3 | 인증/사용자 | AUTH-001~004, USER-001~004 | ✅ 완료 |
-| Phase 3 | 4-5 | 게시글/댓글 | POST-001~005, COMMENT-001~004, LIKE-001~003 | ⏳ 대기 |
-| Phase 4 | 6 | 이미지/통계 | IMAGE-001~003 | ⏳ 대기 |
+| Phase 3 | 4-5 | 게시글/댓글/좋아요 | POST-001~005, COMMENT-001~004, LIKE-001~003 | ⏳ 대기 |
+| Phase 3.5 | 5 | 이미지 업로드 | IMAGE-001, IMAGE-003 | ⏳ 대기 |
+| Phase 4 | 6 | 통계 및 배치 | IMAGE-002 (고아 이미지) | ⏳ 대기 |
 | Phase 5 | 7 | 테스트/문서 | - | ⏳ 대기 |
 
 ---
@@ -150,32 +150,75 @@ Progress: ██████████ 100%
 
 ---
 
-## Phase 4: 이미지 처리 및 통계
+## Phase 3.5: 이미지 업로드 인프라
 
-**목표**: 이미지 관리 및 게시글 통계 기능 구현
+**목표**: S3 직접 연동 이미지 업로드 시스템 구현
+
+### FR 매핑
+
+| FR 코드 | 기능 | 구현 위치 |
+|---------|------|-----------|
+| FR-IMAGE-001 | 이미지 정보 저장 | ImageRepository |
+| FR-IMAGE-003 | 이미지 업로드 | ImageService |
 
 ### 체크리스트
 
-**이미지 관리:**
-- [ ] Image 엔티티 JPA 매핑
-- [ ] PostImage 브릿지 테이블 (display_order 관리)
-- [ ] 프로필 이미지 처리 (User-Image)
-- [ ] S3 서비스 인터페이스 준비 (현재는 URL만 저장)
+**이미지 업로드:**
+- [ ] ImageService (파일 검증, S3 업로드, DB 저장)
+- [ ] ImageController (POST /images)
+- [ ] S3Client 설정 (AWS SDK v2)
+- [ ] 파일 검증 (크기, 형식, Magic Number)
+- [ ] expires_at TTL 로직 (1시간)
 
-**통계 기능:**
-- [ ] PostStats 자동 업데이트 (좋아요/댓글/조회수)
-- [ ] 통계 기반 정렬 (인기순)
+**통합:**
+- [ ] PostService 이미지 연결 (clearExpiresAt)
+- [ ] UserService 프로필 이미지 연결
+- [ ] PostImage 브릿지 테이블 처리
 
 **테스트:**
-- [ ] 단위 테스트 (Service Layer 80%+)
-- [ ] 동시성 처리 검증
+- [ ] ImageService 단위 테스트
+- [ ] 파일 검증 로직 테스트
+- [ ] S3 업로드 통합 테스트
 
 ### 완료 조건
-- 이미지 URL 저장 및 조회 작동
-- 통계 자동 업데이트 확인
-- S3 연동 인터페이스 준비
+- POST /images API 작동 (multipart/form-data)
+- S3 업로드 및 DB 저장 확인
+- 게시글/프로필 이미지 연결 작동
+- 모든 단위 테스트 통과
 
-**참조**: **@docs/DDL.md (Image, PostImage 테이블)**
+**참조**: **@docs/LLD.md Section 7.5** (이미지 업로드 흐름), **@docs/API.md Section 4.1**
+
+---
+
+## Phase 4: 통계 및 배치 작업
+
+**목표**: 게시글 통계 활용 및 고아 이미지 정리 배치 구현
+
+### 체크리스트
+
+**통계 기능:**
+- [ ] PostStats 자동 업데이트 검증 (Phase 3에서 구현됨)
+- [ ] 통계 기반 정렬 구현 (인기순: like_count DESC)
+- [ ] 통계 조회 최적화 (N+1 방지)
+
+**고아 이미지 배치:**
+- [ ] 배치 작업 스케줄러 (@Scheduled)
+- [ ] expires_at < NOW() 조건 이미지 조회
+- [ ] S3 파일 삭제
+- [ ] DB 레코드 삭제
+- [ ] 배치 로그 기록
+
+**테스트:**
+- [ ] 통계 정렬 테스트
+- [ ] 배치 작업 단위 테스트
+- [ ] TTL 만료 시나리오 검증
+
+### 완료 조건
+- 인기순 정렬 작동
+- 고아 이미지 배치 작업 스케줄 실행
+- 배치 로그 확인
+
+**참조**: **@docs/LLD.md Section 7.5** (고아 이미지 처리)
 
 ---
 
@@ -234,7 +277,7 @@ docs: @docs/API.md 게시글 섹션 업데이트
 
 **기술 제약:**
 - 토큰: RDB 저장 (user_tokens) → 추후 Redis 전환
-- 이미지: URL만 저장 → 추후 S3 연동
+- 이미지: S3 직접 저장 (Phase 3.5부터)
 
 **성능 가정:**
 - 초기 트래픽 낮음 → 단일 서버 충분
@@ -242,9 +285,9 @@ docs: @docs/API.md 게시글 섹션 업데이트
 
 **데이터 정책:**
 - Soft Delete: User, Post, Comment (status 변경)
-- Hard Delete: UserToken (배치 작업)
+- Hard Delete: UserToken (배치 작업), 만료된 Image (Phase 4)
 
-상세: @docs/PRD.md Section 5, @docs/LLD.md Section 13
+상세: @docs/PRD.md Section 5, @docs/LLD.md Section 7.5
 
 ---
 
@@ -269,7 +312,8 @@ docs: @docs/API.md 게시글 섹션 업데이트
 |--------|-----------|
 | JWT RDB 성능 저하 | 인덱스 최적화, Redis 전환 |
 | 동시성 이슈 | 원자적 UPDATE, 락 전략 |
-| 이미지 처리 | S3 도입 전까지 URL만 |
+| 고아 이미지 누적 | TTL 기반 배치 삭제 (Phase 4) |
+| S3 비용 초과 | Free Tier 모니터링, 압축 최적화 |
 
 ---
 
@@ -279,4 +323,4 @@ docs: @docs/API.md 게시글 섹션 업데이트
 - **설계**: @docs/LLD.md (아키텍처, 패턴)
 - **스키마**: @docs/DDL.md
 - **API**: @docs/API.md
-- **가이드**: @docs/CLAUDE.md
+- **가이드**: @CLAUDE.md

@@ -1,6 +1,8 @@
 package com.ktb.community.entity;
 
 import com.ktb.community.config.JpaAuditingConfig;
+import com.ktb.community.enums.CommentStatus;
+import com.ktb.community.enums.PostStatus;
 import com.ktb.community.enums.UserRole;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
@@ -59,8 +61,9 @@ class JpaAuditingTest {
         entityManager.persist(user);
 
         Post post = Post.builder()
-                .postTitle("테스트 게시글")
-                .postContent("내용")
+                .title("테스트 게시글")
+                .content("내용")
+                .status(PostStatus.ACTIVE)
                 .user(user)
                 .build();
 
@@ -86,14 +89,16 @@ class JpaAuditingTest {
         entityManager.persist(user);
 
         Post post = Post.builder()
-                .postTitle("게시글")
-                .postContent("내용")
+                .title("게시글")
+                .content("내용")
+                .status(PostStatus.ACTIVE)
                 .user(user)
                 .build();
         entityManager.persist(post);
 
         Comment comment = Comment.builder()
-                .commentContent("댓글 내용")
+                .content("댓글 내용")
+                .status(CommentStatus.ACTIVE)
                 .post(post)
                 .user(user)
                 .build();

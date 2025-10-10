@@ -19,5 +19,5 @@ public class UpdateProfileRequest {
     @Size(max = 10, message = "닉네임은 최대 10자입니다")
     private String nickname;
     
-    private String profileImage;
+    private Long profileImageId;
 }

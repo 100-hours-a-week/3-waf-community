@@ -33,20 +33,18 @@ public class SignupRequest {
     @Size(max = 10, message = "닉네임은 최대 10자입니다")
     private String nickname;
     
-    private String profileImage;
-    
+    private Long profileImageId;
+
     /**
      * DTO → Entity 변환
      * @param encodedPassword BCrypt 암호화된 비밀번호
-     * @param imageId 프로필 이미지 ID (nullable)
      */
-    public User toEntity(String encodedPassword, Long imageId) {
+    public User toEntity(String encodedPassword) {
         return User.builder()
                 .email(email.toLowerCase().trim())
                 .passwordHash(encodedPassword)
                 .nickname(nickname)
                 .role(UserRole.USER)
-                .imageId(imageId)
                 .build();
     }
 }

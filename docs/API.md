@@ -60,10 +60,10 @@
 ### 2.1 회원가입
 **Endpoint:** `POST /users/signup` or `POST /users`
 
-**Request:** `{ "email": "...", "password": "...", "nickname": "...", "profile_image": "..." }`
+**Request:** `{ "email": "...", "password": "...", "nickname": "...", "profile_image_id": 123 }`
 
 **필수:** email(String), password(String), nickname(String)  
-**선택:** profile_image(String)
+**선택:** profile_image_id(Number) - POST /images로 먼저 업로드 필요
 
 **응답:**
 - 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
@@ -90,9 +90,9 @@
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "nickname": "...", "profile_image": "..." }`
+**Request:** `{ "nickname": "...", "profile_image_id": 123 }`
 
-**선택:** nickname(String), profile_image(String)
+**선택:** nickname(String), profile_image_id(Number) - POST /images로 먼저 업로드 필요
 
 **응답:**
 - 200: `update_profile_success` → 수정된 정보 반환

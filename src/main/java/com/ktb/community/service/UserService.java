@@ -64,10 +64,13 @@ public class UserService {
             user.updateNickname(request.getNickname());
         }
         
-        // 프로필 이미지 변경 (Phase 4에서 구현)
-        if (request.getProfileImage() != null) {
-            // TODO: Phase 4에서 Image 엔티티 연동
-            log.info("Profile image update requested (Phase 4)");
+        // 프로필 이미지 변경 (Phase 3.5+에서 구현)
+        if (request.getProfileImageId() != null) {
+            // TODO: Phase 3.5+ ImageRepository 추가 후 구현
+            // Image image = imageRepository.findById(request.getProfileImageId())
+            //     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            // user.updateProfileImage(image);
+            log.info("Profile image update requested (Phase 3.5+): imageId={}", request.getProfileImageId());
         }
         
         log.info("User profile updated: {}", user.getEmail());

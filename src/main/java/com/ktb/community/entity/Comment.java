@@ -38,10 +38,35 @@ public class Comment extends BaseTimeEntity {
     private User user;
 
     @Builder
-    public Comment(String commentContent, Post post, User user) {
-        this.commentContent = commentContent;
+    public Comment(String content, CommentStatus status, Post post, User user) {
+        this.commentContent = content;
+        this.commentStatus = status != null ? status : CommentStatus.ACTIVE;
         this.post = post;
         this.user = user;
-        this.commentStatus = CommentStatus.ACTIVE;
+    }
+
+    /**
+     * 내용 수정
+     */
+    public void updateContent(String content) {
+        this.commentContent = content;
+    }
+
+    /**
+     * 상태 변경
+     */
+    public void updateStatus(CommentStatus status) {
+        this.commentStatus = status;
+    }
+
+    /**
+     * Getter 별칭 (CommentResponse에서 사용)
+     */
+    public String getContent() {
+        return this.commentContent;
+    }
+
+    public CommentStatus getStatus() {
+        return this.commentStatus;
     }
 }

@@ -8,6 +8,12 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  servlet:
+    multipart:
+      max-file-size: 5MB        # 단일 이미지 파일 크기 제한
+      max-request-size: 10MB    # 전체 요청 크기 제한 (향후 다중 이미지 대비)
+      enabled: true
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -39,6 +45,13 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-validity: 1800000  # 30분 (밀리초)
   refresh-token-validity: 604800000  # 7일 (밀리초)
+
+# AWS S3 설정 (Phase 3.5+)
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}              # S3 버킷 이름
+    region: ${AWS_REGION:ap-northeast-2}  # AWS 리전 (기본: 서울)
+    # AWS SDK는 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY 환경 변수 자동 인식
 
 server:
   port: 8080
