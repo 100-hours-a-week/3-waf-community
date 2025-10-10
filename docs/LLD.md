@@ -184,30 +184,59 @@ public class PasswordValidator {
 
 **정책:**
 - 제한: 분당 100회
-- 키: IP 주소 + 사용자 ID (인증 시)
-- 저장소: 인메모리 (ConcurrentHashMap), 추후 Redis
+- 키: FQCN.methodName + IP 주소 + 사용자 ID (인증 시)
+- 저장소: 인메모리 (Caffeine Cache), 추후 Redis
 - 응답: 429 Too Many Requests
+
+**설계 결정사항:**
+
+| 항목 | 선택 | 이유 |
+|------|------|------|
+| 알고리즘 | Token Bucket | Burst traffic 허용, 점진적 refill, 산업 표준 |
+| 라이브러리 | Bucket4j | Redis 전환 용이, 경량, Spring 친화적 |
+| 캐시 | Caffeine | 자동 만료 (10분), 메모리 상한 (10k), LRU 지원 |
+| 키 형식 | FQCN.methodName:IP:userId | 패키지 다른 동일 클래스명 충돌 방지 |
+| 엔드포인트 격리 | FQCN 포함 | RESTful CRUD 메서드명 중복 대응 |
 
 **구현 (AOP):**
 ```java
 @Aspect
 @Component
 public class RateLimitAspect {
-    private final Map<String, RateLimiter> limiters = new ConcurrentHashMap<>();
+    // Caffeine Cache: 10분 미사용 시 자동 삭제, 최대 10,000개
+    private final Cache&lt;String, Bucket&gt; buckets = Caffeine.newBuilder()
+        .expireAfterAccess(10, TimeUnit.MINUTES)
+        .maximumSize(10_000)
+        .build();
 
-    @Around("@annotation(RateLimit)")
-    public Object rateLimit(ProceedingJoinPoint pjp) throws Throwable {
-        String key = getClientKey();
-        RateLimiter limiter = limiters.computeIfAbsent(key,
-            k -> RateLimiter.create(100.0 / 60.0)); // 분당 100회
-
-        if (!limiter.tryAcquire()) {
-            throw new TooManyRequestsException();
+    @Around("@annotation(rateLimit)")
+    public Object rateLimit(ProceedingJoinPoint pjp, RateLimit rateLimit) throws Throwable {
+        String clientKey = getClientKey(pjp);
+        int requestsPerMinute = rateLimit.requestsPerMinute();
+        
+        // Token Bucket: 600ms마다 1개 토큰 refill
+        Bucket bucket = buckets.get(clientKey, k -&gt; createBucket(requestsPerMinute));
+        
+        if (!bucket.tryConsume(1)) {
+            throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
         }
         return pjp.proceed();
     }
+    
+    // 키 예시: "com.ktb.community.controller.AuthController.login:192.168.1.1:user@example.com"
+    private String getClientKey(ProceedingJoinPoint pjp) {
+        String methodName = pjp.getSignature().getDeclaringTypeName() 
+                          + "." + pjp.getSignature().getName();
+        // ... IP + userId 조합
+        return methodName + ":" + userKey;
+    }
 }
 ```
+
+**적용 대상:**
+- AuthController.login - 분당 5회
+- AuthController.signup - 분당 3회
+- 기타 인증 API - 분당 100회 (기본값)
 
 ---
 
