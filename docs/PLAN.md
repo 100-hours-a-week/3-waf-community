@@ -86,17 +86,19 @@ Progress: ██████████ 100%
 - 상세: **@docs/LLD.md Section 7.2, 12.3**
 
 **테스트:**
-- [x] 단위 테스트 작성 (AuthService, UserService)
+- [x] 단위 테스트 작성 (AuthService, UserService, JwtTokenProvider, RateLimitAspect)
   - AuthServiceTest: 10/10 통과
   - UserServiceTest: 8/8 통과
   - JwtTokenProviderTest: 10/10 통과
+  - RateLimitAspectTest: 11/11 통과
 - [x] Service Layer 커버리지 100% (18/18 통과)
+- [x] Config Layer 테스트 (RateLimitAspect 11/11 통과)
 - [ ] Repository Layer 테스트 (Phase 3에서 H2 설정과 함께 진행)
 
 ### 완료 조건
 - [x] 회원가입 → 로그인 → 토큰 발급 → 인증 API 호출 플로우 작동
 - [x] 비밀번호 정책 검증 통과
-- [x] 모든 단위 테스트 통과 (Service Layer 18/18)
+- [x] 모든 단위 테스트 통과 (Service Layer 18/18, Config Layer 11/11)
 
 **참조**: **@docs/LLD.md Section 6 (인증)**, **Section 7.2 (좋아요 동시성), Section 12.3 (동시성 제어)**
 
@@ -224,7 +226,7 @@ docs: @docs/API.md 게시글 섹션 업데이트
 **문서 동기화:**
 - 설계 변경 시 → @docs/LLD.md 업데이트
 - API 변경 시 → @docs/API.md 업데이트
-- 스키마 변경 시 → @docsDDL.md 업데이트
+- 스키마 변경 시 → @docs/DDL.md 업데이트
 
 ---
 

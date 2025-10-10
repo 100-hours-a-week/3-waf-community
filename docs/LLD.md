@@ -384,7 +384,7 @@ public void deleteComment(Long commentId, Long userId) {
 ## 8. 예외 처리
 
 **구조:**
-- **ErrorCode enum**: 에러 정보 중앙 관리 (35개 에러 코드)
+- **ErrorCode enum**: 에러 정보 중앙 관리 (28개 에러 코드)
 - **BusinessException**: 통합 예외 클래스
 - **GlobalExceptionHandler**: 중앙 예외 처리
 
@@ -403,7 +403,7 @@ public class GlobalExceptionHandler {
 }
 ```
 
-**참조**: `src/main/java/com/ktb/community/enums/ErrorCode.java` (35개 에러 정의)
+**참조**: `src/main/java/com/ktb/community/enums/ErrorCode.java` (28개 에러 정의)
 
 ---
 
