@@ -49,6 +49,10 @@ public class PostService {
 
     /**
      * 게시글 작성 (FR-POST-001)
+     * - 사용자 존재 확인
+     * - 게시글 생성 및 통계 초기화
+     * - 이미지 연결 (imageId 있을 경우)
+     * - 이미지 expires_at 클리어 (영구 보존)
      */
     @Transactional
     public PostResponse createPost(PostCreateRequest request, Long userId) {
@@ -96,6 +100,10 @@ public class PostService {
 
     /**
      * 게시글 목록 조회 (FR-POST-002)
+     * - ACTIVE 상태만 조회
+     * - Fetch Join (N+1 방지)
+     * - 정렬: latest (최신순) / likes (인기순)
+     * - 페이지네이션 (offset/limit)
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getPosts(int offset, int limit, String sort) {
@@ -124,6 +132,9 @@ public class PostService {
 
     /**
      * 게시글 상세 조회 (FR-POST-003)
+     * - ACTIVE 상태만 조회
+     * - Fetch Join (N+1 방지)
+     * - 조회수 자동 증가 (동시성 제어)
      */
     @Transactional
     public PostResponse getPostDetail(Long postId) {
@@ -146,6 +157,9 @@ public class PostService {
 
     /**
      * 게시글 수정 (FR-POST-004)
+     * - 작성자 본인만 수정 가능
+     * - 최소 1개 필드 필요 (부분 업데이트)
+     * - 이미지 변경 시 기존 연결 해제 후 재연결
      */
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long userId) {
@@ -204,6 +218,8 @@ public class PostService {
 
     /**
      * 게시글 삭제 (FR-POST-005)
+     * - 작성자 본인만 삭제 가능
+     * - Soft Delete (상태 → DELETED)
      */
     @Transactional
     public void deletePost(Long postId, Long userId) {

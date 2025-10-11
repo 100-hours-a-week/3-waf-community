@@ -43,6 +43,9 @@ public class CommentService {
 
     /**
      * 댓글 작성 (FR-COMMENT-001)
+     * - 게시글 존재 확인 (ACTIVE만)
+     * - 사용자 존재 확인
+     * - 댓글 수 자동 증가 (동시성 제어)
      */
     @Transactional
     public CommentResponse createComment(Long postId, CommentCreateRequest request, Long userId) {
@@ -71,6 +74,10 @@ public class CommentService {
 
     /**
      * 댓글 목록 조회 (FR-COMMENT-002)
+     * - 게시글 존재 확인
+     * - ACTIVE 상태만 조회
+     * - Fetch Join (N+1 방지)
+     * - 정렬: 작성일시 오름차순
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getComments(Long postId, int offset, int limit) {
@@ -106,6 +113,8 @@ public class CommentService {
 
     /**
      * 댓글 수정 (FR-COMMENT-003)
+     * - 작성자 본인만 수정 가능
+     * - ACTIVE 상태만 수정 가능
      */
     @Transactional
     public CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long userId) {
@@ -129,6 +138,9 @@ public class CommentService {
 
     /**
      * 댓글 삭제 (FR-COMMENT-004)
+     * - 작성자 본인만 삭제 가능
+     * - Soft Delete (상태 → DELETED)
+     * - 댓글 수 자동 감소 (동시성 제어)
      */
     @Transactional
     public void deleteComment(Long commentId, Long userId) {

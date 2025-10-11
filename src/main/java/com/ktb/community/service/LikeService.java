@@ -40,6 +40,9 @@ public class LikeService {
 
     /**
      * 게시글 좋아요 추가 (FR-LIKE-001)
+     * - 게시글 존재 확인 (ACTIVE만)
+     * - 중복 방지 (UNIQUE KEY)
+     * - 좋아요 수 자동 증가 (동시성 제어)
      */
     @Transactional
     public Map<String, Integer> addLike(Long postId, Long userId) {
@@ -83,6 +86,9 @@ public class LikeService {
 
     /**
      * 게시글 좋아요 취소 (FR-LIKE-002)
+     * - 좋아요 존재 확인
+     * - Hard Delete (영구 삭제)
+     * - 좋아요 수 자동 감소 (동시성 제어)
      */
     @Transactional
     public Map<String, Integer> removeLike(Long postId, Long userId) {
@@ -117,6 +123,9 @@ public class LikeService {
 
     /**
      * 좋아요한 게시글 목록 조회 (FR-LIKE-003)
+     * - 사용자 존재 확인
+     * - Fetch Join (N+1 방지)
+     * - ACTIVE 게시글만 조회
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getLikedPosts(Long userId, int offset, int limit) {
