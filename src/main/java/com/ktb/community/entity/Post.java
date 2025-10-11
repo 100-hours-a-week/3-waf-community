@@ -30,7 +30,7 @@ public class Post extends BaseTimeEntity {
     private String postContent;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "post_status", nullable = false, columnDefinition = "ENUM('ACTIVE', 'DELETED', 'DRAFT') DEFAULT 'ACTIVE'")
+    @Column(name = "post_status", nullable = false)
     private PostStatus postStatus = PostStatus.ACTIVE;
 
     // 작성자 (N:1)
