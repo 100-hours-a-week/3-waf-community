@@ -41,8 +41,9 @@ MySQL Database
 ### 2.2 계층별 책임
 
 **Controller:**
-- DTO 검증 (Bean Validation)
+- DTO 검증: @Valid + Bean Validation (표준), Manual Validation (@RequestPart 예외)
 - 요청 → Service 전달, 응답 포매팅
+- 예외 메시지: 영어 통일 (ErrorCode 기본 메시지와 일관성)
 - 위치: `com.ktb.community.controller`
 
 **Service:**
