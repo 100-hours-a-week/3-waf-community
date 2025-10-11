@@ -40,12 +40,9 @@ public class ImageService {
 
     /**
      * 이미지 업로드
-     * 1. 파일 검증 (MIME type, Magic Number)
-     * 2. S3 업로드
-     * 3. DB 저장 (expires_at = 1시간 후)
-     *
-     * @param file 업로드할 이미지 파일
-     * @return 이미지 정보
+     * - 파일 검증 (MIME type, Magic Number)
+     * - S3 업로드
+     * - DB 저장 (expires_at = 1시간 후)
      */
     @Transactional
     public ImageResponse uploadImage(MultipartFile file) {
@@ -72,10 +69,8 @@ public class ImageService {
 
     /**
      * S3 업로드 수행
-     *
-     * @param file 업로드할 파일
-     * @param s3Key S3 키
-     * @return 이미지 URL
+     * - PutObjectRequest 생성 및 S3 업로드
+     * - 이미지 URL 반환
      */
     private String uploadToS3(MultipartFile file, String s3Key) {
         try {
