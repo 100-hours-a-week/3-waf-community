@@ -52,15 +52,15 @@ public class UserController {
         
         // 1. Email 검증
         if (email == null || email.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "이메일은 필수입니다");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Email is required");
         }
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "유효한 이메일 형식이어야 합니다");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid email format");
         }
         
         // 2. Password 검증 (LLD.md Section 6.4: 8-20자, 대/소/특수문자 각 1개+)
         if (password == null || password.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "비밀번호는 필수입니다");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Password is required");
         }
         if (!PasswordValidator.isValid(password)) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY,
@@ -69,10 +69,10 @@ public class UserController {
         
         // 3. Nickname 검증
         if (nickname == null || nickname.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "닉네임은 필수입니다");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Nickname is required");
         }
         if (nickname.length() > 10) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "닉네임은 최대 10자입니다");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Nickname must be 10 characters or less");
         }
         
         // SignupRequest 생성
@@ -114,7 +114,7 @@ public class UserController {
         
         // Manual Validation (P0 수정: Bean Validation 대체)
         if (nickname != null && nickname.length() > 10) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "닉네임은 최대 10자입니다");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Nickname must be 10 characters or less");
         }
         
         // UpdateProfileRequest 생성
