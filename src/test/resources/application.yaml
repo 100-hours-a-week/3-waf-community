@@ -39,8 +39,6 @@ aws:
   s3:
     bucket: test-bucket
     region: ap-northeast-2
-  credentials:
-    profile: default
 
 # 로깅 설정 (테스트는 간소화)
 logging:
