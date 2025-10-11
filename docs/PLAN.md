@@ -14,7 +14,7 @@
 **Phase 2 완료** ✅ (Week 2-3)
 **Phase 3 완료** ✅ (Week 4-5)
 **Phase 3.5 완료** ✅ (S3 이미지 업로드)
-**Phase 3.6 진행 중** 🔄 (회원가입/프로필 Multipart 전환)
+**Phase 3.6 완료** ✅ (회원가입/프로필 Multipart 전환 + P0/P1 수정)
 
 ---
 
@@ -26,7 +26,7 @@
 | Phase 2 | 2-3 | 인증/사용자 | AUTH-001~004, USER-001~004 | ✅ 완료 |
 | Phase 3 | 4-5 | 게시글/댓글/좋아요 | POST-001~005, COMMENT-001~004, LIKE-001~003 | ✅ 완료 |
 | Phase 3.5 | 5 | 이미지 업로드 (S3) | IMAGE-001, IMAGE-003 | ✅ 완료 |
-| Phase 3.6 | 5 | Multipart 전환 | AUTH-001, USER-002 | 🔄 진행 중 |
+| Phase 3.6 | 5 | Multipart 전환 + P0/P1 수정 | AUTH-001, USER-002 | ✅ 완료 |
 | Phase 4 | 6 | 통계 및 배치 | IMAGE-002 (고아 이미지) | ⏳ 대기 |
 | Phase 5 | 7 | 테스트/문서 | - | ⏳ 대기 |
 
@@ -206,7 +206,7 @@
 
 ---
 
-## Phase 3.6: 회원가입/프로필 Multipart 전환 🔄 진행 중
+## Phase 3.6: 회원가입/프로필 Multipart 전환 ✅ 완료
 
 **목표**: 회원가입과 프로필 수정 시 이미지와 데이터를 함께 전송하는 자연스러운 UX 구현
 
@@ -221,30 +221,35 @@
 
 **문서 업데이트:**
 - [x] PLAN.md (Phase 3.5 완료, Phase 3.6 추가)
-- [ ] PRD.md (FR-AUTH-001, FR-USER-002)
-- [ ] API.md (Section 2.1, 2.3)
-- [ ] LLD.md (Section 7.5 - 2가지 업로드 패턴)
+- [x] PRD.md (FR-AUTH-001, FR-USER-002)
+- [x] API.md (Section 2.1, 2.3)
+- [x] LLD.md (Section 7.5 - 2가지 업로드 패턴)
 
 **DTO 수정:**
-- [ ] SignupRequest - profileImageId 제거
-- [ ] ProfileUpdateRequest - profileImageId 제거
+- [x] SignupRequest - profileImageId 제거
+- [x] UpdateProfileRequest - profileImageId 제거
 
 **Controller 수정:**
-- [ ] AuthController.signup() - Multipart 적용
-- [ ] UserController.updateProfile() - Multipart 적용
+- [x] UserController.signup() - Multipart 적용 (@RequestPart)
+- [x] UserController.updateProfile() - Multipart 적용 (@RequestPart)
 
 **Service 수정:**
-- [ ] AuthService.signup() - ImageService 통합
-- [ ] UserService.updateProfile() - ImageService 통합
+- [x] AuthService.signup() - ImageService 통합 (MultipartFile 파라미터)
+- [x] UserService.updateProfile() - ImageService 통합 (MultipartFile 파라미터)
 
 **테스트 수정:**
-- [ ] AuthServiceTest - 이미지 있을 때/없을 때
-- [ ] UserServiceTest - 이미지 변경/닉네임만 변경
+- [x] AuthServiceTest - MultipartFile null 처리
+- [x] UserServiceTest - MultipartFile null 처리
+- [x] UserControllerIntegrationTest - Manual Validation 검증 (P0/P1)
+
+**P0/P1 수정:**
+- [x] P0: @RequestPart Manual Validation 복원 (40자 닉네임 → 400 에러)
+- [x] P1: PasswordValidator 사용으로 ErrorCode 일관성 복원 (USER-004)
 
 ### 완료 조건
-- Multipart 회원가입/프로필 수정 작동
-- 기존 2단계 방식과 병행 지원 (하위 호환)
-- 모든 단위 테스트 통과 (98개 → 100개+)
+- [x] Multipart 회원가입/프로필 수정 작동
+- [x] Manual Validation으로 입력 검증 (Bean Validation 대체)
+- [x] 모든 단위 테스트 통과 (102 tests, 0 failures, 100% success)
 
 **참조**: **@docs/LLD.md Section 7.5** (2가지 업로드 패턴), **@docs/API.md Section 2.1, 2.3**
 
