@@ -56,12 +56,11 @@ class RateLimitIntegrationTest {
     void rateLimit_DifferentEndpoints_IndependentCounters() throws Exception {
         // Given
         LoginRequest loginRequest = new LoginRequest("test@example.com", "Test1234!");
-        SignupRequest signupRequest = new SignupRequest(
-            "new@example.com",
-            "Test1234!",
-            "NewUser",
-            null // profileImage
-        );
+        SignupRequest signupRequest = SignupRequest.builder()
+            .email("new@example.com")
+            .password("Test1234!")
+            .nickname("NewUser")
+            .build();
 
         // When & Then - login과 signup은 독립적인 카운터
         mockMvc.perform(post("/auth/login")

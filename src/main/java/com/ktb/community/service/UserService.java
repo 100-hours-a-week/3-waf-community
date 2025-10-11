@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 사용자 서비스
@@ -29,6 +30,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ImageService imageService;
     
     /**
      * 사용자 프로필 조회 (FR-USER-001)
@@ -46,9 +48,11 @@ public class UserService {
      * 사용자 프로필 수정 (FR-USER-002)
      * - 본인만 수정 가능
      * - 닉네임 중복 확인
+     * - 프로필 이미지 업로드 (Multipart)
      */
     @Transactional
-    public UserResponse updateProfile(Long userId, Long authenticatedUserId, UpdateProfileRequest request) {
+    public UserResponse updateProfile(Long userId, Long authenticatedUserId, 
+                                     UpdateProfileRequest request, MultipartFile profileImage) {
         // 권한 확인
         if (!userId.equals(authenticatedUserId)) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -67,15 +71,13 @@ public class UserService {
             user.updateNickname(request.getNickname());
         }
         
-        // 프로필 이미지 변경
-        if (request.getProfileImageId() != null) {
-            Image image = imageRepository.findById(request.getProfileImageId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
-                            "Image not found with id: " + request.getProfileImageId()));
+        // 프로필 이미지 업로드 및 변경 (있을 경우)
+        if (profileImage != null && !profileImage.isEmpty()) {
+            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(profileImage);
+            Image image = imageRepository.findById(imageResponse.getImageId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
             
-            // expires_at 클리어 (영구 보존)
-            image.clearExpiresAt();
-            
+            image.clearExpiresAt();  // 영구 보존
             user.updateProfileImage(image);
             
             log.info("Profile image updated: userId={}, imageId={}", userId, image.getImageId());

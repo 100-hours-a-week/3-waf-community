@@ -80,7 +80,7 @@ class AuthServiceTest {
                 .thenReturn("refresh-token");
 
         // When
-        AuthResponse response = authService.signup(request);
+        AuthResponse response = authService.signup(request, null);
 
         // Then
         assertThat(response).isNotNull();
@@ -104,7 +104,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request))
+        assertThatThrownBy(() -> authService.signup(request, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMAIL_ALREADY_EXISTS);
 
@@ -125,7 +125,7 @@ class AuthServiceTest {
         when(userRepository.existsByNickname(anyString())).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request))
+        assertThatThrownBy(() -> authService.signup(request, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NICKNAME_ALREADY_EXISTS);
 
@@ -146,7 +146,7 @@ class AuthServiceTest {
         when(userRepository.existsByNickname(anyString())).thenReturn(false);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request))
+        assertThatThrownBy(() -> authService.signup(request, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PASSWORD_POLICY);
 

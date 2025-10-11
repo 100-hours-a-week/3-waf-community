@@ -34,11 +34,25 @@ public class UserController {
     /**
      * 회원가입 (API.md 2.1)
      * POST /users/signup or POST /users
+     * Multipart 방식: 이미지와 데이터 함께 전송
      */
-    @PostMapping({"/signup", ""})
+    @PostMapping(value = {"/signup", ""}, consumes = "multipart/form-data")
     @RateLimit(requestsPerMinute = 100)
-    public ResponseEntity<ApiResponse<AuthResponse>> signup(@Valid @RequestBody SignupRequest request) {
-        AuthResponse response = authService.signup(request);
+    public ResponseEntity<ApiResponse<AuthResponse>> signup(
+            @RequestPart("email") String email,
+            @RequestPart("password") String password,
+            @RequestPart("nickname") String nickname,
+            @RequestPart(value = "profile_image", required = false) 
+            org.springframework.web.multipart.MultipartFile profileImage) {
+        
+        // SignupRequest 생성 (validation은 Service에서 수행)
+        SignupRequest request = SignupRequest.builder()
+                .email(email)
+                .password(password)
+                .nickname(nickname)
+                .build();
+        
+        AuthResponse response = authService.signup(request, profileImage);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("register_success", response));
     }
@@ -56,15 +70,24 @@ public class UserController {
     /**
      * 사용자 정보 수정 (API.md 2.3)
      * PATCH /users/{userID}
+     * Multipart 방식: 이미지와 데이터 함께 전송
      */
-    @PatchMapping("/{userId}")
+    @PatchMapping(value = "/{userId}", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @PathVariable Long userId,
-            @Valid @RequestBody UpdateProfileRequest request,
+            @RequestPart(value = "nickname", required = false) String nickname,
+            @RequestPart(value = "profile_image", required = false) 
+            org.springframework.web.multipart.MultipartFile profileImage,
             Authentication authentication) {
         
         Long authenticatedUserId = extractUserIdFromAuthentication(authentication);
-        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
+        
+        // UpdateProfileRequest 생성
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .nickname(nickname)
+                .build();
+        
+        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request, profileImage);
         
         return ResponseEntity.ok(ApiResponse.success("update_profile_success", response));
     }

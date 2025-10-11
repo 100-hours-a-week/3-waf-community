@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -33,15 +34,18 @@ public class AuthService {
     private final UserTokenRepository userTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final ImageService imageService;
+    private final com.ktb.community.repository.ImageRepository imageRepository;
     
     /**
      * 회원가입 (FR-AUTH-001)
      * - 이메일/닉네임 중복 확인
      * - 비밀번호 정책 검증
+     * - 프로필 이미지 업로드 (Multipart)
      * - 자동 로그인 (토큰 발급)
      */
     @Transactional
-    public AuthResponse signup(SignupRequest request) {
+    public AuthResponse signup(SignupRequest request, MultipartFile profileImage) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, 
@@ -63,18 +67,22 @@ public class AuthService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         
+        // 프로필 이미지 업로드 (있을 경우)
+        com.ktb.community.entity.Image image = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(profileImage);
+            image = imageRepository.findById(imageResponse.getImageId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            image.clearExpiresAt();  // 영구 보존
+            log.info("Profile image uploaded for signup: imageId={}", image.getImageId());
+        }
+        
         // 사용자 생성
         User user = request.toEntity(encodedPassword);
-        User savedUser = userRepository.save(user);
-
-        // 프로필 이미지 설정 (Phase 3.5+에서 구현)
-        if (request.getProfileImageId() != null) {
-            // TODO: Phase 3.5+ ImageRepository 추가 후 구현
-            // Image image = imageRepository.findById(request.getProfileImageId())
-            //     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            // savedUser.updateProfileImage(image);
-            log.info("Profile image requested for signup (Phase 3.5+): imageId={}", request.getProfileImageId());
+        if (image != null) {
+            user.updateProfileImage(image);
         }
+        User savedUser = userRepository.save(user);
 
         log.info("User registered: {}", savedUser.getEmail());
         
