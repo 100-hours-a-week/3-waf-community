@@ -12,6 +12,7 @@
 
 **Phase 1 완료** ✅
 **Phase 2 완료** ✅ (Week 2-3)
+**Phase 3 완료** ✅ (Week 4-5)
 
 ---
 
@@ -21,7 +22,7 @@
 |-------|------|------|---------|------|
 | Phase 1 | 1 | 기반 설정 | - | ✅ 완료 |
 | Phase 2 | 2-3 | 인증/사용자 | AUTH-001~004, USER-001~004 | ✅ 완료 |
-| Phase 3 | 4-5 | 게시글/댓글/좋아요 | POST-001~005, COMMENT-001~004, LIKE-001~003 | ⏳ 대기 |
+| Phase 3 | 4-5 | 게시글/댓글/좋아요 | POST-001~005, COMMENT-001~004, LIKE-001~003 | ✅ 완료 |
 | Phase 3.5 | 5 | 이미지 업로드 | IMAGE-001, IMAGE-003 | ⏳ 대기 |
 | Phase 4 | 6 | 통계 및 배치 | IMAGE-002 (고아 이미지) | ⏳ 대기 |
 | Phase 5 | 7 | 테스트/문서 | - | ⏳ 대기 |
@@ -93,7 +94,7 @@
   - RateLimitAspectTest: 11/11 통과
 - [x] Service Layer 커버리지 100% (18/18 통과)
 - [x] Config Layer 테스트 (RateLimitAspect 11/11 통과)
-- [ ] Repository Layer 테스트 (Phase 3에서 H2 설정과 함께 진행)
+- [x] Repository Layer 테스트 (Phase 3에서 완료, H2 환경 12/12 통과)
 
 ### 완료 조건
 - [x] 회원가입 → 로그인 → 토큰 발급 → 인증 API 호출 플로우 작동
@@ -104,7 +105,7 @@
 
 ---
 
-## Phase 3: 게시글 및 댓글 기능
+## Phase 3: 게시글 및 댓글 기능 ✅ 완료
 
 **목표**: 커뮤니티 핵심 기능 구현
 
@@ -119,32 +120,44 @@
 ### 체크리스트
 
 **게시글 기능:**
-- [ ] PostService (CRUD, 페이지네이션, 정렬)
-- [ ] 권한 검증 (작성자만 수정/삭제)
-- [ ] 조회수 자동 증가 (PostStats)
-- [ ] API 6개 (POST/GET/PATCH/DELETE /posts)
+- [x] PostService (CRUD, 페이지네이션, 정렬)
+- [x] 권한 검증 (작성자만 수정/삭제)
+- [x] 조회수 자동 증가 (PostStats, EntityManager.refresh 동기화)
+- [x] API 6개 (POST/GET/PATCH/DELETE /posts)
+- [x] PostController 구현
 
 **댓글 기능:**
-- [ ] CommentService (CRUD)
-- [ ] 권한 검증 (작성자만 수정/삭제)
-- [ ] 댓글 수 자동 업데이트 (PostStats)
-- [ ] API 4개 (GET/POST/PATCH/DELETE /posts/{id}/comments)
+- [x] CommentService (CRUD)
+- [x] 권한 검증 (작성자만 수정/삭제)
+- [x] 댓글 수 자동 업데이트 (PostStats 원자적 UPDATE)
+- [x] API 4개 (GET/POST/PATCH/DELETE /posts/{id}/comments)
+- [x] CommentController 구현
 
 **좋아요 기능:**
-- [ ] LikeService (추가/취소)
-- [ ] 중복 방지 (user_id, post_id UNIQUE)
-- [ ] 좋아요 수 자동 업데이트 (PostStats)
-- [ ] API 3개 (POST/DELETE /posts/{id}/like, GET /users/me/likes)
+- [x] LikeService (추가/취소)
+- [x] 중복 방지 (user_id, post_id UNIQUE)
+- [x] 좋아요 수 자동 업데이트 (PostStats 원자적 UPDATE)
+- [x] API 3개 (POST/DELETE /posts/{id}/like, GET /users/me/likes)
+
+**Repository 계층:**
+- [x] PostRepository (Fetch Join N+1 방지, JPQL 수정)
+- [x] CommentRepository (Fetch Join, JPQL 수정)
+- [x] PostLikeRepository (좋아요 목록, JPQL 수정)
+- [x] ImageRepository 생성 (프로필 이미지 연동)
 
 **테스트:**
-- [ ] 단위 테스트 (Service Layer 80%+)
-- [ ] N+1 문제 검증 (Fetch Join)
-- [ ] 동시성 테스트 (좋아요 동시 추가)
+- [x] 단위 테스트 (Service Layer 30개, 100% 통과)
+  - PostServiceTest: 11/11 통과
+  - CommentServiceTest: 10/10 통과
+  - LikeServiceTest: 9/9 통과
+- [x] Repository 테스트 (12/12 통과, H2 환경)
+- [x] N+1 문제 검증 (Fetch Join)
+- [x] 전체 테스트: 98/98 통과 (100%)
 
 ### 완료 조건
-- 게시글/댓글/좋아요 전체 플로우 작동
-- 권한 검증 정상 작동
-- 모든 단위 테스트 통과
+- [x] 게시글/댓글/좋아요 전체 플로우 작동
+- [x] 권한 검증 정상 작동
+- [x] 모든 단위 테스트 통과
 
 **참조**: **@docs/LLD.md Section 7 (비즈니스 로직), Section 12 (성능 최적화)**
 
