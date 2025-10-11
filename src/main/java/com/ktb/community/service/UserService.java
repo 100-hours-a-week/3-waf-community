@@ -80,10 +80,10 @@ public class UserService {
             image.clearExpiresAt();  // 영구 보존
             user.updateProfileImage(image);
             
-            log.info("Profile image updated: userId={}, imageId={}", userId, image.getImageId());
+            log.info("[User] 프로필 이미지 변경: userId={}, imageId={}", userId, image.getImageId());
         }
         
-        log.info("User profile updated: {}", user.getEmail());
+        log.info("[User] 프로필 수정 완료: email={}, userId={}", user.getEmail(), user.getUserId());
         
         return UserResponse.from(user);
     }
@@ -120,7 +120,7 @@ public class UserService {
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
         user.updatePassword(encodedPassword);
         
-        log.info("Password changed for user: {}", user.getEmail());
+        log.info("[User] 비밀번호 변경 완료: email={}, userId={}", user.getEmail(), user.getUserId());
     }
     
     /**
@@ -142,7 +142,7 @@ public class UserService {
         // 상태 변경 (Soft Delete)
         user.updateStatus(UserStatus.INACTIVE);
         
-        log.info("User account deactivated: {}", user.getEmail());
+        log.info("[User] 회원 탈퇴 완료: email={}, userId={}", user.getEmail(), user.getUserId());
     }
 
     /**

@@ -62,7 +62,7 @@ public class ImageService {
                 .build();
 
         Image savedImage = imageRepository.save(image);
-        log.info("Image uploaded: imageId={}, s3Key={}", savedImage.getImageId(), s3Key);
+        log.info("[Image] 이미지 업로드 완료: imageId={}, s3Key={}", savedImage.getImageId(), s3Key);
 
         return ImageResponse.from(savedImage);
     }
@@ -86,10 +86,10 @@ public class ImageService {
             return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, s3Key);
 
         } catch (IOException e) {
-            log.error("Failed to upload image to S3: s3Key={}", s3Key, e);
+            log.error("[Image] S3 업로드 실패 (IOException): s3Key={}", s3Key, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
-            log.error("S3 upload error: s3Key={}", s3Key, e);
+            log.error("[Image] S3 업로드 에러: s3Key={}", s3Key, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }

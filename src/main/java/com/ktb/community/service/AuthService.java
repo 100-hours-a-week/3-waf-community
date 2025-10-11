@@ -74,7 +74,7 @@ public class AuthService {
             image = imageRepository.findById(imageResponse.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
             image.clearExpiresAt();  // 영구 보존
-            log.info("Profile image uploaded for signup: imageId={}", image.getImageId());
+            log.info("[Auth] 회원가입 프로필 이미지 업로드: imageId={}", image.getImageId());
         }
         
         // 사용자 생성
@@ -84,7 +84,7 @@ public class AuthService {
         }
         User savedUser = userRepository.save(user);
 
-        log.info("User registered: {}", savedUser.getEmail());
+        log.info("[Auth] 회원가입 완료: email={}, userId={}", savedUser.getEmail(), savedUser.getUserId());
         
         // 자동 로그인 - 토큰 발급
         return generateTokens(savedUser);
@@ -110,7 +110,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
         }
         
-        log.info("User logged in: {}", user.getEmail());
+        log.info("[Auth] 로그인 성공: email={}, userId={}", user.getEmail(), user.getUserId());
         
         return generateTokens(user);
     }
@@ -122,7 +122,7 @@ public class AuthService {
     @Transactional
     public void logout(String refreshToken) {
         userTokenRepository.deleteByToken(refreshToken);
-        log.info("User logged out");
+        log.info("[Auth] 로그아웃 완료");
     }
     
     /**
@@ -156,7 +156,7 @@ public class AuthService {
                 user.getRole().name()
         );
         
-        log.info("Access token refreshed for user: {}", user.getEmail());
+        log.info("[Auth] 토큰 갱신 완료: email={}, userId={}", user.getEmail(), user.getUserId());
         
         return AuthResponse.accessOnly(accessToken);
     }

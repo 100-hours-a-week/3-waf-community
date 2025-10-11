@@ -90,10 +90,10 @@ public class PostService {
                     .build();
             postImageRepository.save(postImage);
 
-            log.info("Image linked to post: postId={}, imageId={}", savedPost.getPostId(), image.getImageId());
+            log.info("[Post] 게시글 이미지 연결: postId={}, imageId={}", savedPost.getPostId(), image.getImageId());
         }
 
-        log.info("Post created: postId={}, userId={}", savedPost.getPostId(), userId);
+        log.info("[Post] 게시글 작성 완료: postId={}, userId={}", savedPost.getPostId(), userId);
 
         return PostResponse.from(savedPost);
     }
@@ -150,7 +150,7 @@ public class PostService {
             entityManager.refresh(post.getStats());
         }
 
-        log.info("Post viewed: postId={}", postId);
+        log.info("[Post] 게시글 조회: postId={}", postId);
 
         return PostResponse.from(post);
     }
@@ -208,10 +208,10 @@ public class PostService {
                     .build();
             postImageRepository.save(postImage);
 
-            log.info("Image updated for post: postId={}, imageId={}", postId, image.getImageId());
+            log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}", postId, image.getImageId());
         }
 
-        log.info("Post updated: postId={}, userId={}", postId, userId);
+        log.info("[Post] 게시글 수정 완료: postId={}, userId={}", postId, userId);
 
         return PostResponse.from(post);
     }
@@ -236,7 +236,7 @@ public class PostService {
         // Soft Delete
         post.updateStatus(PostStatus.DELETED);
 
-        log.info("Post deleted: postId={}, userId={}", postId, userId);
+        log.info("[Post] 게시글 삭제 완료: postId={}, userId={}", postId, userId);
     }
 
     /**

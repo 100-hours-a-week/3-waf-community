@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<ErrorDetails>> handleMaxUploadSizeExceeded(
             MaxUploadSizeExceededException ex) {
         
-        log.warn("File size exceeded: {}", ex.getMessage());
+        log.warn("[Error] 파일 크기 초과: {}", ex.getMessage());
         
         ErrorDetails errorDetails = ErrorDetails.of("File size exceeds 5MB limit");
         ApiResponse<ErrorDetails> response = ApiResponse.error(
@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
         ErrorCode errorCode = ex.getErrorCode();
-        log.warn("Business exception: {} - {}", errorCode.getCode(), ex.getMessage());
+        log.warn("[Error] 비즈니스 예외: {} - {}", errorCode.getCode(), ex.getMessage());
         
         ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
         ApiResponse<ErrorDetails> response = ApiResponse.error(errorCode.getCode(), errorDetails);
@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
         
-        log.warn("Validation failed for fields: {} - {}", fields, details);
+        log.warn("[Error] 유효성 검증 실패: fields={}, details={}", fields, details);
         
         ErrorDetails errorDetails = ErrorDetails.of(fields, details);
         ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INVALID_INPUT.getCode(), errorDetails);
@@ -99,7 +99,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<ErrorDetails>> handleIllegalArgumentException(
             IllegalArgumentException ex) {
         
-        log.warn("Illegal argument: {}", ex.getMessage());
+        log.warn("[Error] 잘못된 인자: {}", ex.getMessage());
         
         ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
         ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INVALID_INPUT.getCode(), errorDetails);
@@ -117,7 +117,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<ErrorDetails>> handleIllegalStateException(
             IllegalStateException ex) {
         
-        log.warn("Illegal state: {}", ex.getMessage());
+        log.warn("[Error] 잘못된 상태: {}", ex.getMessage());
         
         ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
         ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INVALID_INPUT.getCode(), errorDetails);
@@ -134,7 +134,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<ErrorDetails>> handleGeneralException(Exception ex) {
         
-        log.error("Unexpected error occurred", ex);
+        log.error("[Error] 예상치 못한 서버 오류 발생", ex);
         
         ErrorDetails errorDetails = ErrorDetails.of("An unexpected error occurred");
         ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
@@ -152,7 +152,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<ErrorDetails>> handleNullPointerException(
             NullPointerException ex) {
         
-        log.error("Null pointer exception occurred", ex);
+        log.error("[Error] Null 포인터 예외 발생", ex);
         
         ErrorDetails errorDetails = ErrorDetails.of("A required value was null");
         ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
