@@ -34,11 +34,11 @@ public class User extends BaseTimeEntity {
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "ENUM('USER', 'ADMIN') DEFAULT 'USER'")
     private UserRole role = UserRole.USER;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_status", nullable = false)
+    @Column(name = "user_status", nullable = false, columnDefinition = "ENUM('ACTIVE', 'INACTIVE', 'DELETED') DEFAULT 'ACTIVE'")
     private UserStatus userStatus = UserStatus.ACTIVE;
 
     // 프로필 이미지 (1:1)

@@ -65,7 +65,7 @@ class UserRepositoryTest {
         User inactiveUser = User.builder()
                 .email("inactive@example.com")
                 .passwordHash("hashedPassword")
-                .nickname("inactiveuser")
+                .nickname("inactive")
                 .role(UserRole.USER)
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(inactiveUser, "userStatus", UserStatus.INACTIVE);

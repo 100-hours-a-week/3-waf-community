@@ -1,6 +1,6 @@
 -- 이미지 저장 테이블
 CREATE TABLE images (
-image_id INT UNSIGNED AUTO_INCREMENT,
+    image_id BIGINT AUTO_INCREMENT,
 image_url VARCHAR(2048) NOT NULL,
 file_size INT UNSIGNED,              
 original_filename VARCHAR(255),      
@@ -13,7 +13,7 @@ expires_at TIMESTAMP NULL DEFAULT NULL,  -- 고아 이미지 관리용 (Phase 4 
 
 -- 유저 테이블
 CREATE TABLE users (
-user_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL AUTO_INCREMENT,
 email        VARCHAR(255) NOT NULL,
 password_hash VARCHAR(255) NOT NULL,
 nickname     VARCHAR(30)  NOT NULL, -- 10자 제한(한글 기준)
@@ -21,7 +21,7 @@ role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
 user_status  ENUM('ACTIVE', 'INACTIVE','DELETED') NOT NULL DEFAULT 'ACTIVE',
 created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-image_id    INT UNSIGNED DEFAULT NULL, -- 프로필 이미지(옵션)
+image_id BIGINT DEFAULT NULL, -- 프로필 이미지(옵션)
 
 PRIMARY KEY (user_id),
 UNIQUE KEY uq_users_email (email), -- 이메일 중복 확인
@@ -41,13 +41,13 @@ CHECK (email NOT REGEXP '\\s')
 
 -- 게시글 테이블
 CREATE TABLE posts (
-post_id INT UNSIGNED AUTO_INCREMENT,
+    post_id BIGINT AUTO_INCREMENT,
 post_title VARCHAR(100) NOT NULL, -- 제목 27자 제한(한글 기준)
 post_content LONGTEXT NOT NULL,
 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 post_status ENUM('ACTIVE', 'DELETED', 'DRAFT') NOT NULL DEFAULT 'ACTIVE', -- VARCHAR → ENUM , 임시 저장 상태 고려
-user_id INT UNSIGNED NOT NULL, -- NULL 불가: API가 항상 author 객체 반환
+    user_id BIGINT NOT NULL, -- NULL 불가: API가 항상 author 객체 반환
 
     PRIMARY KEY (post_id),
     KEY idx_posts_created (created_at DESC), -- 최신 글 조회용 인덱스
@@ -62,7 +62,7 @@ user_id INT UNSIGNED NOT NULL, -- NULL 불가: API가 항상 author 객체 반�
 
 -- 게시글 통계 테이블
 CREATE TABLE post_stats (
-post_id INT UNSIGNED,
+    post_id BIGINT,
 like_count INT UNSIGNED NOT NULL DEFAULT 0,
 comment_count INT UNSIGNED NOT NULL DEFAULT 0,
 view_count INT UNSIGNED NOT NULL DEFAULT 0,
@@ -77,13 +77,13 @@ last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIME
 
 -- 댓글 테이블
 CREATE TABLE comments (
-comment_id INT UNSIGNED AUTO_INCREMENT,
+    comment_id BIGINT AUTO_INCREMENT,
 comment_content VARCHAR(600) NOT NULL, -- 댓글 200자 제한(한글 기준)
 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 comment_status ENUM('ACTIVE', 'DELETED') NOT NULL DEFAULT 'ACTIVE', -- VARCHAR → ENUM
-post_id INT UNSIGNED NOT NULL,
-user_id INT UNSIGNED NOT NULL, -- NULL 불가: API가 항상 author 객체 반환
+    post_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- NULL 불가: API가 항상 author 객체 반환
 
     PRIMARY KEY (comment_id),
     KEY idx_comments_post_created (post_id, created_at, comment_id), -- 특정 게시글의 댓글 조회용 인덱스(생성순)
@@ -101,8 +101,8 @@ user_id INT UNSIGNED NOT NULL, -- NULL 불가: API가 항상 author 객체 반�
 
 -- 게시글 이미지 브릿지 테이블(순서 관리 포함)
 CREATE TABLE post_images (
-post_id INT UNSIGNED NOT NULL,
-image_id INT UNSIGNED NOT NULL,
+    post_id BIGINT NOT NULL,
+    image_id BIGINT NOT NULL,
 display_order TINYINT UNSIGNED NOT NULL DEFAULT 1,
 
     PRIMARY KEY (post_id, image_id),
@@ -119,9 +119,9 @@ display_order TINYINT UNSIGNED NOT NULL DEFAULT 1,
 
 -- 게시글 좋아요 테이블
 CREATE TABLE post_likes (
-like_id INT UNSIGNED AUTO_INCREMENT, -- 단일 PK
-user_id INT UNSIGNED NOT NULL,
-post_id INT UNSIGNED NOT NULL,
+    like_id BIGINT AUTO_INCREMENT, -- 단일 PK
+    user_id BIGINT NOT NULL,
+    post_id BIGINT NOT NULL,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (like_id),
@@ -139,13 +139,13 @@ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
 -- 사용자 토큰 테이블
 CREATE TABLE user_tokens (
-user_token_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_token_id BIGINT NOT NULL AUTO_INCREMENT,
 token         VARCHAR(512) NOT NULL,
 expires_at    TIMESTAMP NOT NULL,
 created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 user_agent    VARCHAR(255),
-ip_address    VARCHAR(45), -- IPv6 대응
-user_id       INT UNSIGNED NOT NULL,
+ip_address VARCHAR(45), -- IPv6 대응
+    user_id BIGINT NOT NULL,
 
 PRIMARY KEY (user_token_id),
 UNIQUE KEY uq_user_tokens_token (token), -- 토큰 중복 방지

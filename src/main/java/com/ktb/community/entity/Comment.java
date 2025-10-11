@@ -24,7 +24,7 @@ public class Comment extends BaseTimeEntity {
     private String commentContent;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "comment_status", nullable = false)
+    @Column(name = "comment_status", nullable = false, columnDefinition = "ENUM('ACTIVE', 'DELETED') DEFAULT 'ACTIVE'")
     private CommentStatus commentStatus = CommentStatus.ACTIVE;
 
     // 게시글 (N:1)
