@@ -26,8 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * 좋아요 서비스
- * PRD.md FR-LIKE-001~003 참조
- * LLD.md Section 7.2 참조
+ * FR-LIKE-001~003
  */
 @Slf4j
 @Service
@@ -41,9 +40,6 @@ public class LikeService {
 
     /**
      * 게시글 좋아요 추가 (FR-LIKE-001)
-     * - 중복 방지 (DDL UNIQUE 제약조건: user_id, post_id)
-     * - PostStats.likeCount 원자적 증가
-     * - 현재 좋아요 수 반환
      */
     @Transactional
     public Map<String, Integer> addLike(Long postId, Long userId) {
@@ -70,7 +66,7 @@ public class LikeService {
                 .build();
         postLikeRepository.save(postLike);
 
-        // 좋아요 수 자동 증가 (LLD.md Section 7.2, 12.3 동시성 제어)
+        // 좋아요 수 자동 증가 (동시성 제어)
         postStatsRepository.incrementLikeCount(postId);
 
         // 현재 좋아요 수 조회
@@ -87,13 +83,11 @@ public class LikeService {
 
     /**
      * 게시글 좋아요 취소 (FR-LIKE-002)
-     * - PostStats.likeCount 원자적 감소
-     * - 현재 좋아요 수 반환
      */
     @Transactional
     public Map<String, Integer> removeLike(Long postId, Long userId) {
         // 게시글 존재 확인
-        if (!postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)) {
+        if (!postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)) {
             throw new BusinessException(ErrorCode.POST_NOT_FOUND,
                     "Post not found with id: " + postId);
         }
@@ -106,7 +100,7 @@ public class LikeService {
         // 좋아요 삭제 (Hard Delete)
         postLikeRepository.delete(postLike);
 
-        // 좋아요 수 자동 감소 (LLD.md Section 7.2, 12.3)
+        // 좋아요 수 자동 감소 (동시성 제어)
         postStatsRepository.decrementLikeCount(postId);
 
         // 현재 좋아요 수 조회
@@ -122,10 +116,7 @@ public class LikeService {
     }
 
     /**
-     * 사용자가 좋아요한 게시글 목록 조회 (FR-LIKE-003)
-     * - ACTIVE 게시글만 조회
-     * - 좋아요 생성일 내림차순
-     * - Offset/Limit 페이지네이션
+     * 좋아요한 게시글 목록 조회 (FR-LIKE-003)
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getLikedPosts(Long userId, int offset, int limit) {

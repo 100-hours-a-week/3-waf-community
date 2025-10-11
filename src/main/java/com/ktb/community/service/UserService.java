@@ -3,10 +3,12 @@ package com.ktb.community.service;
 import com.ktb.community.dto.request.ChangePasswordRequest;
 import com.ktb.community.dto.request.UpdateProfileRequest;
 import com.ktb.community.dto.response.UserResponse;
+import com.ktb.community.entity.Image;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.enums.ErrorCode;
+import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     
     private final UserRepository userRepository;
+    private final ImageRepository imageRepository;
     private final PasswordEncoder passwordEncoder;
     
     /**
@@ -64,13 +67,12 @@ public class UserService {
             user.updateNickname(request.getNickname());
         }
         
-        // 프로필 이미지 변경 (Phase 3.5+에서 구현)
+        // 프로필 이미지 변경
         if (request.getProfileImageId() != null) {
-            // TODO: Phase 3.5+ ImageRepository 추가 후 구현
-            // Image image = imageRepository.findById(request.getProfileImageId())
-            //     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            // user.updateProfileImage(image);
-            log.info("Profile image update requested (Phase 3.5+): imageId={}", request.getProfileImageId());
+            Image image = imageRepository.findById(request.getProfileImageId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                            "Image not found with id: " + request.getProfileImageId()));
+            user.updateProfileImage(image);
         }
         
         log.info("User profile updated: {}", user.getEmail());

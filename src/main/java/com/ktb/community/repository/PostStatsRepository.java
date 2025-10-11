@@ -8,15 +8,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
- * PostStats 엔티티 Repository
- * LLD.md Section 7.2, 12.3 참조 - 동시성 제어
+ * PostStats Repository
+ * 동시성 제어 (원자적 UPDATE)
  */
 @Repository
 public interface PostStatsRepository extends JpaRepository<PostStats, Long> {
     
     /**
      * 조회수 원자적 증가
-     * Phase 3에서 PostService.getPostDetail()에서 호출
      */
     @Modifying(clearAutomatically = true)
     @Query("UPDATE PostStats ps SET ps.viewCount = ps.viewCount + 1, " +
@@ -25,7 +24,6 @@ public interface PostStatsRepository extends JpaRepository<PostStats, Long> {
     
     /**
      * 좋아요 수 원자적 증가
-     * Phase 3에서 LikeService.likePost()에서 호출
      */
     @Modifying(clearAutomatically = true)
     @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount + 1, " +
@@ -34,7 +32,6 @@ public interface PostStatsRepository extends JpaRepository<PostStats, Long> {
     
     /**
      * 좋아요 수 원자적 감소
-     * Phase 3에서 LikeService.unlikePost()에서 호출
      */
     @Modifying(clearAutomatically = true)
     @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount - 1, " +
@@ -44,7 +41,6 @@ public interface PostStatsRepository extends JpaRepository<PostStats, Long> {
     
     /**
      * 댓글 수 원자적 증가
-     * Phase 3에서 CommentService.createComment()에서 호출
      */
     @Modifying(clearAutomatically = true)
     @Query("UPDATE PostStats ps SET ps.commentCount = ps.commentCount + 1, " +
@@ -53,7 +49,6 @@ public interface PostStatsRepository extends JpaRepository<PostStats, Long> {
     
     /**
      * 댓글 수 원자적 감소
-     * Phase 3에서 CommentService.deleteComment()에서 호출
      */
     @Modifying(clearAutomatically = true)
     @Query("UPDATE PostStats ps SET ps.commentCount = ps.commentCount - 1, " +

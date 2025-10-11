@@ -81,6 +81,13 @@ public class Post extends BaseTimeEntity {
     }
 
     /**
+     * PostStats 업데이트
+     */
+    public void updateStats(PostStats stats) {
+        this.stats = stats;
+    }
+
+    /**
      * Getter 별칭 (PostResponse에서 사용)
      */
     public String getTitle() {

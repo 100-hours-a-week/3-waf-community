@@ -215,7 +215,7 @@ class LikeServiceTest {
                 .post(post)
                 .build();
 
-        when(postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(true);
+        when(postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)).thenReturn(true);
         when(postLikeRepository.findByUserUserIdAndPostPostId(userId, postId))
                 .thenReturn(Optional.of(postLike));
         when(postStatsRepository.decrementLikeCount(postId)).thenReturn(1);
@@ -239,7 +239,7 @@ class LikeServiceTest {
         Long postId = 999L;
         Long userId = 1L;
 
-        when(postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(false);
+        when(postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)).thenReturn(false);
 
         // When & Then
         assertThatThrownBy(() -> likeService.removeLike(postId, userId))
@@ -257,7 +257,7 @@ class LikeServiceTest {
         Long postId = 1L;
         Long userId = 1L;
 
-        when(postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(true);
+        when(postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)).thenReturn(true);
         when(postLikeRepository.findByUserUserIdAndPostPostId(userId, postId))
                 .thenReturn(Optional.empty());
 

@@ -13,6 +13,7 @@ import com.ktb.community.exception.BusinessException;
 import com.ktb.community.repository.PostRepository;
 import com.ktb.community.repository.PostStatsRepository;
 import com.ktb.community.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,9 @@ class PostServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private PostService postService;
@@ -171,12 +175,19 @@ class PostServiceTest {
                 .role(UserRole.USER)
                 .build();
 
+        PostStats stats = PostStats.builder()
+                .build();
+        ReflectionTestUtils.setField(stats, "postId", postId);
+        ReflectionTestUtils.setField(stats, "viewCount", 5);
+
         Post post = Post.builder()
                 .title("Test Title")
                 .content("Test Content")
                 .status(PostStatus.ACTIVE)
                 .user(user)
                 .build();
+        // Post에 stats 미리 연결 (FETCH JOIN 시뮬레이션)
+        post.updateStats(stats);
 
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));

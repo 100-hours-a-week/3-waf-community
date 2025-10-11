@@ -193,7 +193,7 @@ class CommentServiceTest {
 
         Page<Comment> commentPage = new PageImpl<>(List.of(comment));
 
-        when(postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(true);
+        when(postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)).thenReturn(true);
         when(commentRepository.findByPostIdAndStatusWithUser(eq(postId), eq(CommentStatus.ACTIVE), any(Pageable.class)))
                 .thenReturn(commentPage);
 
@@ -225,7 +225,7 @@ class CommentServiceTest {
         int offset = 0;
         int limit = 10;
 
-        when(postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(false);
+        when(postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)).thenReturn(false);
 
         // When & Then
         assertThatThrownBy(() -> commentService.getComments(postId, offset, limit))

@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: community-test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+  security:
+    user:
+      name: user
+      password: temp
+
+# JWT 설정 (테스트용)
+jwt:
+  secret: testSecretKeyForJWTtestSecretKeyForJWT1234567890  # 256bit 테스트 시크릿
+  access-token-validity: 1800000  # 30분
+  refresh-token-validity: 604800000  # 7일
+
+# 로깅 설정 (테스트는 간소화)
+logging:
+  level:
+    root: WARN
+    com.ktb.community: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: DEBUG

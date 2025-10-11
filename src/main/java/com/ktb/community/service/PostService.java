@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * 게시글 서비스
- * PRD.md FR-POST-001~005 참조
- * LLD.md Section 7.1 참조
+ * FR-POST-001~005
  */
 @Slf4j
 @Service
@@ -39,13 +39,10 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostStatsRepository postStatsRepository;
     private final UserRepository userRepository;
-    // Phase 3.5+: ImageRepository, PostImageRepository 추가 예정
+    private final EntityManager entityManager;
 
     /**
      * 게시글 작성 (FR-POST-001)
-     * - Post 엔티티 생성 및 저장
-     * - PostStats 초기화 (카운트 0)
-     * - Phase 3.5+: 이미지 연결 처리
      */
     @Transactional
     public PostResponse createPost(PostCreateRequest request, Long userId) {
@@ -61,19 +58,10 @@ public class PostService {
         PostStats stats = PostStats.builder()
                 .post(savedPost)
                 .build();
-        postStatsRepository.save(stats);
+        PostStats savedStats = postStatsRepository.save(stats);
 
-        // Phase 3.5+: 이미지 연결 처리
-        if (request.getImageId() != null) {
-            // TODO: Phase 3.5+ ImageRepository, PostImageRepository 추가 후 구현
-            // Image image = imageRepository.findById(request.getImageId())
-            //     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            // image.clearExpiresAt();  // 영구 보존
-            // PostImage postImage = PostImage.builder()
-            //     .post(savedPost).image(image).displayOrder(1).build();
-            // postImageRepository.save(postImage);
-            log.info("Image connection requested for post (Phase 3.5+): imageId={}", request.getImageId());
-        }
+        // Post에 stats 연결 (PostResponse에서 null 방지)
+        savedPost.updateStats(savedStats);
 
         log.info("Post created: postId={}, userId={}", savedPost.getPostId(), userId);
 
@@ -82,9 +70,6 @@ public class PostService {
 
     /**
      * 게시글 목록 조회 (FR-POST-002)
-     * - Offset/Limit 페이지네이션
-     * - 정렬: latest(최신순), likes(좋아요순)
-     * - ACTIVE만 조회
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getPosts(int offset, int limit, String sort) {
@@ -113,8 +98,6 @@ public class PostService {
 
     /**
      * 게시글 상세 조회 (FR-POST-003)
-     * - ACTIVE만 조회
-     * - 조회수 자동 증가 (원자적 UPDATE)
      */
     @Transactional
     public PostResponse getPostDetail(Long postId) {
@@ -122,8 +105,13 @@ public class PostService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
                         "Post not found with id: " + postId));
 
-        // 조회수 증가 (LLD.md Section 12.3 동시성 제어)
+        // 조회수 증가 (동시성 제어)
         postStatsRepository.incrementViewCount(postId);
+
+        // 영속성 컨텍스트에서 stats를 DB 상태로 동기화
+        if (post.getStats() != null) {
+            entityManager.refresh(post.getStats());
+        }
 
         log.info("Post viewed: postId={}", postId);
 
@@ -132,8 +120,6 @@ public class PostService {
 
     /**
      * 게시글 수정 (FR-POST-004)
-     * - 작성자 본인만 수정 가능
-     * - PATCH: 부분 업데이트 (최소 1개 필드 필요)
      */
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long userId) {
@@ -161,20 +147,6 @@ public class PostService {
             post.updateContent(request.getContent());
         }
 
-        // Phase 3.5+: 이미지 업데이트 처리
-        if (request.getImageId() != null) {
-            // TODO: Phase 3.5+ 이미지 연결 업데이트
-            // postImageRepository.deleteByPostPostId(postId);  // 기존 연결 삭제
-            // Image image = imageRepository.findById(request.getImageId())
-            //     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            // image.clearExpiresAt();
-            // PostImage postImage = PostImage.builder()
-            //     .post(post).image(image).displayOrder(1).build();
-            // postImageRepository.save(postImage);
-            log.info("Image update requested for post (Phase 3.5+): postId={}, imageId={}",
-                    postId, request.getImageId());
-        }
-
         log.info("Post updated: postId={}, userId={}", postId, userId);
 
         return PostResponse.from(post);
@@ -182,8 +154,6 @@ public class PostService {
 
     /**
      * 게시글 삭제 (FR-POST-005)
-     * - 작성자 본인만 삭제 가능
-     * - Soft Delete (status → DELETED)
      */
     @Transactional
     public void deletePost(Long postId, Long userId) {
@@ -205,8 +175,6 @@ public class PostService {
 
     /**
      * 정렬 조건 생성
-     * - latest: 최신순 (created_at DESC)
-     * - likes: 좋아요순 (like_count DESC, created_at DESC)
      */
     private Sort getSort(String sort) {
         if ("likes".equalsIgnoreCase(sort)) {

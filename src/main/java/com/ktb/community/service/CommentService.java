@@ -29,8 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * 댓글 서비스
- * PRD.md FR-COMMENT-001~004 참조
- * LLD.md Section 7.4 참조
+ * FR-COMMENT-001~004
  */
 @Slf4j
 @Service
@@ -44,9 +43,6 @@ public class CommentService {
 
     /**
      * 댓글 작성 (FR-COMMENT-001)
-     * - 게시글 존재 확인 (ACTIVE만)
-     * - Comment 저장
-     * - PostStats.commentCount 원자적 증가
      */
     @Transactional
     public CommentResponse createComment(Long postId, CommentCreateRequest request, Long userId) {
@@ -64,7 +60,7 @@ public class CommentService {
         Comment comment = request.toEntity(post, user);
         Comment savedComment = commentRepository.save(comment);
 
-        // 댓글 수 자동 증가 (LLD.md Section 12.3 동시성 제어)
+        // 댓글 수 자동 증가 (동시성 제어)
         postStatsRepository.incrementCommentCount(postId);
 
         log.info("Comment created: commentId={}, postId={}, userId={}",
@@ -75,14 +71,11 @@ public class CommentService {
 
     /**
      * 댓글 목록 조회 (FR-COMMENT-002)
-     * - 특정 게시글의 댓글만 조회 (ACTIVE)
-     * - 생성일 오름차순
-     * - Offset/Limit 페이지네이션
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getComments(Long postId, int offset, int limit) {
         // 게시글 존재 확인
-        if (!postRepository.existsByPostIdAndStatus(postId, PostStatus.ACTIVE)) {
+        if (!postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)) {
             throw new BusinessException(ErrorCode.POST_NOT_FOUND,
                     "Post not found with id: " + postId);
         }
@@ -113,8 +106,6 @@ public class CommentService {
 
     /**
      * 댓글 수정 (FR-COMMENT-003)
-     * - 작성자 본인만 수정 가능
-     * - 내용만 수정
      */
     @Transactional
     public CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long userId) {
@@ -138,9 +129,6 @@ public class CommentService {
 
     /**
      * 댓글 삭제 (FR-COMMENT-004)
-     * - 작성자 본인만 삭제 가능
-     * - Soft Delete (status → DELETED)
-     * - PostStats.commentCount 원자적 감소
      */
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
@@ -157,7 +145,7 @@ public class CommentService {
         // Soft Delete
         comment.updateStatus(CommentStatus.DELETED);
 
-        // 댓글 수 자동 감소 (LLD.md Section 12.3)
+        // 댓글 수 자동 감소 (동시성 제어)
         postStatsRepository.decrementCommentCount(comment.getPost().getPostId());
 
         log.info("Comment deleted: commentId={}, userId={}", commentId, userId);
