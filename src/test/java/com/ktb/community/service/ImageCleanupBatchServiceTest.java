@@ -2,12 +2,13 @@ package com.ktb.community.service;
 
 import com.ktb.community.entity.Image;
 import com.ktb.community.repository.ImageRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
@@ -31,8 +32,15 @@ class ImageCleanupBatchServiceTest {
     @Mock
     private S3Client s3Client;
 
-    @InjectMocks
     private ImageCleanupBatchService batchService;
+
+    @BeforeEach
+    void setUp() {
+        // Self-injection 패턴: self를 null로 초기화 후 리플렉션으로 자기 자신 설정
+        batchService = new ImageCleanupBatchService(imageRepository, s3Client, null);
+        ReflectionTestUtils.setField(batchService, "self", batchService);
+        ReflectionTestUtils.setField(batchService, "bucketName", "test-bucket");
+    }
 
     @Test
     @DisplayName("고아 이미지 배치 - 만료된 이미지 삭제 성공")
