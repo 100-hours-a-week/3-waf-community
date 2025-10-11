@@ -13,6 +13,8 @@
 **Phase 1 완료** ✅
 **Phase 2 완료** ✅ (Week 2-3)
 **Phase 3 완료** ✅ (Week 4-5)
+**Phase 3.5 완료** ✅ (S3 이미지 업로드)
+**Phase 3.6 진행 중** 🔄 (회원가입/프로필 Multipart 전환)
 
 ---
 
@@ -23,7 +25,8 @@
 | Phase 1 | 1 | 기반 설정 | - | ✅ 완료 |
 | Phase 2 | 2-3 | 인증/사용자 | AUTH-001~004, USER-001~004 | ✅ 완료 |
 | Phase 3 | 4-5 | 게시글/댓글/좋아요 | POST-001~005, COMMENT-001~004, LIKE-001~003 | ✅ 완료 |
-| Phase 3.5 | 5 | 이미지 업로드 | IMAGE-001, IMAGE-003 | ⏳ 대기 |
+| Phase 3.5 | 5 | 이미지 업로드 (S3) | IMAGE-001, IMAGE-003 | ✅ 완료 |
+| Phase 3.6 | 5 | Multipart 전환 | AUTH-001, USER-002 | 🔄 진행 중 |
 | Phase 4 | 6 | 통계 및 배치 | IMAGE-002 (고아 이미지) | ⏳ 대기 |
 | Phase 5 | 7 | 테스트/문서 | - | ⏳ 대기 |
 
@@ -163,7 +166,7 @@
 
 ---
 
-## Phase 3.5: 이미지 업로드 인프라
+## Phase 3.5: 이미지 업로드 인프라 ✅ 완료
 
 **목표**: S3 직접 연동 이미지 업로드 시스템 구현
 
@@ -177,29 +180,73 @@
 ### 체크리스트
 
 **이미지 업로드:**
-- [ ] ImageService (파일 검증, S3 업로드, DB 저장)
-- [ ] ImageController (POST /images)
-- [ ] S3Client 설정 (AWS SDK v2)
-- [ ] 파일 검증 (크기, 형식, Magic Number)
-- [ ] expires_at TTL 로직 (1시간)
+- [x] ImageService (파일 검증, S3 업로드, DB 저장)
+- [x] ImageController (POST /images)
+- [x] S3Client 설정 (AWS SDK v2)
+- [x] 파일 검증 (크기, 형식, Magic Number)
+- [x] expires_at TTL 로직 (1시간)
 
 **통합:**
-- [ ] PostService 이미지 연결 (clearExpiresAt)
-- [ ] UserService 프로필 이미지 연결
-- [ ] PostImage 브릿지 테이블 처리
+- [x] PostService 이미지 연결 (clearExpiresAt)
+- [x] UserService 프로필 이미지 연결
+- [x] PostImage 브릿지 테이블 처리
 
 **테스트:**
-- [ ] ImageService 단위 테스트
-- [ ] 파일 검증 로직 테스트
-- [ ] S3 업로드 통합 테스트
+- [x] ImageService 단위 테스트
+- [x] 파일 검증 로직 테스트
+- [x] S3 업로드 통합 테스트
 
 ### 완료 조건
-- POST /images API 작동 (multipart/form-data)
-- S3 업로드 및 DB 저장 확인
-- 게시글/프로필 이미지 연결 작동
-- 모든 단위 테스트 통과
+- [x] POST /images API 작동 (multipart/form-data)
+- [x] S3 업로드 및 DB 저장 확인
+- [x] 게시글/프로필 이미지 연결 작동
+- [x] 모든 단위 테스트 통과
 
 **참조**: **@docs/LLD.md Section 7.5** (이미지 업로드 흐름), **@docs/API.md Section 4.1**
+
+---
+
+## Phase 3.6: 회원가입/프로필 Multipart 전환 🔄 진행 중
+
+**목표**: 회원가입과 프로필 수정 시 이미지와 데이터를 함께 전송하는 자연스러운 UX 구현
+
+### FR 매핑
+
+| FR 코드 | 기능 | 변경 내용 |
+|---------|------|-----------|
+| FR-AUTH-001 | 회원가입 | 2단계 → Multipart 직접 업로드 |
+| FR-USER-002 | 프로필 수정 | 2단계 → Multipart 직접 업로드 |
+
+### 체크리스트
+
+**문서 업데이트:**
+- [x] PLAN.md (Phase 3.5 완료, Phase 3.6 추가)
+- [ ] PRD.md (FR-AUTH-001, FR-USER-002)
+- [ ] API.md (Section 2.1, 2.3)
+- [ ] LLD.md (Section 7.5 - 2가지 업로드 패턴)
+
+**DTO 수정:**
+- [ ] SignupRequest - profileImageId 제거
+- [ ] ProfileUpdateRequest - profileImageId 제거
+
+**Controller 수정:**
+- [ ] AuthController.signup() - Multipart 적용
+- [ ] UserController.updateProfile() - Multipart 적용
+
+**Service 수정:**
+- [ ] AuthService.signup() - ImageService 통합
+- [ ] UserService.updateProfile() - ImageService 통합
+
+**테스트 수정:**
+- [ ] AuthServiceTest - 이미지 있을 때/없을 때
+- [ ] UserServiceTest - 이미지 변경/닉네임만 변경
+
+### 완료 조건
+- Multipart 회원가입/프로필 수정 작동
+- 기존 2단계 방식과 병행 지원 (하위 호환)
+- 모든 단위 테스트 통과 (98개 → 100개+)
+
+**참조**: **@docs/LLD.md Section 7.5** (2가지 업로드 패턴), **@docs/API.md Section 2.1, 2.3**
 
 ---
 

@@ -400,7 +400,40 @@ public void deleteComment(Long commentId, Long userId) {
 
 ### 7.5 이미지 업로드 흐름 (S3 직접 연동)
 
-**2단계 업로드 패턴:**
+**2가지 업로드 패턴:**
+
+#### 패턴 1: Multipart 직접 업로드 (회원가입/프로필 수정)
+
+```
+Client → POST /users/signup (multipart/form-data)
+    ↓ email, password, nickname, profile_image
+AuthController → @RequestPart로 파일 수신
+    ↓
+AuthService.signup(SignupRequest, MultipartFile)
+    ↓
+ImageService.uploadImage(file) 호출
+    ↓ 파일 검증 (MIME + Magic Number)
+    ↓ S3 업로드
+    ↓ DB 저장 (expires_at = 1시간)
+    ↓ image.clearExpiresAt() (영구 보존)
+    ↓
+User 엔티티 생성 (profileImage 설정)
+    ↓
+Client ← { access_token, refresh_token }
+```
+
+**장점:**
+- 자연스러운 UX (한 번의 요청으로 완료)
+- 원자적 트랜잭션 (회원가입 실패 시 이미지도 롤백)
+- 프론트엔드 구현 단순화
+
+**적용 대상:**
+- POST /users/signup
+- PATCH /users/{userId} (프로필 수정)
+
+---
+
+#### 패턴 2: 2단계 업로드 (게시글 작성)
 
 ```
 Phase 1: 이미지 업로드
@@ -408,90 +441,94 @@ Client → POST /images (multipart/form-data)
     ↓
 ImageService → 파일 검증 (크기, 형식, Magic Number)
     ↓
-S3Client → AWS S3 업로드 (community-images-dev bucket)
+S3Client → AWS S3 업로드
     ↓
-ImageRepository → DB 저장 (image_url, file_size, expires_at)
+ImageRepository → DB 저장 (expires_at = 1시간 후)
     ↓
 Client ← { image_id: 123, image_url: "https://..." }
 
-Phase 2: 비즈니스 로직에서 사용
+Phase 2: 게시글 작성
 Client → POST /posts { "title": "...", "image_id": 123 }
     ↓
-PostService → image_id 검증 (ImageRepository.existsById)
+PostService → image_id 검증
     ↓
 Image → expires_at 클리어 (영구 보존)
     ↓
-PostImageRepository → 연결 테이블 저장 (post_id, image_id, display_order)
+PostImageRepository → 연결 테이블 저장
 ```
 
-**핵심 패턴:**
+**장점:**
+- 이미지 미리보기 가능
+- 드래그앤드롭, 복수 이미지 지원 용이
+- 임시 저장 기능 지원
+- 이미지와 컨텐츠 독립적 관리
+
+**적용 대상:**
+- POST /posts (게시글 작성)
+- PATCH /posts/{postId} (게시글 수정)
+
+---
+
+**핵심 구현 패턴:**
+
 ```java
+// 패턴 1: Multipart 직접 업로드
 @Service
-public class ImageService {
-    private final S3Client s3Client;
+public class AuthService {
+    private final ImageService imageService;
     private final ImageRepository imageRepository;
     
-    @Value("${aws.s3.bucket}")
-    private String bucketName;
-    
     @Transactional
-    public ImageResponse uploadImage(MultipartFile file) {
-        // 1. 파일 검증 (형식과 Magic Number만, 크기는 서버 레벨에서 제어)
-        validateFile(file);
+    public AuthResponse signup(SignupRequest request, MultipartFile profileImage) {
+        // 이메일/닉네임/비밀번호 검증 생략
         
-        // 2. S3 업로드
-        String s3Key = generateS3Key(file.getOriginalFilename());
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-            .bucket(bucketName)
-            .key(s3Key)
-            .contentType(file.getContentType())
-            .build();
-        
-        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
-        
-        // 3. DB 저장 (expires_at = 1시간 후)
-        Image image = Image.builder()
-            .imageUrl(String.format("https://%s.s3.ap-northeast-2.amazonaws.com/%s", 
-                                    bucketName, s3Key))
-            .fileSize(file.getSize())
-            .originalFilename(file.getOriginalFilename())
-            .expiresAt(LocalDateTime.now().plusHours(1))  // 1시간 TTL
-            .build();
-        
-        Image saved = imageRepository.save(image);
-        
-        return ImageResponse.from(saved);
-    }
-    
-    /**
-     * 파일 검증
-     * 파일 크기는 Spring Boot multipart 설정에서 제어 (5MB)
-     * 여기서는 형식과 Magic Number만 검증
-     */
-    private void validateFile(MultipartFile file) {
-        // 형식 검증 (MIME type)
-        String contentType = file.getContentType();
-        if (!Arrays.asList("image/jpeg", "image/png", "image/gif").contains(contentType)) {
-            throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
+        // 프로필 이미지 업로드 (있을 경우)
+        Image image = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            ImageResponse imageResponse = imageService.uploadImage(profileImage);
+            image = imageRepository.findById(imageResponse.getImageId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            image.clearExpiresAt();  // 영구 보존
         }
         
-        // Magic Number 검증 (실제 파일 내용 확인)
-        try {
-            byte[] bytes = file.getBytes();
-            if (!isValidImageMagicNumber(bytes)) {
-                throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
-            }
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
+        // User 생성
+        User user = User.builder()
+            .email(request.getEmail())
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .nickname(request.getNickname())
+            .profileImage(image)  // null 가능
+            .build();
+        
+        userRepository.save(user);
+        
+        // 토큰 발급 및 반환
+        // ...
     }
-    
-    private String generateS3Key(String originalFilename) {
-        String uuid = UUID.randomUUID().toString();
-        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        return String.format("images/%s/%s%s", 
-                           LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")),
-                           uuid, extension);
+}
+
+// 패턴 2: 2단계 업로드
+@Service
+public class PostService {
+    @Transactional
+    public PostResponse createPost(PostCreateRequest request, Long userId) {
+        // 게시글 생성 로직 생략
+        
+        // 이미지 연결 (있을 경우)
+        if (request.getImageId() != null) {
+            Image image = imageRepository.findById(request.getImageId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            
+            image.clearExpiresAt();  // 영구 보존
+            
+            PostImage postImage = PostImage.builder()
+                .post(savedPost)
+                .image(image)
+                .displayOrder(1)
+                .build();
+            postImageRepository.save(postImage);
+        }
+        
+        return PostResponse.from(savedPost);
     }
 }
 ```
@@ -501,12 +538,6 @@ public class ImageService {
 - **사용 시**: `image.clearExpiresAt()` 호출로 expires_at = NULL (영구 보존)
 - **배치 작업**: 매일 새벽 expires_at < NOW() 조건으로 S3 + DB 삭제
 - **인덱스**: `idx_images_expires` 활용으로 빠른 조회
-
-**장점:**
-- **관심사 분리**: 이미지 처리 로직 독립, 비즈니스 로직 단순화
-- **재사용성**: 프로필/게시글 이미지 동일 API 사용
-- **확장성**: S3 → CDN 전환 시 ImageService만 수정
-- **에러 명확성**: 업로드 실패 vs 비즈니스 로직 실패 구분
 
 **참조**: **@docs/API.md Section 4.1** (이미지 업로드 API), **@docs/DDL.md** (images 테이블)
 

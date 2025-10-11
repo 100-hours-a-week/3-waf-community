@@ -60,15 +60,20 @@
 ### 2.1 회원가입
 **Endpoint:** `POST /users/signup` or `POST /users`
 
-**Request:** `{ "email": "...", "password": "...", "nickname": "...", "profile_image_id": 123 }`
+**Content-Type:** `multipart/form-data`
 
-**필수:** email(String), password(String), nickname(String)  
-**선택:** profile_image_id(Number) - POST /images로 먼저 업로드 필요
+**Request Parts:**
+- `email` (String, 필수) - 이메일 주소
+- `password` (String, 필수) - 비밀번호 (8-20자, 대/소/특수문자 각 1개+)
+- `nickname` (String, 필수) - 닉네임 (10자 이내)
+- `profile_image` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
 - 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
+- 413: IMAGE-002 (File too large)
+- 400: IMAGE-003 (Invalid file type)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
@@ -90,14 +95,18 @@
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "nickname": "...", "profile_image_id": 123 }`
+**Content-Type:** `multipart/form-data`
 
-**선택:** nickname(String), profile_image_id(Number) - POST /images로 먼저 업로드 필요
+**Request Parts:**
+- `nickname` (String, 선택) - 닉네임 (10자 이내)
+- `profile_image` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
 - 200: `update_profile_success` → 수정된 정보 반환
 - 404: USER-001 (User not found)
 - 409: USER-003 (Nickname exists)
+- 413: IMAGE-002 (File too large)
+- 400: IMAGE-003 (Invalid file type)
 - 401/403/500: [공통 에러 코드](#응답-코드) 참조
 
 ---
