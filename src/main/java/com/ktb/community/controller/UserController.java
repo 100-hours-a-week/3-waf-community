@@ -11,6 +11,7 @@ import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.service.AuthService;
 import com.ktb.community.service.UserService;
+import com.ktb.community.util.PasswordValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,12 +58,13 @@ public class UserController {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "유효한 이메일 형식이어야 합니다");
         }
         
-        // 2. Password 검증
+        // 2. Password 검증 (LLD.md Section 6.4: 8-20자, 대/소/특수문자 각 1개+)
         if (password == null || password.isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "비밀번호는 필수입니다");
         }
-        if (password.length() < 8 || password.length() > 20) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "비밀번호는 8-20자여야 합니다");
+        if (!PasswordValidator.isValid(password)) {
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY,
+                PasswordValidator.getPolicyDescription());
         }
         
         // 3. Nickname 검증
