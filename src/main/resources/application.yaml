@@ -49,9 +49,10 @@ jwt:
 # AWS S3 설정 (Phase 3.5+)
 aws:
   s3:
-    bucket: ${AWS_S3_BUCKET}              # S3 버킷 이름
-    region: ${AWS_REGION:ap-northeast-2}  # AWS 리전 (기본: 서울)
-    # AWS SDK는 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY 환경 변수 자동 인식
+    bucket: ${AWS_S3_BUCKET:ktb-3-community-images-dev}  # S3 버킷 이름
+    region: ${AWS_REGION:ap-northeast-2}                  # AWS 리전 (기본: 서울)
+  credentials:
+    profile: ${AWS_PROFILE:dev}  # AWS CLI 프로파일 (기본: dev)
 
 server:
   port: 8080

@@ -3,6 +3,7 @@ package com.ktb.community.repository;
 import com.ktb.community.entity.PostImage;
 import com.ktb.community.entity.PostImageId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,10 +29,13 @@ public interface PostImageRepository extends JpaRepository<PostImage, PostImageI
     List<PostImage> findByPostIdWithImage(@Param("postId") Long postId);
 
     /**
-     * 게시글의 모든 이미지 연결 삭제
+     * 게시글의 모든 이미지 연결 삭제 (Bulk Delete)
      * 게시글 수정 시 기존 이미지 제거용
      *
      * @param postId 게시글 ID
+     * @return 삭제된 행 수
      */
-    void deleteByPostPostId(Long postId);
+    @Modifying
+    @Query("DELETE FROM PostImage pi WHERE pi.post.postId = :postId")
+    int deleteByPostId(@Param("postId") Long postId);
 }

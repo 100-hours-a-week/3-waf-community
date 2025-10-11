@@ -3,6 +3,8 @@ package com.ktb.community.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
  * 이미지 엔티티
  * DDL: images 테이블
@@ -28,10 +30,22 @@ public class Image extends BaseCreatedTimeEntity {
     @Column(name = "original_filename", length = 255)
     private String originalFilename;
 
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
     @Builder
-    public Image(String imageUrl, Integer fileSize, String originalFilename) {
+    public Image(String imageUrl, Integer fileSize, String originalFilename, LocalDateTime expiresAt) {
         this.imageUrl = imageUrl;
         this.fileSize = fileSize;
         this.originalFilename = originalFilename;
+        this.expiresAt = expiresAt;
+    }
+
+    /**
+     * 이미지를 영구 보존하기 위해 만료 시간 제거
+     * 게시글이나 프로필에 연결될 때 호출
+     */
+    public void clearExpiresAt() {
+        this.expiresAt = null;
     }
 }

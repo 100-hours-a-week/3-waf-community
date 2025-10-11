@@ -72,7 +72,13 @@ public class UserService {
             Image image = imageRepository.findById(request.getProfileImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
                             "Image not found with id: " + request.getProfileImageId()));
+            
+            // expires_at 클리어 (영구 보존)
+            image.clearExpiresAt();
+            
             user.updateProfileImage(image);
+            
+            log.info("Profile image updated: userId={}, imageId={}", userId, image.getImageId());
         }
         
         log.info("User profile updated: {}", user.getEmail());

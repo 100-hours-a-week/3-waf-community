@@ -9,6 +9,10 @@ import com.ktb.community.entity.User;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.enums.PostStatus;
 import com.ktb.community.exception.BusinessException;
+import com.ktb.community.entity.Image;
+import com.ktb.community.entity.PostImage;
+import com.ktb.community.repository.ImageRepository;
+import com.ktb.community.repository.PostImageRepository;
 import com.ktb.community.repository.PostRepository;
 import com.ktb.community.repository.PostStatsRepository;
 import com.ktb.community.repository.UserRepository;
@@ -39,6 +43,8 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostStatsRepository postStatsRepository;
     private final UserRepository userRepository;
+    private final ImageRepository imageRepository;
+    private final PostImageRepository postImageRepository;
     private final EntityManager entityManager;
 
     /**
@@ -62,6 +68,26 @@ public class PostService {
 
         // Post에 stats 연결 (PostResponse에서 null 방지)
         savedPost.updateStats(savedStats);
+
+        // 이미지 연결 처리 (imageId가 있을 경우)
+        if (request.getImageId() != null) {
+            Image image = imageRepository.findById(request.getImageId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                            "Image not found with id: " + request.getImageId()));
+
+            // expires_at 클리어 (영구 보존)
+            image.clearExpiresAt();
+
+            // PostImage 브릿지 테이블 저장
+            PostImage postImage = PostImage.builder()
+                    .post(savedPost)
+                    .image(image)
+                    .displayOrder(1)
+                    .build();
+            postImageRepository.save(postImage);
+
+            log.info("Image linked to post: postId={}, imageId={}", savedPost.getPostId(), image.getImageId());
+        }
 
         log.info("Post created: postId={}, userId={}", savedPost.getPostId(), userId);
 
@@ -145,6 +171,30 @@ public class PostService {
         }
         if (request.getContent() != null) {
             post.updateContent(request.getContent());
+        }
+
+        // 이미지 업데이트 (imageId가 있을 경우)
+        if (request.getImageId() != null) {
+            // 기존 이미지 연결 삭제
+            postImageRepository.deleteByPostId(postId);
+
+            // 새 이미지 연결
+            Image image = imageRepository.findById(request.getImageId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                            "Image not found with id: " + request.getImageId()));
+
+            // expires_at 클리어 (영구 보존)
+            image.clearExpiresAt();
+
+            // PostImage 브릿지 테이블 저장
+            PostImage postImage = PostImage.builder()
+                    .post(post)
+                    .image(image)
+                    .displayOrder(1)
+                    .build();
+            postImageRepository.save(postImage);
+
+            log.info("Image updated for post: postId={}, imageId={}", postId, image.getImageId());
         }
 
         log.info("Post updated: postId={}, userId={}", postId, userId);

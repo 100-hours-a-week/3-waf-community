@@ -34,6 +34,14 @@ jwt:
   access-token-validity: 1800000  # 30분
   refresh-token-validity: 604800000  # 7일
 
+# AWS S3 설정 (테스트용 - Mock 사용)
+aws:
+  s3:
+    bucket: test-bucket
+    region: ap-northeast-2
+  credentials:
+    profile: default
+
 # 로깅 설정 (테스트는 간소화)
 logging:
   level:

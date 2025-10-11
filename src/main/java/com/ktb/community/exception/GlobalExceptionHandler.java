@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,26 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
+    /**
+     * 파일 크기 초과 예외 처리
+     * Spring Boot multipart max-file-size 초과 시 발생 (서버 레벨)
+     * 
+     * @param ex MaxUploadSizeExceededException
+     * @return 413 Payload Too Large
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<ErrorDetails>> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex) {
+        
+        log.warn("File size exceeded: {}", ex.getMessage());
+        
+        ErrorDetails errorDetails = ErrorDetails.of("File size exceeds 5MB limit");
+        ApiResponse<ErrorDetails> response = ApiResponse.error(
+            ErrorCode.FILE_TOO_LARGE.getCode(), errorDetails);
+        
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
+    }
+
     /**
      * BusinessException 통합 처리
      * ErrorCode에서 HTTP 상태 자동 매핑
