@@ -51,7 +51,7 @@ public class UserService {
      */
     @Transactional
     public UserResponse updateProfile(Long userId, Long authenticatedUserId, 
-                                     UpdateProfileRequest request, MultipartFile profileImage) {
+                                     UpdateProfileRequest request) {
         // 권한 확인
         if (!userId.equals(authenticatedUserId)) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -71,8 +71,8 @@ public class UserService {
         }
         
         // 프로필 이미지 업로드 및 변경 (있을 경우)
-        if (profileImage != null && !profileImage.isEmpty()) {
-            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(profileImage);
+        if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
+            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(request.getProfileImage());
             Image image = imageRepository.findById(imageResponse.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
             

@@ -103,7 +103,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("newnickname")).thenReturn(false);
 
         // When
-        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request, null);
+        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
 
         // Then
         assertThat(response).isNotNull();
@@ -134,7 +134,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("existingnick")).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateProfile(userId, authenticatedUserId, request, null))
+        assertThatThrownBy(() -> userService.updateProfile(userId, authenticatedUserId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NICKNAME_ALREADY_EXISTS);
 

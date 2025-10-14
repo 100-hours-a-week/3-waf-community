@@ -80,7 +80,7 @@ class AuthServiceTest {
                 .thenReturn("refresh-token");
 
         // When
-        AuthResponse response = authService.signup(request, null);
+        AuthResponse response = authService.signup(request);
 
         // Then
         assertThat(response).isNotNull();
@@ -104,7 +104,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request, null))
+        assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMAIL_ALREADY_EXISTS);
 
@@ -125,7 +125,7 @@ class AuthServiceTest {
         when(userRepository.existsByNickname(anyString())).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request, null))
+        assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NICKNAME_ALREADY_EXISTS);
 

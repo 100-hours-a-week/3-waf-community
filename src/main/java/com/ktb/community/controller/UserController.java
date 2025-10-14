@@ -42,47 +42,15 @@ public class UserController {
     @PostMapping(value = {"/signup", ""}, consumes = "multipart/form-data")
     @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<AuthResponse>> signup(
-            @RequestPart("email") String email,
-            @RequestPart("password") String password,
-            @RequestPart("nickname") String nickname,
-            @RequestPart(value = "profile_image", required = false) 
-            org.springframework.web.multipart.MultipartFile profileImage) {
+            @Valid @ModelAttribute SignupRequest request) {
         
-        // Manual Validation (P0 수정: Bean Validation 대체)
-        
-        // 1. Email 검증
-        if (email == null || email.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Email is required");
-        }
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid email format");
-        }
-        
-        // 2. Password 검증 (LLD.md Section 6.4: 8-20자, 대/소/특수문자 각 1개+)
-        if (password == null || password.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Password is required");
-        }
-        if (!PasswordValidator.isValid(password)) {
+        // 비밀번호 정책 검증 (Bean Validation 외 추가 정책)
+        if (!PasswordValidator.isValid(request.getPassword())) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY,
-                PasswordValidator.getPolicyDescription());
+                    PasswordValidator.getPolicyDescription());
         }
         
-        // 3. Nickname 검증
-        if (nickname == null || nickname.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Nickname is required");
-        }
-        if (nickname.length() > 10) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Nickname must be 10 characters or less");
-        }
-        
-        // SignupRequest 생성
-        SignupRequest request = SignupRequest.builder()
-                .email(email)
-                .password(password)
-                .nickname(nickname)
-                .build();
-        
-        AuthResponse response = authService.signup(request, profileImage);
+        AuthResponse response = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("register_success", response));
     }
@@ -105,24 +73,11 @@ public class UserController {
     @PatchMapping(value = "/{userId}", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @PathVariable Long userId,
-            @RequestPart(value = "nickname", required = false) String nickname,
-            @RequestPart(value = "profile_image", required = false) 
-            org.springframework.web.multipart.MultipartFile profileImage,
+            @Valid @ModelAttribute UpdateProfileRequest request,
             Authentication authentication) {
         
         Long authenticatedUserId = extractUserIdFromAuthentication(authentication);
-        
-        // Manual Validation (P0 수정: Bean Validation 대체)
-        if (nickname != null && nickname.length() > 10) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Nickname must be 10 characters or less");
-        }
-        
-        // UpdateProfileRequest 생성
-        UpdateProfileRequest request = UpdateProfileRequest.builder()
-                .nickname(nickname)
-                .build();
-        
-        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request, profileImage);
+        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
         
         return ResponseEntity.ok(ApiResponse.success("update_profile_success", response));
     }
