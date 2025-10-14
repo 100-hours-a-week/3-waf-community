@@ -80,7 +80,7 @@ class AuthServiceTest {
                 .thenReturn("refresh-token");
 
         // When
-        AuthResponse response = authService.signup(request, null);
+        AuthResponse response = authService.signup(request);
 
         // Then
         assertThat(response).isNotNull();
@@ -104,7 +104,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request, null))
+        assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMAIL_ALREADY_EXISTS);
 
@@ -125,30 +125,9 @@ class AuthServiceTest {
         when(userRepository.existsByNickname(anyString())).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> authService.signup(request, null))
+        assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NICKNAME_ALREADY_EXISTS);
-
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
-    @DisplayName("회원가입 실패 - 비밀번호 정책 위반")
-    void signup_InvalidPassword_ThrowsException() {
-        // Given
-        SignupRequest request = SignupRequest.builder()
-                .email("test@example.com")
-                .password("weak")
-                .nickname("testuser")
-                .build();
-
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
-        when(userRepository.existsByNickname(anyString())).thenReturn(false);
-
-        // When & Then
-        assertThatThrownBy(() -> authService.signup(request, null))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PASSWORD_POLICY);
 
         verify(userRepository, never()).save(any(User.class));
     }

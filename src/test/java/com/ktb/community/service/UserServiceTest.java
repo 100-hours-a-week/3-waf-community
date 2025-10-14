@@ -103,7 +103,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("newnickname")).thenReturn(false);
 
         // When
-        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request, null);
+        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
 
         // Then
         assertThat(response).isNotNull();
@@ -134,7 +134,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("existingnick")).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateProfile(userId, authenticatedUserId, request, null))
+        assertThatThrownBy(() -> userService.updateProfile(userId, authenticatedUserId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NICKNAME_ALREADY_EXISTS);
 
@@ -169,64 +169,6 @@ class UserServiceTest {
         // Then
         verify(userRepository).findById(userId);
         verify(passwordEncoder).encode("NewPass123!");
-    }
-
-    @Test
-    @DisplayName("비밀번호 변경 실패 - 비밀번호 정책 위반")
-    void changePassword_InvalidPolicy_ThrowsException() {
-        // Given
-        Long userId = 1L;
-        Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .newPassword("weak") // 정책 위반
-                .newPasswordConfirm("weak")
-                .build();
-
-        User user = User.builder()
-                .email("test@example.com")
-                .passwordHash("hashedPassword")
-                .nickname("testuser")
-                .build();
-        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        // When & Then
-        assertThatThrownBy(() -> userService.changePassword(userId, authenticatedUserId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PASSWORD_POLICY);
-
-        verify(userRepository).findById(userId);
-        verify(passwordEncoder, never()).encode(anyString());
-    }
-
-    @Test
-    @DisplayName("비밀번호 변경 실패 - 비밀번호 불일치")
-    void changePassword_Mismatch_ThrowsException() {
-        // Given
-        Long userId = 1L;
-        Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .newPassword("NewPass123!")
-                .newPasswordConfirm("DifferentPass123!") // 불일치
-                .build();
-
-        User user = User.builder()
-                .email("test@example.com")
-                .passwordHash("hashedPassword")
-                .nickname("testuser")
-                .build();
-        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        // When & Then
-        assertThatThrownBy(() -> userService.changePassword(userId, authenticatedUserId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
-
-        verify(userRepository).findById(userId);
-        verify(passwordEncoder, never()).encode(anyString());
     }
 
     @Test

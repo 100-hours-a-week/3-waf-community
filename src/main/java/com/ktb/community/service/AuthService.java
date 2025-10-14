@@ -11,7 +11,6 @@ import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.repository.UserTokenRepository;
 import com.ktb.community.security.JwtTokenProvider;
-import com.ktb.community.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,7 +44,7 @@ public class AuthService {
      * - 자동 로그인 (토큰 발급)
      */
     @Transactional
-    public AuthResponse signup(SignupRequest request, MultipartFile profileImage) {
+    public AuthResponse signup(SignupRequest request) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, 
@@ -58,19 +57,13 @@ public class AuthService {
                     "Nickname already exists: " + request.getNickname());
         }
         
-        // 비밀번호 정책 검증
-        if (!PasswordValidator.isValid(request.getPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
-                    PasswordValidator.getPolicyDescription());
-        }
-        
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         
         // 프로필 이미지 업로드 (있을 경우)
         com.ktb.community.entity.Image image = null;
-        if (profileImage != null && !profileImage.isEmpty()) {
-            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(profileImage);
+        if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
+            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(request.getProfileImage());
             image = imageRepository.findById(imageResponse.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
             image.clearExpiresAt();  // 영구 보존

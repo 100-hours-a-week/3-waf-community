@@ -10,7 +10,6 @@ import com.ktb.community.exception.BusinessException;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.UserRepository;
-import com.ktb.community.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -52,7 +51,7 @@ public class UserService {
      */
     @Transactional
     public UserResponse updateProfile(Long userId, Long authenticatedUserId, 
-                                     UpdateProfileRequest request, MultipartFile profileImage) {
+                                     UpdateProfileRequest request) {
         // 권한 확인
         if (!userId.equals(authenticatedUserId)) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -72,8 +71,8 @@ public class UserService {
         }
         
         // 프로필 이미지 업로드 및 변경 (있을 경우)
-        if (profileImage != null && !profileImage.isEmpty()) {
-            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(profileImage);
+        if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
+            com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(request.getProfileImage());
             Image image = imageRepository.findById(imageResponse.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
             
@@ -104,17 +103,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
                         "User not found with id: " + userId));
-        
-        // 비밀번호 확인 일치 검증
-        if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
-            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
-        }
-        
-        // 비밀번호 정책 검증
-        if (!PasswordValidator.isValid(request.getNewPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
-                    PasswordValidator.getPolicyDescription());
-        }
         
         // 비밀번호 암호화 및 업데이트
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());

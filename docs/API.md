@@ -350,7 +350,7 @@
 ---
 
 ### 6.3 내가 좋아요 한 게시글 목록 조회
-**Endpoint:** `GET /users/me/likes?offset=0&limit=10`
+**Endpoint:** `GET /posts/users/me/likes?offset=0&limit=10`
 
 **헤더:** Authorization: Bearer {access_token}
 

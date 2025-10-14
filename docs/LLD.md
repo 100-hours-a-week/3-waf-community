@@ -246,49 +246,55 @@ public class RateLimitAspect {
 
 ### 7.1 게시글 작성 흐름
 
-```
-1. Controller: DTO 검증 (제목 27자, 내용 필수)
-2. Service: 인증 사용자 확인
-3. Service: Post 엔티티 생성 (상태: ACTIVE)
-4. Repository: Post 저장
-5. Repository: PostStats 초기화 (카운트 0)
-6. Service: 이미지 있으면 연결
-7. Controller: 201 Created + PostResponse
-```
-
-**핵심 패턴:**
+**핵심 구현 패턴:**
 ```java
 @Transactional
 public PostResponse createPost(PostCreateRequest request, Long userId) {
+    // 1. 사용자 검증
     User user = userRepository.findById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    
+            .orElseThrow(() -&gt; new BusinessException(ErrorCode.USER_NOT_FOUND,
+                    "User not found with id: " + userId));
+
+    // 2. 게시글 생성 및 저장
     Post post = request.toEntity(user);
-    Post saved = postRepository.save(post);
+    Post savedPost = postRepository.save(post);
+
+    // 3. 통계 초기화 (Builder 기본값 0 사용)
+    PostStats stats = PostStats.builder()
+            .post(savedPost)
+            .build();
+    PostStats savedStats = postStatsRepository.save(stats);
     
-    // 통계 초기화
-    postStatsRepository.save(PostStats.builder()
-        .post(saved).likeCount(0).commentCount(0).viewCount(0).build());
-    
-    // 이미지 연결 (image_id가 있을 경우)
+    // 4. Post에 stats 연결 (필수 - PostResponse null 방지)
+    savedPost.updateStats(savedStats);
+
+    // 5. 이미지 TTL 해제 (imageId 있을 경우)
     if (request.getImageId() != null) {
         Image image = imageRepository.findById(request.getImageId())
-            .orElseThrow(() -> new ResourceNotFoundException("Image not found"));
+                .orElseThrow(() -&gt; new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                        "Image not found with id: " + request.getImageId()));
         
-        // expires_at 클리어 (영구 보존)
-        image.clearExpiresAt();
+        image.clearExpiresAt();  // expires_at → NULL (영구 보존)
         
         PostImage postImage = PostImage.builder()
-            .post(saved)
-            .image(image)
-            .displayOrder(1)
-            .build();
+                .post(savedPost)
+                .image(image)
+                .displayOrder(1)
+                .build();
         postImageRepository.save(postImage);
     }
-    
-    return PostResponse.from(saved);
+
+    return PostResponse.from(savedPost);
 }
 ```
+
+**설계 결정사항:**
+- **예외**: BusinessException + ErrorCode 사용 (ResourceNotFoundException 아님)
+- **통계 초기화**: Builder 기본값 의존 (명시적 0 설정 불필요)
+- **updateStats() 필수**: 양방향 연관관계 동기화, PostResponse null 방지
+- **이미지 TTL**: clearExpiresAt() 호출로 영구 보존 전환
+
+**참조:** PostService.java:49-105
 
 ### 7.2 좋아요 처리 - 동시성 제어
 
@@ -333,214 +339,152 @@ Long nextCursor = posts.isEmpty() ? null : posts.get(posts.size()-1).getId();
 
 ### 7.4 댓글 작성 흐름
 
-```
-1. Controller: DTO 검증 (내용 200자)
-2. Service: 게시글 존재 확인
-3. Service: 인증 사용자 확인
-4. Service: Comment 엔티티 생성 (상태: ACTIVE)
-5. Repository: Comment 저장
-6. Repository: PostStats.commentCount 원자적 증가 (Section 12.3)
-7. Controller: 201 Created + CommentResponse
-```
-
-**핵심 패턴:**
+**핵심 구현 패턴:**
 ```java
 @Transactional
 public CommentResponse createComment(Long postId, CommentCreateRequest request, Long userId) {
-    Post post = postRepository.findById(postId)
-        .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+    // 1. 게시글 존재 확인 (Fetch Join, ACTIVE만)
+    Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
+            .orElseThrow(() -&gt; new BusinessException(ErrorCode.POST_NOT_FOUND,
+                    "Post not found with id: " + postId));
+
+    // 2. 사용자 확인
     User user = userRepository.findById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    
+            .orElseThrow(() -&gt; new BusinessException(ErrorCode.USER_NOT_FOUND,
+                    "User not found with id: " + userId));
+
+    // 3. 댓글 생성 및 저장
     Comment comment = request.toEntity(post, user);
-    Comment saved = commentRepository.save(comment);
-    
-    // 댓글 수 자동 증가 (Section 12.3 동시성 제어)
+    Comment savedComment = commentRepository.save(comment);
+
+    // 4. 댓글 수 자동 증가 (동시성 제어 - 원자적 UPDATE)
     postStatsRepository.incrementCommentCount(postId);
-    
-    return CommentResponse.from(saved);
+
+    return CommentResponse.from(savedComment);
 }
 ```
 
-**권한 검증 (수정/삭제):**
+**설계 결정사항:**
+- **Repository 메서드**: findByIdWithUserAndStats (Fetch Join + ACTIVE 필터링)
+- **동시성 제어**: incrementCommentCount() - DB 레벨 원자적 UPDATE (Section 12.3)
+- **트랜잭션 경계**: 댓글 저장 + 통계 증가가 동일 트랜잭션 (원자성 보장)
+
+**권한 검증 패턴 (수정/삭제):**
 ```java
-@Transactional
-public CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long userId) {
-    Comment comment = commentRepository.findById(commentId)
-        .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-    
-    // 작성자 본인만 수정 가능
-    if (!comment.getUser().getUserId().equals(userId)) {
-        throw new ForbiddenException("Not authorized to update this comment");
-    }
-    
-    comment.updateContent(request.getContent());
-    return CommentResponse.from(comment);
+// 작성자 본인만 수정 가능
+if (!comment.getUser().getUserId().equals(userId)) {
+    throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS,
+            "Not authorized to update this comment");
 }
 ```
 
-**Soft Delete 처리:**
-```java
-@Transactional
-public void deleteComment(Long commentId, Long userId) {
-    Comment comment = commentRepository.findById(commentId)
-        .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-    
-    if (!comment.getUser().getUserId().equals(userId)) {
-        throw new ForbiddenException("Not authorized to delete this comment");
-    }
-    
-    comment.updateStatus(CommentStatus.DELETED);
-    postStatsRepository.decrementCommentCount(comment.getPost().getPostId());
-}
-```
-
-**참조**: **@docs/API.md Section 5** (댓글 API), **@docs/DDL.md** (comments 테이블)
+**참조**: CommentService.java (전체 CRUD), **@docs/API.md Section 5**, **@docs/DDL.md** (comments 테이블)
 
 ---
 
-### 7.5 이미지 업로드 흐름 (S3 직접 연동)
+### 7.5 이미지 업로드 전략
 
-**2가지 업로드 패턴:**
+**2가지 패턴 비교:**
 
-#### 패턴 1: Multipart 직접 업로드 (회원가입/프로필 수정)
-
-```
-Client → POST /users/signup (multipart/form-data)
-    ↓ email, password, nickname, profile_image
-AuthController → @RequestPart로 파일 수신
-    ↓
-AuthService.signup(SignupRequest, MultipartFile)
-    ↓
-ImageService.uploadImage(file) 호출
-    ↓ 파일 검증 (MIME + Magic Number)
-    ↓ S3 업로드
-    ↓ DB 저장 (expires_at = 1시간)
-    ↓ image.clearExpiresAt() (영구 보존)
-    ↓
-User 엔티티 생성 (profileImage 설정)
-    ↓
-Client ← { access_token, refresh_token }
-```
-
-**장점:**
-- 자연스러운 UX (한 번의 요청으로 완료)
-- 원자적 트랜잭션 (회원가입 실패 시 이미지도 롤백)
-- 프론트엔드 구현 단순화
-
-**적용 대상:**
-- POST /users/signup
-- PATCH /users/{userId} (프로필 수정)
-
----
-
-#### 패턴 2: 2단계 업로드 (게시글 작성)
-
-```
-Phase 1: 이미지 업로드
-Client → POST /images (multipart/form-data)
-    ↓
-ImageService → 파일 검증 (크기, 형식, Magic Number)
-    ↓
-S3Client → AWS S3 업로드
-    ↓
-ImageRepository → DB 저장 (expires_at = 1시간 후)
-    ↓
-Client ← { image_id: 123, image_url: "https://..." }
-
-Phase 2: 게시글 작성
-Client → POST /posts { "title": "...", "image_id": 123 }
-    ↓
-PostService → image_id 검증
-    ↓
-Image → expires_at 클리어 (영구 보존)
-    ↓
-PostImageRepository → 연결 테이블 저장
-```
-
-**장점:**
-- 이미지 미리보기 가능
-- 드래그앤드롭, 복수 이미지 지원 용이
-- 임시 저장 기능 지원
-- 이미지와 컨텐츠 독립적 관리
-
-**적용 대상:**
-- POST /posts (게시글 작성)
-- PATCH /posts/{postId} (게시글 수정)
-
----
+| 항목 | Multipart 직접 업로드 | 2단계 업로드 |
+|------|---------------------|-------------|
+| **사용처** | 회원가입, 프로필 수정 | 게시글 작성/수정 |
+| **요청 횟수** | 1회 (multipart/form-data) | 2회 (POST /images → POST /posts) |
+| **트랜잭션** | 원자적 (이미지 포함) | 독립적 (이미지 선행) |
+| **UX 장점** | 간편함, 한 번에 완료 | 미리보기, 임시 저장 지원 |
+| **핵심 메서드** | AuthService.signup() | PostService.createPost() |
 
 **핵심 구현 패턴:**
 
+**패턴 1 - Multipart 직접 업로드 (AuthService):**
 ```java
-// 패턴 1: Multipart 직접 업로드
-@Service
-public class AuthService {
-    private final ImageService imageService;
-    private final ImageRepository imageRepository;
-    
-    @Transactional
-    public AuthResponse signup(SignupRequest request, MultipartFile profileImage) {
-        // 이메일/닉네임/비밀번호 검증 생략
-        
-        // 프로필 이미지 업로드 (있을 경우)
-        Image image = null;
-        if (profileImage != null && !profileImage.isEmpty()) {
-            ImageResponse imageResponse = imageService.uploadImage(profileImage);
-            image = imageRepository.findById(imageResponse.getImageId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            image.clearExpiresAt();  // 영구 보존
-        }
-        
-        // User 생성
-        User user = User.builder()
-            .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .nickname(request.getNickname())
-            .profileImage(image)  // null 가능
-            .build();
-        
-        userRepository.save(user);
-        
-        // 토큰 발급 및 반환
-        // ...
+@Transactional
+public AuthResponse signup(SignupRequest request, MultipartFile profileImage) {
+    // 1. 이메일 중복 확인
+    if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
+        throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, 
+                "Email already exists: " + request.getEmail());
     }
+    
+    // 2. 닉네임 중복 확인
+    if (userRepository.existsByNickname(request.getNickname())) {
+        throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS, 
+                "Nickname already exists: " + request.getNickname());
+    }
+    
+    // 3. 비밀번호 정책 검증
+    if (!PasswordValidator.isValid(request.getPassword())) {
+        throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
+                PasswordValidator.getPolicyDescription());
+    }
+    
+    // 4. 비밀번호 암호화
+    String encodedPassword = passwordEncoder.encode(request.getPassword());
+    
+    // 5. 프로필 이미지 업로드 (있을 경우)
+    Image image = null;
+    if (profileImage != null &amp;&amp; !profileImage.isEmpty()) {
+        ImageResponse imageResponse = imageService.uploadImage(profileImage);
+        image = imageRepository.findById(imageResponse.getImageId())
+                .orElseThrow(() -&gt; new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        image.clearExpiresAt();  // TTL 해제 (영구 보존)
+    }
+    
+    // 6. User 생성 (DTO 변환 사용)
+    User user = request.toEntity(encodedPassword);
+    if (image != null) {
+        user.updateProfileImage(image);
+    }
+    userRepository.save(user);
+    
+    // 7. 자동 로그인 - 토큰 발급
+    return generateTokens(user);
 }
+```
 
-// 패턴 2: 2단계 업로드
-@Service
-public class PostService {
-    @Transactional
-    public PostResponse createPost(PostCreateRequest request, Long userId) {
-        // 게시글 생성 로직 생략
+**패턴 2 - 2단계 업로드 (PostService):**
+```java
+@Transactional
+public PostResponse createPost(PostCreateRequest request, Long userId) {
+    // ... 게시글 생성 및 저장 ...
+    
+    // 이미지 연결 (imageId가 있을 경우)
+    if (request.getImageId() != null) {
+        Image image = imageRepository.findById(request.getImageId())
+                .orElseThrow(() -&gt; new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                        "Image not found with id: " + request.getImageId()));
         
-        // 이미지 연결 (있을 경우)
-        if (request.getImageId() != null) {
-            Image image = imageRepository.findById(request.getImageId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            
-            image.clearExpiresAt();  // 영구 보존
-            
-            PostImage postImage = PostImage.builder()
+        image.clearExpiresAt();  // TTL 해제 (영구 보존)
+        
+        PostImage postImage = PostImage.builder()
                 .post(savedPost)
                 .image(image)
                 .displayOrder(1)
                 .build();
-            postImageRepository.save(postImage);
-        }
-        
-        return PostResponse.from(savedPost);
+        postImageRepository.save(postImage);
     }
+    
+    return PostResponse.from(savedPost);
 }
 ```
 
-**고아 이미지 처리 (Phase 4):**
-- **업로드 시**: `expires_at = NOW() + 1시간` 설정
-- **사용 시**: `image.clearExpiresAt()` 호출로 expires_at = NULL (영구 보존)
-- **배치 작업**: 매일 새벽 expires_at < NOW() 조건으로 S3 + DB 삭제
+**TTL 패턴 (공통 핵심):**
+- **업로드 시**: ImageService가 `expires_at = NOW() + 1시간` 설정
+- **사용 시**: `image.clearExpiresAt()` 호출 → `expires_at = NULL` (영구 보존)
+- **미사용 시**: Phase 4 배치가 expires_at &lt; NOW() 조건으로 S3 + DB 삭제
 - **인덱스**: `idx_images_expires` 활용으로 빠른 조회
 
-**참조**: **@docs/API.md Section 4.1** (이미지 업로드 API), **@docs/DDL.md** (images 테이블)
+**설계 결정사항:**
+- **검증 로직**: AuthService.signup()에서 이메일/닉네임/비밀번호 검증 모두 구현됨 (생략 아님)
+- **User 생성**: Builder 직접 사용 대신 `request.toEntity()` + `updateProfileImage()` 패턴
+- **트랜잭션 안전성**: 패턴 1은 완전 원자적, 패턴 2는 이미지만 선행 업로드 (S3 파일 고아 가능)
+
+**참조**: 
+- AuthService.signup() - 패턴 1 전체 구현
+- PostService.createPost() - 패턴 2 전체 구현
+- ImageService.uploadImage() - 공통 검증 로직
+- **@docs/API.md Section 2.1, 3.3, 4.1**
+- **@docs/DDL.md** (images 테이블)
 
 ---
 
@@ -575,68 +519,35 @@ public class PostService {
 
 ### 8.3 핵심 패턴
 
-**BusinessException (통합 에러 처리):**
+**통합 예외 처리 (BusinessException):**
 ```java
 @ExceptionHandler(BusinessException.class)
-public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
+public ResponseEntity&lt;ApiResponse&lt;ErrorDetails&gt;&gt; handleBusinessException(BusinessException ex) {
     ErrorCode errorCode = ex.getErrorCode();
-    log.warn("Business exception: {} - {}", errorCode.getCode(), ex.getMessage());
-    
     ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
-    ApiResponse<ErrorDetails> response = ApiResponse.error(errorCode.getCode(), errorDetails);
+    ApiResponse&lt;ErrorDetails&gt; response = ApiResponse.error(errorCode.getCode(), errorDetails);
     
     return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
 }
 ```
 
-**MaxUploadSizeExceededException (Phase 3.5 추가 예정):**
-```java
-/**
- * 파일 크기 초과 예외 처리 (서버 레벨)
- * Spring Boot multipart max-file-size 초과 시 발생
- * IMAGE-002 에러 코드로 통일하여 클라이언트에 일관된 응답 제공
- */
-@ExceptionHandler(MaxUploadSizeExceededException.class)
-public ResponseEntity<ApiResponse<ErrorDetails>> handleMaxUploadSizeExceeded(
-        MaxUploadSizeExceededException ex) {
-    
-    log.warn("File size exceeded: {}", ex.getMessage());
-    
-    ErrorDetails errorDetails = ErrorDetails.of("File size exceeds 5MB limit");
-    ApiResponse<ErrorDetails> response = ApiResponse.error(
-        ErrorCode.FILE_TOO_LARGE.getCode(), errorDetails);
-    
-    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
-}
-```
-
-**DTO 검증 실패 (Bean Validation):**
-```java
-@ExceptionHandler(MethodArgumentNotValidException.class)
-public ResponseEntity<ApiResponse<ErrorDetails>> handleValidationException(
-        MethodArgumentNotValidException ex) {
-    
-    String details = ex.getBindingResult().getFieldErrors().stream()
-        .map(FieldError::getDefaultMessage)
-        .collect(Collectors.joining(", "));
-    
-    ErrorDetails errorDetails = ErrorDetails.of(details);
-    ApiResponse<ErrorDetails> response = ApiResponse.error(
-        ErrorCode.INVALID_INPUT.getCode(), errorDetails);
-    
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-}
-```
+**핵심 장점:**
+- ErrorCode enum이 HTTP 상태, 에러 코드, 메시지 모두 관리
+- Service Layer에서 `throw new BusinessException(ErrorCode.XXX)` 한 줄로 통일
+- GlobalExceptionHandler가 자동 매핑 (ErrorCode → HTTP 상태 + 응답)
 
 **사용 예시:**
 ```java
 // Service Layer
-if (userRepository.existsByEmail(email)) {
-    throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+if (!comment.getUser().getUserId().equals(userId)) {
+    throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS,
+            "Not authorized to update this comment");
 }
 
-// 자동 변환: EMAIL_ALREADY_EXISTS → HTTP 409 + "USER-002" 응답
+// 자동 변환: UNAUTHORIZED_ACCESS → HTTP 403 + "COMMON-XXX" + 메시지
 ```
+
+**참조:** GlobalExceptionHandler.java (전체 핸들러 7개), ErrorCode.java (28개 에러 정의)
 
 ---
 
@@ -671,46 +582,31 @@ public Post toEntity(User user) {
 
 ## 10. 설정 파일
 
-**application.yaml 핵심:**
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/community
-    username: root
-    password: ${DB_PASSWORD}
-    hikari:
-      maximum-pool-size: 10
-  servlet:
-    multipart:
-      max-file-size: 5MB        # 단일 이미지 파일 크기 제한
-      max-request-size: 10MB    # 전체 요청 크기 제한 (향후 다중 이미지 대비)
-      enabled: true
-  jpa:
-    hibernate:
-      ddl-auto: validate  # 운영: validate
-    open-in-view: false   # OSIV 비활성화
+**핵심 설정 항목:**
 
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-validity: 1800000   # 30분
-  refresh-token-validity: 604800000 # 7일
+| 항목 | 설정값 | 설명 |
+|------|--------|------|
+| **HikariCP** | maximum-pool-size: 10 | DB 커넥션 풀 크기 |
+| **Multipart** | max-file-size: 5MB, max-request-size: 10MB | 이미지 업로드 제한 |
+| **JPA** | ddl-auto: validate, open-in-view: false | 운영 모드, OSIV 비활성화 |
+| **JWT** | access: 30분, refresh: 7일 | 토큰 유효기간 |
+| **S3** | bucket/region 환경 변수 주입 | AWS 인증 자동 인식 |
+| **Rate Limit** | requests-per-minute: 100 | 기본 제한 (엔드포인트별 override 가능) |
 
-# AWS S3 설정 (Phase 3.5+)
-aws:
-  s3:
-    bucket: ${AWS_S3_BUCKET}              # S3 버킷 이름
-    region: ${AWS_REGION:ap-northeast-2}  # AWS 리전 (기본: 서울)
-    # AWS SDK는 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY 환경 변수 자동 인식
+**환경 변수 (필수):**
+```bash
+# Phase 1-2
+DB_PASSWORD=<MySQL 비밀번호>
+JWT_SECRET=<256bit 이상 시크릿>
 
-rate-limit:
-  requests-per-minute: 100
+# Phase 3.5+ (S3)
+AWS_ACCESS_KEY_ID=<AWS Access Key>
+AWS_SECRET_ACCESS_KEY=<AWS Secret Key>
+AWS_REGION=ap-northeast-2
+AWS_S3_BUCKET=<버킷 이름>
 ```
 
-**환경 변수:**
-- **Phase 1-2 (필수)**: `DB_PASSWORD`, `JWT_SECRET`
-- **Phase 3.5+ (필수)**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`
-
-**참고**: AWS SDK는 표준 환경 변수를 자동 인식하므로 application.yaml에 명시적으로 credential을 넣지 않음
+**참조:** `src/main/resources/application.yaml` (전체 설정)
 
 ---
 
