@@ -105,17 +105,6 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
                         "User not found with id: " + userId));
         
-        // 비밀번호 확인 일치 검증
-        if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
-            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
-        }
-        
-        // 비밀번호 정책 검증
-        if (!PasswordValidator.isValid(request.getNewPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
-                    PasswordValidator.getPolicyDescription());
-        }
-        
         // 비밀번호 암호화 및 업데이트
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
         user.updatePassword(encodedPassword);

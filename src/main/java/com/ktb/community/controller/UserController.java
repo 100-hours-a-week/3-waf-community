@@ -137,6 +137,18 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
         
+        // 1. 비밀번호 일치 검증
+        if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH,
+                    "Password confirmation does not match");
+        }
+        
+        // 2. 비밀번호 정책 검증
+        if (!PasswordValidator.isValid(request.getNewPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY,
+                    PasswordValidator.getPolicyDescription());
+        }
+        
         Long authenticatedUserId = extractUserIdFromAuthentication(authentication);
         userService.changePassword(userId, authenticatedUserId, request);
         

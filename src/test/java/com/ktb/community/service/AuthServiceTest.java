@@ -133,27 +133,6 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 실패 - 비밀번호 정책 위반")
-    void signup_InvalidPassword_ThrowsException() {
-        // Given
-        SignupRequest request = SignupRequest.builder()
-                .email("test@example.com")
-                .password("weak")
-                .nickname("testuser")
-                .build();
-
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
-        when(userRepository.existsByNickname(anyString())).thenReturn(false);
-
-        // When & Then
-        assertThatThrownBy(() -> authService.signup(request, null))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PASSWORD_POLICY);
-
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
     @DisplayName("로그인 성공 - 토큰 발급")
     void login_Success() {
         // Given

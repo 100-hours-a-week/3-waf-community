@@ -58,12 +58,6 @@ public class AuthService {
                     "Nickname already exists: " + request.getNickname());
         }
         
-        // 비밀번호 정책 검증
-        if (!PasswordValidator.isValid(request.getPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY, 
-                    PasswordValidator.getPolicyDescription());
-        }
-        
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         

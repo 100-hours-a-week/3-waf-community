@@ -172,64 +172,6 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("비밀번호 변경 실패 - 비밀번호 정책 위반")
-    void changePassword_InvalidPolicy_ThrowsException() {
-        // Given
-        Long userId = 1L;
-        Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .newPassword("weak") // 정책 위반
-                .newPasswordConfirm("weak")
-                .build();
-
-        User user = User.builder()
-                .email("test@example.com")
-                .passwordHash("hashedPassword")
-                .nickname("testuser")
-                .build();
-        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        // When & Then
-        assertThatThrownBy(() -> userService.changePassword(userId, authenticatedUserId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PASSWORD_POLICY);
-
-        verify(userRepository).findById(userId);
-        verify(passwordEncoder, never()).encode(anyString());
-    }
-
-    @Test
-    @DisplayName("비밀번호 변경 실패 - 비밀번호 불일치")
-    void changePassword_Mismatch_ThrowsException() {
-        // Given
-        Long userId = 1L;
-        Long authenticatedUserId = 1L;
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .newPassword("NewPass123!")
-                .newPasswordConfirm("DifferentPass123!") // 불일치
-                .build();
-
-        User user = User.builder()
-                .email("test@example.com")
-                .passwordHash("hashedPassword")
-                .nickname("testuser")
-                .build();
-        org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        // When & Then
-        assertThatThrownBy(() -> userService.changePassword(userId, authenticatedUserId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
-
-        verify(userRepository).findById(userId);
-        verify(passwordEncoder, never()).encode(anyString());
-    }
-
-    @Test
     @DisplayName("회원 탈퇴 성공 - 상태 INACTIVE 변경")
     void deactivateAccount_Success() {
         // Given
