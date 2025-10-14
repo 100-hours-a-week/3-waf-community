@@ -10,7 +10,6 @@ import com.ktb.community.exception.BusinessException;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.UserRepository;
-import com.ktb.community.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
