@@ -8,6 +8,7 @@ import com.ktb.community.entity.PostStats;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.enums.PostStatus;
+import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.entity.Image;
 import com.ktb.community.entity.PostImage;
@@ -56,9 +57,9 @@ public class PostService {
      */
     @Transactional
     public PostResponse createPost(PostCreateRequest request, Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
 
         // 게시글 생성
         Post post = request.toEntity(user);
@@ -93,7 +94,7 @@ public class PostService {
             log.info("[Post] 게시글 이미지 연결: postId={}, imageId={}", savedPost.getPostId(), image.getImageId());
         }
 
-        log.info("[Post] 게시글 작성 완료: postId={}, userId={}", savedPost.getPostId(), userId);
+        log.debug("[Post] 게시글 작성 완료: postId={}", savedPost.getPostId());
 
         return PostResponse.from(savedPost);
     }
@@ -148,11 +149,7 @@ public class PostService {
         // 영속성 컨텍스트에서 stats를 DB 상태로 동기화
         if (post.getStats() != null) {
             entityManager.refresh(post.getStats());
-        }
-
-        log.info("[Post] 게시글 조회: postId={}", postId);
-
-        return PostResponse.from(post);
+        }return PostResponse.from(post);
     }
 
     /**
@@ -163,12 +160,6 @@ public class PostService {
      */
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long userId) {
-        // 최소 1개 필드 검증
-        if (!request.hasAnyUpdate()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT,
-                    "At least one field must be provided for update");
-        }
-
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
                         "Post not found with id: " + postId));
@@ -211,7 +202,7 @@ public class PostService {
             log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}", postId, image.getImageId());
         }
 
-        log.info("[Post] 게시글 수정 완료: postId={}, userId={}", postId, userId);
+        log.debug("[Post] 게시글 수정 완료: postId={}", postId);
 
         return PostResponse.from(post);
     }
@@ -236,7 +227,7 @@ public class PostService {
         // Soft Delete
         post.updateStatus(PostStatus.DELETED);
 
-        log.info("[Post] 게시글 삭제 완료: postId={}, userId={}", postId, userId);
+        log.debug("[Post] 게시글 삭제 완료: postId={}", postId);
     }
 
     /**

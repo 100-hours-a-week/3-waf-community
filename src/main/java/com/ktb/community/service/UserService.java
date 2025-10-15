@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
  * 사용자 서비스
  * PRD.md FR-USER-001~004 참조
@@ -36,9 +38,9 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         return UserResponse.from(user);
     }
@@ -57,9 +59,9 @@ public class UserService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         // 닉네임 변경 시 중복 확인
         if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
@@ -78,12 +80,8 @@ public class UserService {
             
             image.clearExpiresAt();  // 영구 보존
             user.updateProfileImage(image);
-            
-            log.info("[User] 프로필 이미지 변경: userId={}, imageId={}", userId, image.getImageId());
         }
-        
-        log.info("[User] 프로필 수정 완료: email={}, userId={}", user.getEmail(), user.getUserId());
-        
+
         return UserResponse.from(user);
     }
     
@@ -100,15 +98,13 @@ public class UserService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         // 비밀번호 암호화 및 업데이트
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
         user.updatePassword(encodedPassword);
-        
-        log.info("[User] 비밀번호 변경 완료: email={}, userId={}", user.getEmail(), user.getUserId());
     }
     
     /**
@@ -123,25 +119,26 @@ public class UserService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         // 상태 변경 (Soft Delete)
         user.updateStatus(UserStatus.INACTIVE);
-        
-        log.info("[User] 회원 탈퇴 완료: email={}, userId={}", user.getEmail(), user.getUserId());
     }
 
     /**
      * 이메일로 사용자 ID 조회 (Controller 인증용)
+     * ACTIVE + INACTIVE 허용 (탈퇴 후 자기 글 삭제 = GDPR)
      */
     @Transactional(readOnly = true)
     public Long findUserIdByEmail(String email) {
-        return userRepository.findByEmail(email.toLowerCase().trim())
+        return userRepository.findByEmailAndUserStatusIn(
+                email.toLowerCase().trim(),
+                List.of(UserStatus.ACTIVE, UserStatus.INACTIVE))
                 .map(User::getUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with email: " + email));
+                        "User not found or deleted with email: " + email));
     }
     
 }

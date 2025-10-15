@@ -5,7 +5,7 @@
 | 항목 | 내용                        |
 |------|---------------------------|
 | 프로젝트명 | KTB Community Platform    |
-| 버전 | 1.4                       |
+| 버전 | 1.6                       |
 | 문서 유형 | Low Level Design Document |
 
 ---
@@ -235,10 +235,27 @@ public class RateLimitAspect {
 }
 ```
 
-**적용 대상:**
-- AuthController.login - 분당 5회
-- AuthController.signup - 분당 3회
-- 기타 인증 API - 분당 100회 (기본값)
+**적용 대상 (3-Tier 전략):**
+
+**Tier 1 (5회/분) - 강한 제한:**
+- AuthController.login - brute-force 방지
+- UserController.changePassword - enumeration 방지
+
+**Tier 2 (10-50회/분) - 중간 제한:**
+- UserController.signup (10회/분) - spam bot, 정상 사용자 재시도 고려
+- AuthController.refreshToken (30회/분) - 비정상 토큰 갱신 감지
+- UserController.updateProfile (30회/분) - 프로필 수정 spam 방지
+- UserController.deactivateAccount (10회/분) - 계정 비활성화 남용 방지
+- PostController.createPost (30회/분) - 게시글 spam 방지
+- CommentController.createComment (50회/분) - 댓글 spam 방지 (더 빈번)
+- ImageController.uploadImage (10회/분) - 파일 업로드 부하
+
+**Tier 3 (제한 없음 또는 200회/분) - 약한 제한/해제:**
+- 모든 GET 조회 API - 제한 없음 (페이지네이션으로 제어)
+- AuthController.logout - 제한 없음 (공격 동인 없음)
+- PostController.likePost/unlikePost (200회/분) - 빈번한 액션, 원자적 UPDATE
+- Post/Comment 수정 API (50회/분) - 본인 권한 검증 있음
+- Post/Comment 삭제 API (30회/분) - Soft Delete
 
 ---
 
@@ -655,6 +672,32 @@ Page<Post> findByStatusWithUserAndStats(...);
 - DDL.md의 인덱스 정의 준수
 - EXPLAIN으로 쿼리 실행 계획 분석
 
+**Batch Fetch Size 설정:**
+```yaml
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100  # N+1 최적화
+```
+- to-many lazy loading 시 IN 쿼리로 일괄 로드
+- Post 목록 조회: 11개 쿼리 → 2개 쿼리 (82% 감소)
+- 코드 변경 없이 설정만으로 적용 가능
+
+**User Soft Delete 필터링:**
+```java
+// Repository: Spring Data 파생 메서드
+Optional<User> findByUserIdAndUserStatus(Long userId, UserStatus userStatus);
+
+// Service: ACTIVE 필터 적용
+User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
+    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
+        "User not found or inactive with id: " + userId));
+```
+- INACTIVE/DELETED 사용자는 게시글 작성/댓글 작성/좋아요 불가
+- 보안 취약점 제거: 탈퇴 사용자의 활동 차단
+- 적용 범위: UserService 4곳, PostService/CommentService/LikeService 각 1곳
+
 ### 12.2 캐싱 전략 (추후)
 
 **Redis 도입 시:**
@@ -719,6 +762,45 @@ JWT_SECRET=<256bit 이상 시크릿>
 
 ---
 
+## 14. 로깅 정책
+
+### 14.1 로그 레벨 기준
+
+| 레벨 | 용도 | 예시 |
+|------|------|------|
+| debug | 상세 디버깅 (개발 환경만) | 메서드 진입/종료, 상태 변화 |
+| info | 비즈니스 이벤트 (비개인정보) | 배치 시작/종료, 통계 |
+| warn | 의도적 실패 (복구 가능) | 404, 403, 409, RateLimit |
+| error | 예상치 못한 실패 | 500, 예외 스택 |
+
+### 14.2 민감정보 처리 규칙
+
+**금지:**
+- ❌ Email, UserId (개인 식별자)
+- ❌ 비밀번호, 토큰 원본
+
+**허용:**
+- ✅ PostId, CommentId, ImageId (콘텐츠/리소스 식별자)
+- ✅ HTTP 메서드, 경로
+
+**대안:**
+- 요청 추적: MDC + requestId (Phase 6+)
+- 감사 로그: 별도 AuditLog 테이블
+
+### 14.3 현재 적용 현황
+
+**Service Layer:**
+- 성공 플로우: debug (운영 환경에서 숨김)
+- 비즈니스 이벤트: info (배치, 통계만)
+
+**GlobalExceptionHandler:**
+- 의도적 실패: warn (4xx, RateLimit)
+- 예상치 못한 실패: error (5xx, 예외)
+
+**운영 환경 설정**: `application-prod.yaml`에서 INFO 레벨 사용
+
+---
+
 ## 변경 이력
 
 | 날짜 | 버전 | 변경 내용 |
@@ -728,3 +810,5 @@ JWT_SECRET=<256bit 이상 시크릿>
 | 2025-10-04 | 1.2 | 핵심 섹션 완전 복원 (6.4, 6.5, 12.3) |
 | 2025-10-04 | 1.3 | Section 7.4 댓글 작성 흐름 추가 (참조 무결성 복원) |
 | 2025-10-10 | 1.4 | HTML 이스케이프 코드 수정 (Section 6.5) |
+| 2025-10-15 | 1.5 | Section 14 로깅 정책 추가, Service Layer 로그 레벨 조정 |
+| 2025-10-15 | 1.6 | Section 12.1 User Soft Delete 필터링 및 Batch Fetch Size 추가 |

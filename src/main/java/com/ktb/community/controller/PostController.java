@@ -35,9 +35,9 @@ public class PostController {
     /**
      * 게시글 목록 조회 (API.md Section 3.1)
      * GET /posts?offset=0&limit=10&sort=latest
+     * Tier 3: 제한 없음 (조회 API, 페이지네이션 있음)
      */
     @GetMapping
-    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPosts(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int limit,
@@ -50,9 +50,9 @@ public class PostController {
     /**
      * 게시글 상세 조회 (API.md Section 3.2)
      * GET /posts/{postId}
+     * Tier 3: 제한 없음 (조회 API)
      */
     @GetMapping("/{postId}")
-    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<PostResponse>> getPostDetail(@PathVariable Long postId) {
         PostResponse post = postService.getPostDetail(postId);
         return ResponseEntity.ok(ApiResponse.success("get_post_detail_success", post));
@@ -62,9 +62,10 @@ public class PostController {
      * 게시글 작성 (API.md Section 3.3)
      * POST /posts
      * Authorization: Bearer {access_token}
+     * Tier 2: 중간 제한 (게시글 spam 방지)
      */
     @PostMapping
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<ApiResponse<PostResponse>> createPost(
             @Valid @RequestBody PostCreateRequest request,
             Authentication authentication
@@ -79,9 +80,10 @@ public class PostController {
      * 게시글 수정 (API.md Section 3.4)
      * PATCH /posts/{postId}
      * Authorization: Bearer {access_token}
+     * Tier 3: 넉넉한 제한 (본인 권한 검증 있음)
      */
     @PatchMapping("/{postId}")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 50)
     public ResponseEntity<ApiResponse<PostResponse>> updatePost(
             @PathVariable Long postId,
             @Valid @RequestBody PostUpdateRequest request,
@@ -96,9 +98,10 @@ public class PostController {
      * 게시글 삭제 (API.md Section 3.5)
      * DELETE /posts/{postId}
      * Authorization: Bearer {access_token}
+     * Tier 3: 넉넉한 제한 (Soft Delete, 본인 권한 검증)
      */
     @DeleteMapping("/{postId}")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<ApiResponse<Void>> deletePost(
             @PathVariable Long postId,
             Authentication authentication
@@ -112,9 +115,10 @@ public class PostController {
      * 게시글 좋아요 (API.md Section 6.1)
      * POST /posts/{postId}/like
      * Authorization: Bearer {access_token}
+     * Tier 3: 넉넉한 제한 (빈번한 액션, 원자적 UPDATE로 안전)
      */
     @PostMapping("/{postId}/like")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 200)
     public ResponseEntity<ApiResponse<Map<String, Integer>>> addLike(
             @PathVariable Long postId,
             Authentication authentication
@@ -128,9 +132,10 @@ public class PostController {
      * 게시글 좋아요 취소 (API.md Section 6.2)
      * DELETE /posts/{postId}/like
      * Authorization: Bearer {access_token}
+     * Tier 3: 넉넉한 제한 (빈번한 액션, 원자적 UPDATE로 안전)
      */
     @DeleteMapping("/{postId}/like")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 200)
     public ResponseEntity<ApiResponse<Map<String, Integer>>> removeLike(
             @PathVariable Long postId,
             Authentication authentication
@@ -144,9 +149,9 @@ public class PostController {
      * 내가 좋아요한 게시글 목록 조회 (API.md Section 6.3)
      * GET /users/me/likes?offset=0&limit=10
      * Authorization: Bearer {access_token}
+     * Tier 3: 제한 없음 (조회 API)
      */
     @GetMapping("/users/me/likes")
-    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getLikedPosts(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int limit,

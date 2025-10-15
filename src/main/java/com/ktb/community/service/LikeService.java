@@ -6,6 +6,7 @@ import com.ktb.community.entity.PostLike;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.enums.PostStatus;
+import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.repository.PostLikeRepository;
 import com.ktb.community.repository.PostRepository;
@@ -52,9 +53,9 @@ public class LikeService {
                         "Post not found with id: " + postId));
 
         // 사용자 확인
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
 
         // 중복 확인
         if (postLikeRepository.existsByUserUserIdAndPostPostId(userId, postId)) {
@@ -77,7 +78,7 @@ public class LikeService {
                 .map(stats -> stats.getLikeCount())
                 .orElse(0);
 
-        log.info("[Like] 좋아요 추가 완료: postId={}, userId={}, likeCount={}", postId, userId, likeCount);
+        log.debug("[Like] 좋아요 추가 완료: postId={}, likeCount={}", postId, likeCount);
 
         Map<String, Integer> response = new HashMap<>();
         response.put("like_count", likeCount);
@@ -114,7 +115,7 @@ public class LikeService {
                 .map(stats -> stats.getLikeCount())
                 .orElse(0);
 
-        log.info("[Like] 좋아요 취소 완료: postId={}, userId={}, likeCount={}", postId, userId, likeCount);
+        log.debug("[Like] 좋아요 취소 완료: postId={}, likeCount={}", postId, likeCount);
 
         Map<String, Integer> response = new HashMap<>();
         response.put("like_count", likeCount);
@@ -129,10 +130,11 @@ public class LikeService {
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getLikedPosts(Long userId, int offset, int limit) {
-        // 사용자 확인
-        if (!userRepository.existsById(userId)) {
+        // 사용자 확인 (ACTIVE + INACTIVE 허용 = Read 권한)
+        if (!userRepository.existsByUserIdAndUserStatusIn(
+                userId, List.of(UserStatus.ACTIVE, UserStatus.INACTIVE))) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND,
-                    "User not found with id: " + userId);
+                    "User not found or deleted with id: " + userId);
         }
 
         // 페이지 정보 생성

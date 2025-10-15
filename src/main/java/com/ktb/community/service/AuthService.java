@@ -77,8 +77,6 @@ public class AuthService {
         }
         User savedUser = userRepository.save(user);
 
-        log.info("[Auth] 회원가입 완료: email={}, userId={}", savedUser.getEmail(), savedUser.getUserId());
-        
         // 자동 로그인 - 토큰 발급
         return generateTokens(savedUser);
     }
@@ -102,9 +100,7 @@ public class AuthService {
         if (user.getUserStatus() != UserStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
         }
-        
-        log.info("[Auth] 로그인 성공: email={}, userId={}", user.getEmail(), user.getUserId());
-        
+
         return generateTokens(user);
     }
     
@@ -148,9 +144,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole().name()
         );
-        
-        log.info("[Auth] 토큰 갱신 완료: email={}, userId={}", user.getEmail(), user.getUserId());
-        
+
         return AuthResponse.accessOnly(accessToken);
     }
     

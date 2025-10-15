@@ -1,0 +1,15 @@
+# 운영 환경 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.ktb.community: INFO  # 운영 환경: debug 로그 제외
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  
+  file:
+    name: logs/community.log
+    max-size: 10MB
+    max-history: 30

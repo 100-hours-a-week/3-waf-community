@@ -34,15 +34,15 @@ public class User extends BaseTimeEntity {
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('USER', 'ADMIN') DEFAULT 'USER'")
+    @Column(nullable = false)
     private UserRole role = UserRole.USER;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_status", nullable = false, columnDefinition = "ENUM('ACTIVE', 'INACTIVE', 'DELETED') DEFAULT 'ACTIVE'")
+    @Column(name = "user_status", nullable = false)
     private UserStatus userStatus = UserStatus.ACTIVE;
 
     // 프로필 이미지 (1:1)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id")
     private Image profileImage;
 

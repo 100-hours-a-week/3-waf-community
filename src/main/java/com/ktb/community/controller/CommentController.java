@@ -33,9 +33,9 @@ public class CommentController {
     /**
      * 댓글 목록 조회 (API.md Section 5.1)
      * GET /posts/{postId}/comments?offset=0&limit=10
+     * Tier 3: 제한 없음 (조회 API, 페이지네이션 있음)
      */
     @GetMapping
-    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getComments(
             @PathVariable Long postId,
             @RequestParam(defaultValue = "0") int offset,
@@ -49,9 +49,10 @@ public class CommentController {
      * 댓글 작성 (API.md Section 5.2)
      * POST /posts/{postId}/comments
      * Authorization: Bearer {access_token}
+     * Tier 2: 중간 제한 (댓글 spam 방지, 게시글보다 빈번)
      */
     @PostMapping
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 50)
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @PathVariable Long postId,
             @Valid @RequestBody CommentCreateRequest request,
@@ -67,9 +68,10 @@ public class CommentController {
      * 댓글 수정 (API.md Section 5.3)
      * PATCH /posts/{postId}/comments/{commentId}
      * Authorization: Bearer {access_token}
+     * Tier 3: 넉넉한 제한 (본인 권한 검증 있음)
      */
     @PatchMapping("/{commentId}")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 50)
     public ResponseEntity<ApiResponse<CommentResponse>> updateComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,
@@ -86,9 +88,10 @@ public class CommentController {
      * DELETE /posts/{postId}/comments/{commentId}
      * Authorization: Bearer {access_token}
      * Note: Soft Delete (status → DELETED)
+     * Tier 3: 넉넉한 제한 (Soft Delete, 본인 권한 검증)
      */
     @DeleteMapping("/{commentId}")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,

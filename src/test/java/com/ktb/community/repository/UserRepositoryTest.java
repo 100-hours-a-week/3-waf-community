@@ -123,4 +123,39 @@ class UserRepositoryTest {
         // Then
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("userId와 상태로 사용자 조회 - ACTIVE 성공")
+    void findByUserIdAndUserStatus_ActiveUser_Success() {
+        // When
+        Optional<User> result = userRepository.findByUserIdAndUserStatus(
+                testUser.getUserId(), UserStatus.ACTIVE);
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().getUserId()).isEqualTo(testUser.getUserId());
+        assertThat(result.get().getUserStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("userId와 상태로 사용자 조회 - INACTIVE는 조회 안됨")
+    void findByUserIdAndUserStatus_InactiveUser_NotFound() {
+        // Given: INACTIVE 사용자 생성
+        User inactiveUser = User.builder()
+                .email("inactive2@example.com")
+                .passwordHash("hashedPassword")
+                .nickname("inactive2")
+                .role(UserRole.USER)
+                .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(inactiveUser, "userStatus", UserStatus.INACTIVE);
+        entityManager.persist(inactiveUser);
+        entityManager.flush();
+
+        // When: ACTIVE로 조회 시도
+        Optional<User> result = userRepository.findByUserIdAndUserStatus(
+                inactiveUser.getUserId(), UserStatus.ACTIVE);
+
+        // Then: 조회 안됨
+        assertThat(result).isEmpty();
+    }
 }

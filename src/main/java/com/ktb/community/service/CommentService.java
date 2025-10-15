@@ -9,6 +9,7 @@ import com.ktb.community.entity.User;
 import com.ktb.community.enums.CommentStatus;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.enums.PostStatus;
+import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.repository.CommentRepository;
 import com.ktb.community.repository.PostRepository;
@@ -55,9 +56,9 @@ public class CommentService {
                         "Post not found with id: " + postId));
 
         // 사용자 확인
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
 
         // 댓글 생성
         Comment comment = request.toEntity(post, user);
@@ -66,8 +67,7 @@ public class CommentService {
         // 댓글 수 자동 증가 (동시성 제어)
         postStatsRepository.incrementCommentCount(postId);
 
-        log.info("[Comment] 댓글 작성 완료: commentId={}, postId={}, userId={}",
-                savedComment.getCommentId(), postId, userId);
+        log.debug("[Comment] 댓글 작성 완료: commentId={}, postId={}", savedComment.getCommentId(), postId);
 
         return CommentResponse.from(savedComment);
     }
@@ -131,7 +131,7 @@ public class CommentService {
         // 내용 수정
         comment.updateContent(request.getComment());
 
-        log.info("[Comment] 댓글 수정 완료: commentId={}, userId={}", commentId, userId);
+        log.debug("[Comment] 댓글 수정 완료: commentId={}", commentId);
 
         return CommentResponse.from(comment);
     }
@@ -160,6 +160,6 @@ public class CommentService {
         // 댓글 수 자동 감소 (동시성 제어)
         postStatsRepository.decrementCommentCount(comment.getPost().getPostId());
 
-        log.info("[Comment] 댓글 삭제 완료: commentId={}, userId={}", commentId, userId);
+        log.debug("[Comment] 댓글 삭제 완료: commentId={}", commentId);
     }
 }
