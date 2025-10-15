@@ -5,7 +5,7 @@
 | 항목 | 내용                        |
 |------|---------------------------|
 | 프로젝트명 | KTB Community Platform    |
-| 버전 | 1.5                       |
+| 버전 | 1.6                       |
 | 문서 유형 | Low Level Design Document |
 
 ---
@@ -672,6 +672,32 @@ Page<Post> findByStatusWithUserAndStats(...);
 - DDL.md의 인덱스 정의 준수
 - EXPLAIN으로 쿼리 실행 계획 분석
 
+**Batch Fetch Size 설정:**
+```yaml
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100  # N+1 최적화
+```
+- to-many lazy loading 시 IN 쿼리로 일괄 로드
+- Post 목록 조회: 11개 쿼리 → 2개 쿼리 (82% 감소)
+- 코드 변경 없이 설정만으로 적용 가능
+
+**User Soft Delete 필터링:**
+```java
+// Repository: Spring Data 파생 메서드
+Optional<User> findByUserIdAndUserStatus(Long userId, UserStatus userStatus);
+
+// Service: ACTIVE 필터 적용
+User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
+    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
+        "User not found or inactive with id: " + userId));
+```
+- INACTIVE/DELETED 사용자는 게시글 작성/댓글 작성/좋아요 불가
+- 보안 취약점 제거: 탈퇴 사용자의 활동 차단
+- 적용 범위: UserService 4곳, PostService/CommentService/LikeService 각 1곳
+
 ### 12.2 캐싱 전략 (추후)
 
 **Redis 도입 시:**
@@ -785,3 +811,4 @@ JWT_SECRET=<256bit 이상 시크릿>
 | 2025-10-04 | 1.3 | Section 7.4 댓글 작성 흐름 추가 (참조 무결성 복원) |
 | 2025-10-10 | 1.4 | HTML 이스케이프 코드 수정 (Section 6.5) |
 | 2025-10-15 | 1.5 | Section 14 로깅 정책 추가, Service Layer 로그 레벨 조정 |
+| 2025-10-15 | 1.6 | Section 12.1 User Soft Delete 필터링 및 Batch Fetch Size 추가 |

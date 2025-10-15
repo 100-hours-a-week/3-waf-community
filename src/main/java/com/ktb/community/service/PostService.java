@@ -8,6 +8,7 @@ import com.ktb.community.entity.PostStats;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.enums.PostStatus;
+import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.entity.Image;
 import com.ktb.community.entity.PostImage;
@@ -56,9 +57,9 @@ public class PostService {
      */
     @Transactional
     public PostResponse createPost(PostCreateRequest request, Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
 
         // 게시글 생성
         Post post = request.toEntity(user);

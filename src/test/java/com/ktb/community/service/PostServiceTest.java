@@ -34,6 +34,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.ktb.community.enums.UserStatus;
+
 /**
  * PostService 단위 테스트
  * PRD.md FR-POST-001~005 검증
@@ -81,7 +83,7 @@ class PostServiceTest {
                 .user(user)
                 .build();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(postRepository.save(any(Post.class))).thenReturn(savedPost);
         when(postStatsRepository.save(any(PostStats.class))).thenReturn(PostStats.builder().post(savedPost).build());
 
@@ -106,7 +108,7 @@ class PostServiceTest {
                 .content("Test Content")
                 .build();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> postService.createPost(request, userId))
@@ -368,5 +370,22 @@ class PostServiceTest {
         assertThatThrownBy(() -> postService.deletePost(postId, requesterId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Not authorized");
+    }
+
+    @Test
+    @DisplayName("게시글 작성 실패 - INACTIVE 사용자")
+    void createPost_WithInactiveUser_ThrowsException() {
+        // Given
+        Long inactiveUserId = 999L;
+        PostCreateRequest request = new PostCreateRequest("Title", "Content", null);
+
+        when(userRepository.findByUserIdAndUserStatus(inactiveUserId, UserStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> postService.createPost(request, inactiveUserId))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND)
+                .hasMessageContaining("User not found or inactive");
     }
 }

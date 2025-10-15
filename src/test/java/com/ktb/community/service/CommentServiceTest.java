@@ -34,6 +34,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.ktb.community.enums.UserStatus;
+
 /**
  * CommentService 단위 테스트
  * PRD.md FR-COMMENT-001~004 검증
@@ -90,7 +92,7 @@ class CommentServiceTest {
 
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(commentRepository.save(any(Comment.class))).thenReturn(savedComment);
         when(postStatsRepository.incrementCommentCount(postId)).thenReturn(1);
 
@@ -152,7 +154,7 @@ class CommentServiceTest {
 
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> commentService.createComment(postId, request, userId))

@@ -24,6 +24,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import com.ktb.community.enums.UserStatus;
+
 /**
  * UserService 단위 테스트
  */
@@ -53,7 +55,7 @@ class UserServiceTest {
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
 
         // When
         UserResponse response = userService.getProfile(userId);
@@ -63,7 +65,7 @@ class UserServiceTest {
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getNickname()).isEqualTo("testuser");
 
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByUserIdAndUserStatus(userId, UserStatus.ACTIVE);
     }
 
     @Test
@@ -71,14 +73,14 @@ class UserServiceTest {
     void getProfile_UserNotFound_ThrowsException() {
         // Given
         Long userId = 999L;
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> userService.getProfile(userId))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByUserIdAndUserStatus(userId, UserStatus.ACTIVE);
     }
 
     @Test
@@ -99,7 +101,7 @@ class UserServiceTest {
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(userRepository.existsByNickname("newnickname")).thenReturn(false);
 
         // When
@@ -109,7 +111,7 @@ class UserServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getNickname()).isEqualTo("newnickname");
 
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByUserIdAndUserStatus(userId, UserStatus.ACTIVE);
         verify(userRepository).existsByNickname("newnickname");
     }
 
@@ -130,7 +132,7 @@ class UserServiceTest {
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(userRepository.existsByNickname("existingnick")).thenReturn(true);
 
         // When & Then
@@ -138,7 +140,7 @@ class UserServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NICKNAME_ALREADY_EXISTS);
 
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByUserIdAndUserStatus(userId, UserStatus.ACTIVE);
         verify(userRepository).existsByNickname("existingnick");
     }
 
@@ -160,14 +162,14 @@ class UserServiceTest {
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("NewPass123!")).thenReturn("newEncodedPassword");
 
         // When
         userService.changePassword(userId, authenticatedUserId, request);
 
         // Then
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByUserIdAndUserStatus(userId, UserStatus.ACTIVE);
         verify(passwordEncoder).encode("NewPass123!");
     }
 
@@ -185,13 +187,13 @@ class UserServiceTest {
                 .build();
         org.springframework.test.util.ReflectionTestUtils.setField(user, "userId", userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
 
         // When
         userService.deactivateAccount(userId, authenticatedUserId);
 
         // Then
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByUserIdAndUserStatus(userId, UserStatus.ACTIVE);
         // Note: Entity 상태 변경은 실제 트랜잭션에서 확인 (단위 테스트에서는 메서드 호출만 검증)
     }
 

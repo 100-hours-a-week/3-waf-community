@@ -37,4 +37,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 이메일과 상태로 사용자 조회
      */
     Optional<User> findByEmailAndUserStatus(String email, UserStatus userStatus);
+    
+    /**
+     * 사용자 ID와 상태로 조회
+     */
+    Optional<User> findByUserIdAndUserStatus(Long userId, UserStatus userStatus);
 }

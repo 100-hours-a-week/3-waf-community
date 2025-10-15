@@ -9,6 +9,7 @@ import com.ktb.community.entity.User;
 import com.ktb.community.enums.CommentStatus;
 import com.ktb.community.enums.ErrorCode;
 import com.ktb.community.enums.PostStatus;
+import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.repository.CommentRepository;
 import com.ktb.community.repository.PostRepository;
@@ -55,9 +56,9 @@ public class CommentService {
                         "Post not found with id: " + postId));
 
         // 사용자 확인
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
 
         // 댓글 생성
         Comment comment = request.toEntity(post, user);

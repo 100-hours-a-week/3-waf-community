@@ -36,9 +36,9 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         return UserResponse.from(user);
     }
@@ -57,9 +57,9 @@ public class UserService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         // 닉네임 변경 시 중복 확인
         if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
@@ -96,9 +96,9 @@ public class UserService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         // 비밀번호 암호화 및 업데이트
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
@@ -117,9 +117,9 @@ public class UserService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, 
-                        "User not found with id: " + userId));
+                        "User not found or inactive with id: " + userId));
         
         // 상태 변경 (Soft Delete)
         user.updateStatus(UserStatus.INACTIVE);

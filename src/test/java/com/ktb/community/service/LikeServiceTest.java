@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.ktb.community.enums.UserStatus;
+
 /**
  * LikeService 단위 테스트
  * PRD.md FR-LIKE-001~003 검증
@@ -80,7 +82,7 @@ class LikeServiceTest {
 
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(postLikeRepository.existsByUserUserIdAndPostPostId(userId, postId)).thenReturn(false);
         when(postLikeRepository.save(any(PostLike.class))).thenReturn(null);
         when(postStatsRepository.incrementLikeCount(postId)).thenReturn(1);
@@ -140,7 +142,7 @@ class LikeServiceTest {
 
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> likeService.addLike(postId, userId))
@@ -173,7 +175,7 @@ class LikeServiceTest {
 
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(user));
         when(postLikeRepository.existsByUserUserIdAndPostPostId(userId, postId)).thenReturn(true);
 
         // When & Then
