@@ -29,16 +29,17 @@ spring:
       name: user
       password: temp
 
-# 로깅 설정 (Phase 1 간단한 설정)
+# 로깅 설정 (개발 환경)
 logging:
   level:
     root: INFO
-    com.ktb.community: DEBUG
+    com.ktb.community: DEBUG  # 개발 환경: debug 로그 포함
     org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
-
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{40} : %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 # JWT 설정
 jwt:

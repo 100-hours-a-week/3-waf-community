@@ -77,7 +77,7 @@ public class LikeService {
                 .map(stats -> stats.getLikeCount())
                 .orElse(0);
 
-        log.info("[Like] 좋아요 추가 완료: postId={}, userId={}, likeCount={}", postId, userId, likeCount);
+        log.debug("[Like] 좋아요 추가 완료: postId={}, likeCount={}", postId, likeCount);
 
         Map<String, Integer> response = new HashMap<>();
         response.put("like_count", likeCount);
@@ -114,7 +114,7 @@ public class LikeService {
                 .map(stats -> stats.getLikeCount())
                 .orElse(0);
 
-        log.info("[Like] 좋아요 취소 완료: postId={}, userId={}, likeCount={}", postId, userId, likeCount);
+        log.debug("[Like] 좋아요 취소 완료: postId={}, likeCount={}", postId, likeCount);
 
         Map<String, Integer> response = new HashMap<>();
         response.put("like_count", likeCount);

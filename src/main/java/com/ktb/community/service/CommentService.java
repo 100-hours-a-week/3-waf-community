@@ -66,8 +66,7 @@ public class CommentService {
         // 댓글 수 자동 증가 (동시성 제어)
         postStatsRepository.incrementCommentCount(postId);
 
-        log.info("[Comment] 댓글 작성 완료: commentId={}, postId={}, userId={}",
-                savedComment.getCommentId(), postId, userId);
+        log.debug("[Comment] 댓글 작성 완료: commentId={}, postId={}", savedComment.getCommentId(), postId);
 
         return CommentResponse.from(savedComment);
     }
@@ -131,7 +130,7 @@ public class CommentService {
         // 내용 수정
         comment.updateContent(request.getComment());
 
-        log.info("[Comment] 댓글 수정 완료: commentId={}, userId={}", commentId, userId);
+        log.debug("[Comment] 댓글 수정 완료: commentId={}", commentId);
 
         return CommentResponse.from(comment);
     }
@@ -160,6 +159,6 @@ public class CommentService {
         // 댓글 수 자동 감소 (동시성 제어)
         postStatsRepository.decrementCommentCount(comment.getPost().getPostId());
 
-        log.info("[Comment] 댓글 삭제 완료: commentId={}, userId={}", commentId, userId);
+        log.debug("[Comment] 댓글 삭제 완료: commentId={}", commentId);
     }
 }

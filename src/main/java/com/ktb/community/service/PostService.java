@@ -93,7 +93,7 @@ public class PostService {
             log.info("[Post] 게시글 이미지 연결: postId={}, imageId={}", savedPost.getPostId(), image.getImageId());
         }
 
-        log.info("[Post] 게시글 작성 완료: postId={}, userId={}", savedPost.getPostId(), userId);
+        log.debug("[Post] 게시글 작성 완료: postId={}", savedPost.getPostId());
 
         return PostResponse.from(savedPost);
     }
@@ -148,11 +148,7 @@ public class PostService {
         // 영속성 컨텍스트에서 stats를 DB 상태로 동기화
         if (post.getStats() != null) {
             entityManager.refresh(post.getStats());
-        }
-
-        log.info("[Post] 게시글 조회: postId={}", postId);
-
-        return PostResponse.from(post);
+        }return PostResponse.from(post);
     }
 
     /**
@@ -205,7 +201,7 @@ public class PostService {
             log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}", postId, image.getImageId());
         }
 
-        log.info("[Post] 게시글 수정 완료: postId={}, userId={}", postId, userId);
+        log.debug("[Post] 게시글 수정 완료: postId={}", postId);
 
         return PostResponse.from(post);
     }
@@ -230,7 +226,7 @@ public class PostService {
         // Soft Delete
         post.updateStatus(PostStatus.DELETED);
 
-        log.info("[Post] 게시글 삭제 완료: postId={}, userId={}", postId, userId);
+        log.debug("[Post] 게시글 삭제 완료: postId={}", postId);
     }
 
     /**
