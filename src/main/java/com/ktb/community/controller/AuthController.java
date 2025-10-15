@@ -27,9 +27,10 @@ public class AuthController {
     /**
      * 로그인 (API.md 1.1)
      * POST /auth/login
+     * Tier 1: 강한 제한 (brute-force 방지)
      */
     @PostMapping("/login")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 5)
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("login_success", response));
@@ -38,9 +39,9 @@ public class AuthController {
     /**
      * 로그아웃 (API.md 1.2)
      * POST /auth/logout
+     * Tier 3: 제한 없음 (공격 동인 없음)
      */
     @PostMapping("/logout")
-    @RateLimit(requestsPerMinute = 100)
     public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("logout_success"));
@@ -49,9 +50,10 @@ public class AuthController {
     /**
      * 액세스 토큰 재발급 (API.md 1.3)
      * POST /auth/refresh_token
+     * Tier 2: 중간 제한 (비정상 토큰 갱신 감지)
      */
     @PostMapping("/refresh_token")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refreshAccessToken(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("token_refreshed", response));

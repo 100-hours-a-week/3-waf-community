@@ -39,9 +39,10 @@ public class UserController {
      * 회원가입 (API.md 2.1)
      * POST /users/signup or POST /users
      * Multipart 방식: 이미지와 데이터 함께 전송
+     * Tier 2: 중간 제한 (spam bot 방지, 정상 사용자 재시도 고려)
      */
     @PostMapping(value = {"/signup", ""}, consumes = "multipart/form-data")
-    @RateLimit(requestsPerMinute = 100)
+    @RateLimit(requestsPerMinute = 10)
     public ResponseEntity<ApiResponse<AuthResponse>> signup(
             @Valid @ModelAttribute SignupRequest request) {
         
@@ -59,6 +60,7 @@ public class UserController {
     /**
      * 사용자 정보 조회 (API.md 2.2)
      * GET /users/{userID}
+     * Tier 3: 제한 없음 (조회 API)
      */
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponse>> getProfile(@PathVariable Long userId) {
@@ -70,8 +72,10 @@ public class UserController {
      * 사용자 정보 수정 (API.md 2.3)
      * PATCH /users/{userID}
      * Multipart 방식: 이미지와 데이터 함께 전송
+     * Tier 2: 중간 제한 (프로필 수정 spam 방지)
      */
     @PatchMapping(value = "/{userId}", consumes = "multipart/form-data")
+    @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @PathVariable Long userId,
             @Valid @ModelAttribute UpdateProfileRequest request,
@@ -86,8 +90,10 @@ public class UserController {
     /**
      * 비밀번호 변경 (API.md 2.4)
      * PATCH /users/{userID}/password
+     * Tier 1: 강한 제한 (enumeration 방지)
      */
     @PatchMapping("/{userId}/password")
+    @RateLimit(requestsPerMinute = 5)
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @PathVariable Long userId,
             @Valid @RequestBody ChangePasswordRequest request,
@@ -114,8 +120,10 @@ public class UserController {
     /**
      * 회원 탈퇴 (API.md 2.5)
      * PUT /users/{userID}
+     * Tier 2: 중간 제한 (계정 비활성화 남용 방지)
      */
     @PutMapping("/{userId}")
+    @RateLimit(requestsPerMinute = 10)
     public ResponseEntity<ApiResponse<Void>> deactivateAccount(
             @PathVariable Long userId,
             Authentication authentication) {

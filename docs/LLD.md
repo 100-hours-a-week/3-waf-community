@@ -235,10 +235,27 @@ public class RateLimitAspect {
 }
 ```
 
-**적용 대상:**
-- AuthController.login - 분당 5회
-- AuthController.signup - 분당 3회
-- 기타 인증 API - 분당 100회 (기본값)
+**적용 대상 (3-Tier 전략):**
+
+**Tier 1 (5회/분) - 강한 제한:**
+- AuthController.login - brute-force 방지
+- UserController.changePassword - enumeration 방지
+
+**Tier 2 (10-50회/분) - 중간 제한:**
+- UserController.signup (10회/분) - spam bot, 정상 사용자 재시도 고려
+- AuthController.refreshToken (30회/분) - 비정상 토큰 갱신 감지
+- UserController.updateProfile (30회/분) - 프로필 수정 spam 방지
+- UserController.deactivateAccount (10회/분) - 계정 비활성화 남용 방지
+- PostController.createPost (30회/분) - 게시글 spam 방지
+- CommentController.createComment (50회/분) - 댓글 spam 방지 (더 빈번)
+- ImageController.uploadImage (10회/분) - 파일 업로드 부하
+
+**Tier 3 (제한 없음 또는 200회/분) - 약한 제한/해제:**
+- 모든 GET 조회 API - 제한 없음 (페이지네이션으로 제어)
+- AuthController.logout - 제한 없음 (공격 동인 없음)
+- PostController.likePost/unlikePost (200회/분) - 빈번한 액션, 원자적 UPDATE
+- Post/Comment 수정 API (50회/분) - 본인 권한 검증 있음
+- Post/Comment 삭제 API (30회/분) - Soft Delete
 
 ---
 
