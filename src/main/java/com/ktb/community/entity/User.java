@@ -42,7 +42,7 @@ public class User extends BaseTimeEntity {
     private UserStatus userStatus = UserStatus.ACTIVE;
 
     // 프로필 이미지 (1:1)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id")
     private Image profileImage;
 
