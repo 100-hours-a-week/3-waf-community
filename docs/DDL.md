@@ -17,8 +17,8 @@ CREATE TABLE users (
 email        VARCHAR(255) NOT NULL,
 password_hash VARCHAR(255) NOT NULL,
 nickname     VARCHAR(30)  NOT NULL, -- 10자 제한(한글 기준)
-role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
-user_status  ENUM('ACTIVE', 'INACTIVE','DELETED') NOT NULL DEFAULT 'ACTIVE',
+role VARCHAR(20) NOT NULL DEFAULT 'USER',
+user_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
 created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 image_id BIGINT DEFAULT NULL, -- 프로필 이미지(옵션, 1:1)
@@ -33,6 +33,10 @@ ON DELETE SET NULL
 ON UPDATE RESTRICT,
 CONSTRAINT chk_users_nickname_len -- 닉네임 길이 제한
 CHECK (CHAR_LENGTH(nickname) <= 10),
+CONSTRAINT chk_users_role -- 역할 값 검증
+CHECK (role IN ('USER', 'ADMIN')),
+CONSTRAINT chk_users_status -- 상태 값 검증
+CHECK (user_status IN ('ACTIVE', 'INACTIVE', 'DELETED')),
 CONSTRAINT chk_users_email_trim_lower -- 이메일 공백 제거 및 소문자 변환
 CHECK (email = LOWER(TRIM(email))),
 CONSTRAINT chk_users_email_no_ws -- 이메일 내부 공백 문자 포함 금지
@@ -46,7 +50,7 @@ post_title VARCHAR(100) NOT NULL, -- 제목 27자 제한(한글 기준)
 post_content LONGTEXT NOT NULL,
 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-post_status ENUM('ACTIVE', 'DELETED', 'DRAFT') NOT NULL DEFAULT 'ACTIVE', -- VARCHAR → ENUM , 임시 저장 상태 고려
+post_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- 상태 값 (임시 저장 상태 고려)
     user_id BIGINT NOT NULL, -- NULL 불가: API가 항상 author 객체 반환
 
     PRIMARY KEY (post_id),
@@ -57,7 +61,9 @@ post_status ENUM('ACTIVE', 'DELETED', 'DRAFT') NOT NULL DEFAULT 'ACTIVE', -- VAR
       ON DELETE RESTRICT -- 게시글이 있는 사용자는 삭제 불가 (user_status로 관리)
       ON UPDATE RESTRICT,
     CONSTRAINT chk_posts_title_len -- 제목 길이 제한
-      CHECK (CHAR_LENGTH(post_title) <= 27)
+      CHECK (CHAR_LENGTH(post_title) <= 27),
+    CONSTRAINT chk_posts_status -- 상태 값 검증
+      CHECK (post_status IN ('ACTIVE', 'DELETED', 'DRAFT'))
 );
 
 -- 게시글 통계 테이블
@@ -81,7 +87,7 @@ CREATE TABLE comments (
 comment_content VARCHAR(600) NOT NULL, -- 댓글 200자 제한(한글 기준)
 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-comment_status ENUM('ACTIVE', 'DELETED') NOT NULL DEFAULT 'ACTIVE', -- VARCHAR → ENUM
+comment_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- 상태 값
     post_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL, -- NULL 불가: API가 항상 author 객체 반환
 
@@ -96,7 +102,9 @@ comment_status ENUM('ACTIVE', 'DELETED') NOT NULL DEFAULT 'ACTIVE', -- VARCHAR �
       ON DELETE RESTRICT -- 댓글이 있는 사용자는 삭제 불가 (user_status로 관리)
       ON UPDATE RESTRICT,
     CONSTRAINT chk_comments_len -- 댓글 길이 제한
-      CHECK (CHAR_LENGTH(comment_content) <= 200)
+      CHECK (CHAR_LENGTH(comment_content) <= 200),
+    CONSTRAINT chk_comments_status -- 상태 값 검증
+      CHECK (comment_status IN ('ACTIVE', 'DELETED'))
 );
 
 -- 게시글 이미지 브릿지 테이블(순서 관리 포함)
