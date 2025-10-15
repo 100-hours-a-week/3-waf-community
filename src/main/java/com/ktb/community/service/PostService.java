@@ -163,12 +163,6 @@ public class PostService {
      */
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long userId) {
-        // 최소 1개 필드 검증
-        if (!request.hasAnyUpdate()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT,
-                    "At least one field must be provided for update");
-        }
-
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
                         "Post not found with id: " + postId));

@@ -1,5 +1,6 @@
 package com.ktb.community.dto.request;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,11 +30,11 @@ public class PostUpdateRequest {
     private Long imageId;
 
     /**
-     * 최소 1개 필드 변경 필요 검증
-     *
-     * @return 업데이트 필드 존재 여부
+     * PATCH 부분 업데이트 검증: 최소 1개 필드 필요
+     * Bean Validation에서 자동 검증
      */
-    public boolean hasAnyUpdate() {
+    @AssertTrue(message = "최소 1개 필드가 필요합니다")
+    public boolean isHasAnyUpdate() {
         return title != null || content != null || imageId != null;
     }
 }

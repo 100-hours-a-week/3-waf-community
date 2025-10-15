@@ -307,22 +307,6 @@ class PostServiceTest {
     }
 
     @Test
-    @DisplayName("게시글 수정 실패 - 업데이트 필드 없음")
-    void updatePost_NoFields_ThrowsException() {
-        // Given
-        Long postId = 1L;
-        Long userId = 1L;
-        PostUpdateRequest request = PostUpdateRequest.builder().build();  // 모든 필드 null
-
-        // When & Then
-        assertThatThrownBy(() -> postService.updatePost(postId, request, userId))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("At least one field must be provided");
-
-        verify(postRepository, never()).findById(anyLong());
-    }
-
-    @Test
     @DisplayName("게시글 삭제 성공 - Soft Delete")
     void deletePost_Success() {
         // Given
