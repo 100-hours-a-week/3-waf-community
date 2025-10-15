@@ -301,7 +301,8 @@ class LikeServiceTest {
 
         Page<PostLike> likePage = new PageImpl<>(List.of(postLike));
 
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userRepository.existsByUserIdAndUserStatusIn(
+                userId, List.of(UserStatus.ACTIVE, UserStatus.INACTIVE))).thenReturn(true);
         when(postLikeRepository.findByUserIdWithPost(eq(userId), eq(PostStatus.ACTIVE), any(Pageable.class)))
                 .thenReturn(likePage);
 
@@ -329,7 +330,8 @@ class LikeServiceTest {
         int offset = 0;
         int limit = 10;
 
-        when(userRepository.existsById(userId)).thenReturn(false);
+        when(userRepository.existsByUserIdAndUserStatusIn(
+                userId, List.of(UserStatus.ACTIVE, UserStatus.INACTIVE))).thenReturn(false);
 
         // When & Then
         assertThatThrownBy(() -> likeService.getLikedPosts(userId, offset, limit))

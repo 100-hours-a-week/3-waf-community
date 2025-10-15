@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
  * 사용자 서비스
  * PRD.md FR-USER-001~004 참조
@@ -127,13 +129,16 @@ public class UserService {
 
     /**
      * 이메일로 사용자 ID 조회 (Controller 인증용)
+     * ACTIVE + INACTIVE 허용 (탈퇴 후 자기 글 삭제 = GDPR)
      */
     @Transactional(readOnly = true)
     public Long findUserIdByEmail(String email) {
-        return userRepository.findByEmail(email.toLowerCase().trim())
+        return userRepository.findByEmailAndUserStatusIn(
+                email.toLowerCase().trim(),
+                List.of(UserStatus.ACTIVE, UserStatus.INACTIVE))
                 .map(User::getUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
-                        "User not found with email: " + email));
+                        "User not found or deleted with email: " + email));
     }
     
 }

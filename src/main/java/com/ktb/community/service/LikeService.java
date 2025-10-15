@@ -130,10 +130,11 @@ public class LikeService {
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getLikedPosts(Long userId, int offset, int limit) {
-        // 사용자 확인
-        if (!userRepository.existsById(userId)) {
+        // 사용자 확인 (ACTIVE + INACTIVE 허용 = Read 권한)
+        if (!userRepository.existsByUserIdAndUserStatusIn(
+                userId, List.of(UserStatus.ACTIVE, UserStatus.INACTIVE))) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND,
-                    "User not found with id: " + userId);
+                    "User not found or deleted with id: " + userId);
         }
 
         // 페이지 정보 생성
