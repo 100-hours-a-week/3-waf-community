@@ -2,7 +2,7 @@
 
 **버전**: 1.0
 **Base URL**: `http://localhost:8080`
-**상세 API 스펙**: [API.md](API.md) 참조
+**상세 API 스펙**: [API.md](../be/API.md) 참조
 
 ---
 
@@ -144,7 +144,7 @@ async function fetchWithAuth(url, options = {}) {
 | /auth/logout | POST | ✅ | 로그아웃 (Authorization 헤더 + refresh_token 필요) |
 | /auth/refresh_token | POST | ❌ | Access Token 갱신 |
 
-상세 스펙: [API.md Section 1](API.md#1-인증-authentication)
+상세 스펙: [API.md Section 1](../be/API.md#1-인증-authentication)
 
 ---
 
@@ -399,7 +399,7 @@ function validateSignupForm(formData) {
 | IMAGE-003 | 400 | 유효하지 않은 파일 형식 | JPG/PNG/GIF 안내 |
 | COMMON-004 | 429 | Rate Limit | 재시도 (지수 백오프) |
 
-**전체 에러 코드**: [API.md Section 7](API.md#7-공통-사양) 참조
+**전체 에러 코드**: [API.md Section 7](../be/API.md#7-공통-사양) 참조
 
 ### 6.2 에러 핸들러 구현
 
@@ -556,10 +556,10 @@ A4. 429 응답 시 1-2초 대기 후 재시도 (Section 6.3 참조)
 
 ## 참고 문서
 
-- **전체 API 스펙**: [API.md](API.md)
-- **에러 코드 전체**: [API.md Section 7](API.md#7-공통-사양)
-- **DB 스키마**: [DDL.md](DDL.md)
-- **설계 문서**: [LLD.md](LLD.md)
+- **전체 API 스펙**: [API.md](../be/API.md)
+- **에러 코드 전체**: [API.md Section 7](../be/API.md#7-공통-사양)
+- **DB 스키마**: [DDL.md](../be/DDL.md)
+- **설계 문서**: [LLD.md](../be/LLD.md)
 
 ---
 

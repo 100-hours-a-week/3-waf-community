@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시글 상세 - 아무 말 대잔치</title>
+
+  <!-- Common Styles -->
+  <link rel="stylesheet" href="/css/common/reset.css">
+  <link rel="stylesheet" href="/css/common/variables.css">
+  <link rel="stylesheet" href="/css/common/typography.css">
+  <link rel="stylesheet" href="/css/common/layout.css">
+
+  <!-- Component Styles -->
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/input.css">
+  <link rel="stylesheet" href="/css/components/header.css">
+  <link rel="stylesheet" href="/css/components/comment.css">
+
+  <!-- Page Styles -->
+  <link rel="stylesheet" href="/css/board/detail.css">
+</head>
+<body>
+  <!-- Header with Back Button -->
+  <header class="header header--with-back">
+    <div class="header__container">
+      <button class="header__back" data-action="go-back" aria-label="뒤로가기">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <h1 class="header__title">아무 말 대잔치</h1>
+      <button class="header__profile" data-action="toggle-menu" aria-label="프로필 메뉴">
+        <img src="" alt="프로필" class="header__profile-image" data-profile="image">
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container--narrow">
+      <!-- Post Detail -->
+      <article class="post-detail" data-post="detail">
+        <!-- Post Header -->
+        <header class="post-detail__header">
+          <h2 class="post-detail__title" data-post="title">주말에 다녀온 산책로 풍경이에요</h2>
+          <div class="post-detail__meta">
+            <div class="post-detail__author">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="이영희" class="post-detail__author-image" data-post="authorImage">
+              <span class="post-detail__author-name" data-post="authorName">이영희</span>
+            </div>
+            <time class="post-detail__date" data-post="date">2024-10-15 14:30</time>
+          </div>
+          <div class="post-detail__actions" data-post="actions" style="display: none;">
+            <button class="btn btn--sm btn--secondary" data-action="edit-post">수정</button>
+            <button class="btn btn--sm btn--danger" data-action="delete-post">삭제</button>
+          </div>
+        </header>
+
+        <!-- Post Content -->
+        <div class="post-detail__content">
+          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop" alt="산책로 풍경" class="post-detail__image" data-post="image">
+          <div class="post-detail__body" data-post="content">
+            오늘 날씨가 너무 좋아서 근처 산책로에 다녀왔어요!
+
+            가을 단풍이 정말 아름답더라구요. 하늘도 맑고 바람도 선선해서 걷기 딱 좋았습니다.
+
+            주말에 가볍게 산책하기 좋은 코스라서 여러분께 공유합니다 😊
+
+            혹시 다른 좋은 산책 장소 있으면 추천 부탁드려요!
+          </div>
+        </div>
+
+        <!-- Post Stats -->
+        <div class="post-detail__stats">
+          <button class="post-detail__stat" data-action="toggle-like">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span data-post="likes">89</span> 좋아요
+          </button>
+          <div class="post-detail__stat">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span data-post="views">432</span> 조회수
+          </div>
+          <div class="post-detail__stat">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span data-post="comments">5</span> 댓글
+          </div>
+        </div>
+      </article>
+
+      <!-- Comments Section -->
+      <section class="comments-section">
+        <h3 class="comments-section__title">댓글</h3>
+
+        <!-- Comment Form -->
+        <form class="comment-form" data-form="comment">
+          <textarea
+            class="comment-form__textarea"
+            placeholder="댓글을 입력해주세요"
+            rows="3"
+            data-field="comment"
+            required
+          ></textarea>
+          <button type="submit" class="btn btn--primary" data-action="submit-comment">
+            댓글 등록
+          </button>
+        </form>
+
+        <!-- Comments List -->
+        <div class="comments-list" data-list="comments">
+          <!-- Sample Comment 1 -->
+          <div class="comment-item" data-comment-id="1">
+            <div class="comment-item__header">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="김철수 프로필" class="comment-item__avatar">
+              <div class="comment-item__info">
+                <div class="comment-item__author">김철수</div>
+                <div class="comment-item__date">1시간 전</div>
+              </div>
+              <div class="comment-item__actions" data-author-actions style="display: none;">
+                <button class="comment-item__action" data-action="edit-comment">수정</button>
+                <button class="comment-item__action comment-item__action--delete" data-action="delete-comment">삭제</button>
+              </div>
+            </div>
+            <div class="comment-item__content">
+              정말 아름다운 풍경이네요! 저도 주말에 꼭 가보고 싶어요 👍
+            </div>
+          </div>
+
+          <!-- Sample Comment 2 -->
+          <div class="comment-item" data-comment-id="2">
+            <div class="comment-item__header">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie" alt="최지은 프로필" class="comment-item__avatar">
+              <div class="comment-item__info">
+                <div class="comment-item__author">최지은</div>
+                <div class="comment-item__date">3시간 전</div>
+              </div>
+              <div class="comment-item__actions" data-author-actions style="display: none;">
+                <button class="comment-item__action" data-action="edit-comment">수정</button>
+                <button class="comment-item__action comment-item__action--delete" data-action="delete-comment">삭제</button>
+              </div>
+            </div>
+            <div class="comment-item__content">
+              혹시 정확한 위치 알 수 있을까요? 사진만 봐도 힐링되는 기분이에요 ㅎㅎ
+            </div>
+          </div>
+
+          <!-- Sample Comment 3 -->
+          <div class="comment-item" data-comment-id="3">
+            <div class="comment-item__header">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" alt="박민수 프로필" class="comment-item__avatar">
+              <div class="comment-item__info">
+                <div class="comment-item__author">박민수</div>
+                <div class="comment-item__date">5시간 전</div>
+              </div>
+              <div class="comment-item__actions" data-author-actions style="display: none;">
+                <button class="comment-item__action" data-action="edit-comment">수정</button>
+                <button class="comment-item__action comment-item__action--delete" data-action="delete-comment">삭제</button>
+              </div>
+            </div>
+            <div class="comment-item__content">
+              가을 단풍이 정말 예쁘네요. 저는 한강 공원 추천드려요!
+            </div>
+          </div>
+
+          <!-- Sample Comment 4 -->
+          <div class="comment-item" data-comment-id="4">
+            <div class="comment-item__header">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bella" alt="정수연 프로필" class="comment-item__avatar">
+              <div class="comment-item__info">
+                <div class="comment-item__author">정수연</div>
+                <div class="comment-item__date">6시간 전</div>
+              </div>
+              <div class="comment-item__actions" data-author-actions style="display: none;">
+                <button class="comment-item__action" data-action="edit-comment">수정</button>
+                <button class="comment-item__action comment-item__action--delete" data-action="delete-comment">삭제</button>
+              </div>
+            </div>
+            <div class="comment-item__content">
+              좋은 정보 감사합니다! 다음 주말에 가족들과 함께 가봐야겠어요 😊
+            </div>
+          </div>
+
+          <!-- Sample Comment 5 -->
+          <div class="comment-item" data-comment-id="5">
+            <div class="comment-item__header">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Max" alt="강태민 프로필" class="comment-item__avatar">
+              <div class="comment-item__info">
+                <div class="comment-item__author">강태민</div>
+                <div class="comment-item__date">8시간 전</div>
+              </div>
+              <div class="comment-item__actions" data-author-actions style="display: none;">
+                <button class="comment-item__action" data-action="edit-comment">수정</button>
+                <button class="comment-item__action comment-item__action--delete" data-action="delete-comment">삭제</button>
+              </div>
+            </div>
+            <div class="comment-item__content">
+              날씨 좋은 날 산책하기 딱이겠네요. 사진 너무 잘 찍으셨어요!
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" data-empty="comments" style="display: none;">
+          <p>첫 번째 댓글을 작성해보세요!</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Delete Confirmation Modal (Hidden by default) -->
+  <div class="modal" data-modal="delete-post" style="display: none;">
+    <div class="modal__overlay" data-action="close-modal"></div>
+    <div class="modal__content">
+      <h3 class="modal__title">게시글 삭제</h3>
+      <p class="modal__message">정말 삭제하시겠습니까?</p>
+      <div class="modal__actions">
+        <button class="btn btn--secondary" data-action="close-modal">취소</button>
+        <button class="btn btn--danger" data-action="confirm-delete">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Common Scripts -->
+  <script src="/js/common/api.js"></script>
+  <script src="/js/common/validation.js"></script>
+  <script src="/js/common/utils.js"></script>
+
+  <!-- Page Script -->
+  <script src="/js/board/detail.js"></script>
+</body>
+</html>
