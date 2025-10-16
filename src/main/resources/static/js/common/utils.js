@@ -58,6 +58,20 @@ function formatNumber(num) {
 }
 
 /**
+ * 숫자 포맷 (축약형, 소셜 미디어 스타일)
+ * 1234 → "1.2k", 10000 → "10k"
+ *
+ * @param {number} num
+ * @returns {string}
+ */
+function formatNumberCompact(num) {
+    if (typeof num !== 'number') return '0';
+    if (num >= 10000) return `${Math.floor(num / 1000)}k`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+    return num.toString();
+}
+
+/**
  * 에러 메시지 표시
  * 현재: alert (추후 모달/토스트로 개선)
  *

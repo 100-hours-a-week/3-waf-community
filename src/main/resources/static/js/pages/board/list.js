@@ -1,7 +1,7 @@
 /**
  * Board List Page Script
- * 파일: scripts/pages/board/list.js
- * 설명: 게시글 목록 페이지 로직 (주석으로만 구현)
+ * 게시글 목록 페이지 로직
+ * 참조: @CLAUDE.md Section 4.1, @docs/be/API.md Section 3.1
  */
 
 (function(window, document) {
@@ -10,295 +10,335 @@
   // ============================================
   // Configuration
   // ============================================
-  // const CONFIG = {
-  //   API_POSTS: '/api/posts',
-  //   PAGE_SIZE: 26,
-  //   WRITE_POST_URL: './write.html',
-  //   POST_DETAIL_URL: './detail.html',
-  //   LOGIN_URL: '../user/login.html'
-  // };
-
+  const CONFIG = {
+    PAGE_SIZE: 10,
+    WRITE_POST_URL: '/board/write.html',
+    POST_DETAIL_URL: '/board/detail.html',
+    LOGIN_URL: '/user/login.html'
+  };
 
   // ============================================
   // State Management
   // ============================================
-  // const state = {
-  //   posts: [],
-  //   currentPage: 1,
-  //   hasMore: true,
-  //   isLoading: false,
-  //   user: null
-  // };
-
+  const state = {
+    currentCursor: null, // Cursor 페이지네이션
+    hasMore: true,
+    isLoading: false
+  };
 
   // ============================================
   // DOM Element Caching
   // ============================================
-  // const elements = {
-  //   postList: null,
-  //   loadingIndicator: null,
-  //   emptyState: null,
-  //   writeButton: null,
-  //   loadMoreButton: null,
-  //   profileImage: null
-  // };
-
+  const elements = {
+    postList: null,
+    loadingIndicator: null,
+    emptyState: null,
+    writeButton: null,
+    loadMoreButton: null,
+    loadMoreContainer: null,
+    profileImage: null,
+    profileButton: null
+  };
 
   // ============================================
   // Initialization
   // ============================================
-  // function init() {
-  //   cacheElements();
-  //   checkAuthStatus();
-  //   bindEvents();
-  //   loadPosts();
-  // }
+  function init() {
+    cacheElements();
+    bindEvents();
+    loadInitialData();
+  }
 
-  // function cacheElements() {
-  //   elements.postList = document.querySelector('[data-list="posts"]');
-  //   elements.loadingIndicator = document.querySelector('[data-loading="posts"]');
-  //   elements.emptyState = document.querySelector('[data-empty="posts"]');
-  //   elements.writeButton = document.querySelector('[data-action="write-post"]');
-  //   elements.loadMoreButton = document.querySelector('[data-action="load-more"]');
-  //   elements.profileImage = document.querySelector('[data-profile="image"]');
-  // }
-
+  function cacheElements() {
+    elements.postList = document.querySelector('[data-list="posts"]');
+    elements.loadingIndicator = document.querySelector('[data-loading="posts"]');
+    elements.emptyState = document.querySelector('[data-empty="posts"]');
+    elements.writeButton = document.querySelector('[data-action="write-post"]');
+    elements.loadMoreButton = document.querySelector('[data-action="load-more"]');
+    elements.loadMoreContainer = document.querySelector('.load-more-container');
+    elements.profileImage = document.querySelector('[data-profile="image"]');
+    elements.profileButton = document.querySelector('[data-action="toggle-menu"]');
+  }
 
   // ============================================
   // Event Binding
   // ============================================
-  // function bindEvents() {
-  //   // 게시글 작성 버튼
-  //   elements.writeButton.addEventListener('click', handleWriteClick);
-  //
-  //   // 더보기 버튼
-  //   if (elements.loadMoreButton) {
-  //     elements.loadMoreButton.addEventListener('click', handleLoadMore);
-  //   }
-  //
-  //   // 무한 스크롤
-  //   window.addEventListener('scroll', Utils.throttle(handleScroll, 200));
-  //
-  //   // 게시글 카드 클릭 (이벤트 위임)
-  //   elements.postList.addEventListener('click', handlePostClick);
-  // }
+  function bindEvents() {
+    // 게시글 작성 버튼
+    if (elements.writeButton) {
+      elements.writeButton.addEventListener('click', handleWriteClick);
+    }
 
+    // 더보기 버튼
+    if (elements.loadMoreButton) {
+      elements.loadMoreButton.addEventListener('click', handleLoadMore);
+    }
+
+    // 게시글 카드 클릭 (이벤트 위임)
+    if (elements.postList) {
+      elements.postList.addEventListener('click', handlePostClick);
+    }
+
+    // 프로필 메뉴 (추후 구현)
+    if (elements.profileButton) {
+      elements.profileButton.addEventListener('click', handleProfileMenu);
+    }
+  }
+
+  // ============================================
+  // Initial Data Load
+  // ============================================
+  async function loadInitialData() {
+    // 샘플 게시글 제거
+    if (elements.postList) {
+      elements.postList.innerHTML = '';
+    }
+
+    // 프로필 이미지 로드
+    loadUserProfile();
+
+    // 첫 페이지 게시글 로드
+    await loadPosts();
+  }
 
   // ============================================
   // Event Handlers
   // ============================================
-  // function handleWriteClick(e) {
-  //   e.preventDefault();
-  //
-  //   // 로그인 확인
-  //   if (!state.user) {
-  //     Utils.toast.warning('로그인이 필요합니다');
-  //     setTimeout(() => {
-  //       window.location.href = CONFIG.LOGIN_URL;
-  //     }, 1000);
-  //     return;
-  //   }
-  //
-  //   // 게시글 작성 페이지로 이동
-  //   window.location.href = CONFIG.WRITE_POST_URL;
-  // }
+  function handleWriteClick(e) {
+    e.preventDefault();
 
-  // function handleLoadMore(e) {
-  //   e.preventDefault();
-  //   loadPosts();
-  // }
+    // 로그인 확인
+    if (!isAuthenticated()) {
+      alert('로그인이 필요합니다.');
+      window.location.href = CONFIG.LOGIN_URL;
+      return;
+    }
 
-  // function handleScroll() {
-  //   // 무한 스크롤 구현
-  //   const scrollHeight = document.documentElement.scrollHeight;
-  //   const scrollTop = document.documentElement.scrollTop;
-  //   const clientHeight = document.documentElement.clientHeight;
-  //
-  //   // 하단 200px 근처에 도달하면 추가 로드
-  //   if (scrollHeight - scrollTop - clientHeight < 200) {
-  //     if (!state.isLoading && state.hasMore) {
-  //       loadPosts();
-  //     }
-  //   }
-  // }
+    // 게시글 작성 페이지로 이동
+    window.location.href = CONFIG.WRITE_POST_URL;
+  }
 
-  // function handlePostClick(e) {
-  //   const card = e.target.closest('.post-card');
-  //   if (!card) return;
-  //
-  //   const postId = card.dataset.postId;
-  //   if (postId) {
-  //     window.location.href = `${CONFIG.POST_DETAIL_URL}?id=${postId}`;
-  //   }
-  // }
+  function handleLoadMore(e) {
+    e.preventDefault();
+    loadPosts();
+  }
 
+  function handlePostClick(e) {
+    const card = e.target.closest('.post-card');
+    if (!card) return;
+
+    const postId = card.dataset.postId;
+    if (postId) {
+      window.location.href = `${CONFIG.POST_DETAIL_URL}?id=${postId}`;
+    }
+  }
+
+  function handleProfileMenu(e) {
+    e.preventDefault();
+    // TODO: Phase 5에서 프로필 메뉴 구현
+    alert('프로필 메뉴는 추후 구현 예정입니다.');
+  }
 
   // ============================================
   // API Functions
   // ============================================
-  // async function loadPosts() {
-  //   try {
-  //     // 로딩 상태 시작
-  //     setLoading(true);
-  //
-  //     // API 호출
-  //     const response = await API.get(CONFIG.API_POSTS, {
-  //       params: {
-  //         page: state.currentPage,
-  //         size: CONFIG.PAGE_SIZE
-  //       }
-  //     });
-  //
-  //     // 데이터 처리
-  //     handlePostsLoaded(response.data);
-  //
-  //   } catch (error) {
-  //     // 에러 처리
-  //     handleLoadError(error);
-  //   } finally {
-  //     // 로딩 상태 종료
-  //     setLoading(false);
-  //   }
-  // }
+  /**
+   * 게시글 목록 로드 (Cursor 페이지네이션)
+   * GET /posts?cursor={cursor}&limit={limit}&sort=latest
+   */
+  async function loadPosts() {
+    if (state.isLoading || !state.hasMore) return;
 
-  // function handlePostsLoaded(data) {
-  //   const { posts, hasMore } = data;
-  //
-  //   if (posts.length === 0 && state.currentPage === 1) {
-  //     // 게시글이 없음
-  //     showEmptyState();
-  //     return;
-  //   }
-  //
-  //   // 게시글 추가
-  //   posts.forEach(post => {
-  //     state.posts.push(post);
-  //     renderPost(post);
-  //   });
-  //
-  //   // 상태 업데이트
-  //   state.hasMore = hasMore;
-  //   state.currentPage++;
-  //
-  //   // Empty state 숨김
-  //   elements.emptyState.style.display = 'none';
-  // }
+    try {
+      setLoading(true);
 
-  // function handleLoadError(error) {
-  //   Utils.toast.error('게시글을 불러오는데 실패했습니다');
-  //   console.error('Failed to load posts:', error);
-  // }
+      // API 호출 (cursor 방식)
+      const params = new URLSearchParams({
+        limit: CONFIG.PAGE_SIZE,
+        sort: 'latest'
+      });
 
+      if (state.currentCursor) {
+        params.append('cursor', state.currentCursor);
+      }
+
+      const result = await fetchWithAuth(`/posts?${params}`);
+
+      // 응답 구조: { posts: [...], nextCursor: 100, hasMore: true }
+      handlePostsLoaded(result);
+
+    } catch (error) {
+      console.error('Failed to load posts:', error);
+      showError('게시글을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handlePostsLoaded(data) {
+    const { posts, nextCursor, hasMore } = data;
+
+    // 첫 로드이고 게시글이 없는 경우
+    if (posts.length === 0 && state.currentCursor === null) {
+      showEmptyState();
+      return;
+    }
+
+    // 게시글 렌더링
+    posts.forEach(post => {
+      renderPost(post);
+    });
+
+    // 상태 업데이트
+    state.currentCursor = nextCursor;
+    state.hasMore = hasMore;
+
+    // 더보기 버튼 표시/숨김
+    updateLoadMoreButton();
+
+    // Empty state 숨김
+    if (elements.emptyState) {
+      elements.emptyState.style.display = 'none';
+    }
+  }
 
   // ============================================
   // Render Functions
   // ============================================
-  // function renderPost(post) {
-  //   const card = createPostCard(post);
-  //   elements.postList.appendChild(card);
-  // }
+  function renderPost(post) {
+    const card = createPostCard(post);
+    if (elements.postList) {
+      elements.postList.appendChild(card);
+    }
+  }
 
-  // function createPostCard(post) {
-  //   const article = document.createElement('article');
-  //   article.className = 'post-card';
-  //   article.dataset.postId = post.id;
-  //
-  //   article.innerHTML = `
-  //     <h3 class="post-card__title">${escapeHtml(post.title)}</h3>
-  //     <div class="post-card__meta">
-  //       <span class="post-card__stat">
-  //         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-  //           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2"/>
-  //         </svg>
-  //         <span class="post-card__stat-value">${formatNumber(post.likes)}</span>
-  //       </span>
-  //       <span class="post-card__stat">
-  //         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-  //           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
-  //         </svg>
-  //         <span class="post-card__stat-value">${formatNumber(post.commentCount)}</span>
-  //       </span>
-  //       <span class="post-card__stat">
-  //         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-  //           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
-  //           <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-  //         </svg>
-  //         <span class="post-card__stat-value">${formatNumber(post.views)}</span>
-  //       </span>
-  //     </div>
-  //     <div class="post-card__footer">
-  //       <div class="post-card__author">
-  //         <img src="${post.author.profileImage || '/default-profile.png'}" alt="${post.author.nickname}" class="post-card__author-image">
-  //         <span class="post-card__author-name">${escapeHtml(post.author.nickname)}</span>
-  //       </div>
-  //       <time class="post-card__date">${Utils.formatDate(post.createdAt)}</time>
-  //     </div>
-  //   `;
-  //
-  //   return article;
-  // }
+  /**
+   * 게시글 카드 생성
+   * @param {Object} post - 게시글 객체
+   * @returns {HTMLElement} - 게시글 카드 요소
+   */
+  function createPostCard(post) {
+    const article = document.createElement('article');
+    article.className = 'post-card';
+    article.dataset.postId = post.postId;
 
+    // 작성자 정보
+    const author = post.author || {};
+    const authorName = escapeHtml(author.nickname || '알 수 없음');
+    const authorImage = author.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+
+    // 통계 정보
+    const stats = post.stats || { likeCount: 0, commentCount: 0, viewCount: 0 };
+
+    // 날짜 포맷
+    const formattedDate = formatDate(post.createdAt);
+
+    // 이미지 HTML (있는 경우)
+    const imageHtml = post.imageUrl ? `
+      <div class="post-card__image-wrapper">
+        <img src="${escapeHtml(post.imageUrl)}" alt="게시글 이미지" class="post-card__image">
+      </div>
+    ` : '';
+
+    article.innerHTML = `
+      <div class="post-card__header">
+        <img src="${authorImage}" alt="작성자 프로필" class="post-card__avatar">
+        <div class="post-card__author">
+          <div class="post-card__author-name">${authorName}</div>
+          <div class="post-card__date">${formattedDate}</div>
+        </div>
+      </div>
+      ${imageHtml}
+      <h3 class="post-card__title">${escapeHtml(post.title)}</h3>
+      <div class="post-card__meta">
+        <div class="post-card__stat">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span>${formatNumberCompact(stats.likeCount)}</span>
+        </div>
+        <div class="post-card__stat">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+          </svg>
+          <span>${formatNumberCompact(stats.commentCount)}</span>
+        </div>
+        <div class="post-card__stat">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+          </svg>
+          <span>${formatNumberCompact(stats.viewCount)}</span>
+        </div>
+      </div>
+    `;
+
+    return article;
+  }
 
   // ============================================
   // UI Helper Functions
   // ============================================
-  // function setLoading(loading) {
-  //   state.isLoading = loading;
-  //
-  //   if (loading) {
-  //     elements.loadingIndicator.style.display = 'flex';
-  //   } else {
-  //     elements.loadingIndicator.style.display = 'none';
-  //   }
-  // }
+  function setLoading(loading) {
+    state.isLoading = loading;
 
-  // function showEmptyState() {
-  //   elements.emptyState.style.display = 'flex';
-  //   elements.postList.style.display = 'none';
-  // }
+    if (elements.loadingIndicator) {
+      elements.loadingIndicator.style.display = loading ? 'flex' : 'none';
+    }
+  }
 
-  // function formatNumber(num) {
-  //   // 1k, 10k, 100k 포맷
-  //   return Utils.formatNumber(num, { compact: true });
-  // }
+  function showEmptyState() {
+    if (elements.emptyState) {
+      elements.emptyState.style.display = 'flex';
+    }
+    if (elements.postList) {
+      elements.postList.style.display = 'none';
+    }
+  }
 
-  // function escapeHtml(text) {
-  //   const div = document.createElement('div');
-  //   div.textContent = text;
-  //   return div.innerHTML;
-  // }
+  function updateLoadMoreButton() {
+    if (elements.loadMoreContainer) {
+      elements.loadMoreContainer.style.display = state.hasMore ? 'block' : 'none';
+    }
+  }
 
+  function showError(message) {
+    alert(translateErrorCode(message));
+  }
 
   // ============================================
-  // Auth Check
+  // User Profile
   // ============================================
-  // function checkAuthStatus() {
-  //   const token = API.getToken();
-  //   const userStr = localStorage.getItem('user');
-  //
-  //   if (token && userStr) {
-  //     try {
-  //       state.user = JSON.parse(userStr);
-  //       // 프로필 이미지 설정
-  //       if (elements.profileImage) {
-  //         elements.profileImage.src = state.user.profileImage || '/default-profile.png';
-  //       }
-  //     } catch (error) {
-  //       console.error('Failed to parse user data:', error);
-  //     }
-  //   }
-  // }
+  async function loadUserProfile() {
+    if (!isAuthenticated()) {
+      // 비로그인 상태 - 기본 이미지 표시
+      if (elements.profileImage) {
+        elements.profileImage.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=anonymous';
+      }
+      return;
+    }
 
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return;
+
+      const user = await fetchWithAuth(`/users/${userId}`);
+
+      // 프로필 이미지 설정
+      if (elements.profileImage && user.profileImage) {
+        elements.profileImage.src = user.profileImage;
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  }
 
   // ============================================
   // DOMContentLoaded Event
   // ============================================
-  // if (document.readyState === 'loading') {
-  //   document.addEventListener('DOMContentLoaded', init);
-  // } else {
-  //   init();
-  // }
-
-  // TODO: 위 주석을 해제하고 실제 구현 진행
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 
 })(window, document);
