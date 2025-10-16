@@ -1,14 +1,5 @@
 {
-    "mcpServers": {
-    "sequential-thinking": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ],
-      "env": {}
-    },
+  "mcpServers": {
     "context7": {
       "type": "stdio",
       "command": "npx",
@@ -18,16 +9,9 @@
       ],
       "env": {}
     },
-    "serena": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena-mcp-server",
-        "--project", "project.yml"
-      ],
-      "env": {}
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
     }
   }
 }
