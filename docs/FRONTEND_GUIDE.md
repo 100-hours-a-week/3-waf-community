@@ -141,7 +141,7 @@ async function fetchWithAuth(url, options = {}) {
 | 엔드포인트 | 메서드 | 인증 | 설명 |
 |-----------|--------|------|------|
 | /auth/login | POST | ❌ | 로그인 |
-| /auth/logout | POST | ❌ | 로그아웃 (refresh_token 필요) |
+| /auth/logout | POST | ✅ | 로그아웃 (Authorization 헤더 + refresh_token 필요) |
 | /auth/refresh_token | POST | ❌ | Access Token 갱신 |
 
 상세 스펙: [API.md Section 1](API.md#1-인증-authentication)

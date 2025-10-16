@@ -30,6 +30,8 @@
 ### 1.2 로그아웃
 **Endpoint:** `POST /auth/logout`
 
+**헤더:** Authorization: Bearer {access_token}
+
 **Request:** `{ "refresh_token": "..." }`
 
 **필수:** refresh_token(String)
