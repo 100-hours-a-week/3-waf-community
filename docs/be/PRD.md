@@ -32,7 +32,7 @@
 **검증**: 이메일/닉네임 중복, 비밀번호 정책(대/소/특수문자 각 1개+), 이미지 형식(JPG/PNG/GIF), 파일 크기(최대 5MB)  
 **에러**: 409(중복), 400(유효성), 413(파일 크기 초과), 400(유효하지 않은 파일 형식)
 
-**참조**: **@docs/API.md Section 2.1**, **@docs/LLD.md Section 6.4**
+**참조**: **@docs/be/API.md Section 2.1**, **@docs/be/LLD.md Section 6.4**
 
 ---
 
@@ -70,7 +70,7 @@
 #### FR-USER-001: 사용자 프로필 조회 (P0)
 **입력**: User ID  
 **출력**: nickname, email, profile_image  
-**권한**: 인증된 사용자만
+**권한**: 누구나 (공개 프로필)
 
 ---
 
@@ -110,10 +110,17 @@
 ---
 
 #### FR-POST-002: 게시글 목록 조회 (P0)
-**입력**: offset(기본 0), limit(기본 10), sort(latest|likes)  
-**출력**: 게시글 목록(작성자 정보 포함), total_count  
+**입력**: 
+- **최신순 (sort=latest)**: cursor(선택), limit(기본 10)
+- **좋아요순 (sort=likes)**: offset(기본 0), limit(기본 10)
+
+**출력**: 
+- **최신순**: 게시글 목록, nextCursor, hasMore (Cursor 페이지네이션)
+- **좋아요순**: 게시글 목록, total_count (Offset 페이지네이션)
+
 **필터링**: ACTIVE만  
-**권한**: 누구나
+**권한**: 누구나  
+**참고**: 하이브리드 전략 - 최신순은 무한 스크롤(cursor), 좋아요순은 페이지 번호(offset)
 
 ---
 
@@ -228,7 +235,7 @@
 **처리**: 서버 측 검증 후 S3 직접 저장  
 **에러**: 413 (파일 크기 초과), 400 (유효하지 않은 파일 형식)
 
-**참조**: **@docs/LLD.md Section 7.5** (이미지 업로드 흐름)
+**참조**: **@docs/be/LLD.md Section 7.5** (이미지 업로드 흐름)
 
 ---
 
@@ -245,7 +252,7 @@
 - BCrypt 암호화
 - 정책: 8-20자, 대/소/특수문자 각 1개+
 
-**구현**: @docs/LLD.md Section 6.4
+**구현**: @docs/be/LLD.md Section 6.4
 
 **NFR-SEC-003: API 보안**
 - HTTPS(배포 시), CORS 설정
@@ -280,7 +287,7 @@
 - 게시글/댓글 수정: 50회/분 (본인 권한 검증)
 - 게시글/댓글 삭제: 30회/분 (Soft Delete)
 
-**구현**: **@docs/LLD.md Section 6.5**
+**구현**: **@docs/be/LLD.md Section 6.5**
 
 ---
 
@@ -292,11 +299,11 @@
 - 게시글 상세: < 200ms
 
 **NFR-PERF-002: 데이터베이스 최적화**
-- 인덱스 활용(@docs/DDL.md)
+- 인덱스 활용(@docs/be/DDL.md)
 - N+1 방지(Fetch Join)
 - 커넥션 풀(HikariCP)
 
-**구현**: @docs/LLD.md Section 12
+**구현**: @docs/be/LLD.md Section 12
 
 **NFR-PERF-003: 페이지네이션**
 - **웹**: Offset/Limit (limit 기본 10)
@@ -306,7 +313,7 @@
   - 장점: 무한 스크롤 최적화, 실시간 안정성
   - 단점: 특정 페이지 직접 이동 불가
 
-**구현**: **@docs/LLD.md Section 7.3**
+**구현**: **@docs/be/LLD.md Section 7.3**
 
 ---
 
@@ -338,7 +345,7 @@
 - 트랜잭션 관리
 - 동시성 제어 (원자적 UPDATE)
 
-**구현**: **@docs/LLD.md Section 7.2, 12.3**
+**구현**: **@docs/be/LLD.md Section 7.2, 12.3**
 
 ---
 
@@ -355,8 +362,8 @@
 - JUnit 5 + Mockito
 
 **NFR-MAINT-003: 문서화**
-- API 명세(**@docs/API.md**)
-- DB 스키마(**@docs/DDL.md**)
+- API 명세(**@docs/be/API.md**)
+- DB 스키마(**@docs/be/DDL.md**)
 - 개발 가이드(**@docs/CLAUDE.md**)
 
 ---
@@ -373,7 +380,7 @@
 - Post 1:N → Comment
 - Post M:N → Image (via PostImage)
 
-**상세**: **@docs/DDL.md** (ERD, 테이블 구조, Foreign Keys)
+**상세**: **@docs/be/DDL.md** (ERD, 테이블 구조, Foreign Keys)
 
 ### 4.2 데이터 보존
 

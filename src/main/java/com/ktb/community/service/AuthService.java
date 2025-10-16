@@ -8,6 +8,7 @@ import com.ktb.community.entity.UserToken;
 import com.ktb.community.enums.UserStatus;
 import com.ktb.community.exception.BusinessException;
 import com.ktb.community.enums.ErrorCode;
+import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.repository.UserTokenRepository;
 import com.ktb.community.security.JwtTokenProvider;
@@ -34,7 +35,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final ImageService imageService;
-    private final com.ktb.community.repository.ImageRepository imageRepository;
+    private final ImageRepository imageRepository;
     
     /**
      * 회원가입 (FR-AUTH-001)

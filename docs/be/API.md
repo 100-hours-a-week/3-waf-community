@@ -30,6 +30,8 @@
 ### 1.2 로그아웃
 **Endpoint:** `POST /auth/logout`
 
+**헤더:** Authorization: Bearer {access_token}
+
 **Request:** `{ "refresh_token": "..." }`
 
 **필수:** refresh_token(String)
@@ -81,8 +83,6 @@
 ### 2.2 사용자 정보 조회
 **Endpoint:** `GET /users/{userID}`
 
-**헤더:** Authorization: Bearer {access_token}
-
 **응답:**
 - 200: `get_profile_success` → image, nickname, email 반환
 - 404: USER-001 (User not found)
@@ -133,29 +133,66 @@
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "user_status": "INACTIVE" }`
-
-**필수:** user_status(String) - "INACTIVE" (DDL: ACTIVE, INACTIVE, DELETED)
-
 **응답:**
 - 200: `account_deactivated_success`
 - 404: USER-001 (User not found)
 - 401/403/500: [공통 에러 코드](#응답-코드) 참조
+
+**Note:** Request Body 없이 서버에서 자동으로 INACTIVE 상태로 변경
 
 ---
 
 ## 3. 게시글 (Posts)
 
 ### 3.1 게시글 목록 조회
-**Endpoint:** `GET /posts?offset=0&limit=10&sort=latest`
+**하이브리드 페이지네이션**: latest(cursor), likes(offset)
 
-**쿼리:** offset(Number), limit(Number), sort(String: latest|likes)
+#### latest (최신순, Cursor 방식)
+**Endpoint:** `GET /posts?cursor=123&limit=10&sort=latest`
+
+**쿼리:** cursor(Long, optional), limit(Number, default 10), sort=latest
+
+**응답:**
+- 200: `get_posts_success` → posts[], nextCursor, hasMore
+- 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**데이터 구조 (Cursor):**
+```json
+{
+  "posts": [{
+    "postId": 123,
+    "title": "...",
+    "content": "...",
+    "createdAt": "2025-09-30T10:00:00Z",
+    "updatedAt": "2025-09-30T10:00:00Z",
+    "author": { "userId": 1, "nickname": "...", "profileImage": "..." },
+    "stats": { "likeCount": 42, "commentCount": 15, "viewCount": 230 }
+  }],
+  "nextCursor": 100,
+  "hasMore": true
+}
+```
+
+**참고:**
+- cursor=null → 첫 페이지
+- nextCursor=null → 마지막 페이지
+- hasMore=false → 더 이상 데이터 없음
+
+**⚠️ Breaking Change (Phase 5):**
+- latest 정렬은 **offset 파라미터를 지원하지 않습니다**
+- `GET /posts?offset=20&sort=latest` 요청 시 offset은 무시되고 첫 페이지 반환
+- 무한 스크롤 구현 시 cursor 방식을 사용하세요
+
+#### likes (인기순, Offset 방식)
+**Endpoint:** `GET /posts?offset=0&limit=10&sort=likes`
+
+**쿼리:** offset(Number, default 0), limit(Number, default 10), sort=likes
 
 **응답:**
 - 200: `get_posts_success` → posts[], pagination.total_count
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
-**데이터 구조:**
+**데이터 구조 (Offset):**
 ```json
 {
   "posts": [{
@@ -170,6 +207,8 @@
   "pagination": { "total_count": 150 }
 }
 ```
+
+**참고:** likes 정렬은 추후 cursor 방식으로 전환 예정
 
 ---
 
@@ -219,19 +258,17 @@
 ---
 
 ### 3.5 게시글 삭제
-**Endpoint:** `DELETE /posts/{postId}` or `PUT /posts/{postId}`
+**Endpoint:** `DELETE /posts/{postId}`
 
 **헤더:** Authorization: Bearer {access_token}
-
-**Request:** `{ "post_status": "DELETED" }`
-
-**필수:** post_status(String) - "DELETED" (DDL: ACTIVE, DELETED, DRAFT)
 
 **응답:**
 - 204: 삭제 성공 (응답 body 없음)
 - 404: POST-001 (Post not found)
 - 403: POST-002 (Owner mismatch)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**Note:** Soft Delete - Request Body 없이 서버에서 자동으로 DELETED 상태로 변경
 
 ---
 
@@ -304,21 +341,17 @@
 ---
 
 ### 5.4 댓글 삭제
-**Endpoint:** `PATCH /posts/{postId}/comments/{commentId}`
+**Endpoint:** `DELETE /posts/{postId}/comments/{commentId}`
 
 **헤더:** Authorization: Bearer {access_token}
-
-**Request:** `{ "comment_status": "DELETED" }`
-
-**필수:** comment_status(String) - "DELETED" (DDL: ACTIVE, DELETED)
-
-**Note:** Soft delete 방식으로 PATCH 사용
 
 **응답:**
 - 204: 삭제 성공 (응답 body 없음)
 - 404: POST-001 (Post not found), COMMENT-001 (Comment not found)
 - 403: COMMENT-002 (Owner mismatch)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**Note:** Soft Delete - Request Body 없이 서버에서 자동으로 DELETED 상태로 변경
 
 ---
 

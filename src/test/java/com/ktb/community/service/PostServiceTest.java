@@ -119,12 +119,66 @@ class PostServiceTest {
     }
 
     @Test
-    @DisplayName("게시글 목록 조회 성공")
-    void getPosts_Success() {
+    @DisplayName("게시글 목록 조회 성공 - Cursor (latest)")
+    void getPosts_Cursor_Success() {
+        // Given
+        Long cursor = null;
+        int limit = 10;
+        String sort = "latest";
+
+        User user = User.builder()
+                .email("test@example.com")
+                .passwordHash("encoded")
+                .nickname("testnick")
+                .role(UserRole.USER)
+                .build();
+
+        Post post1 = Post.builder()
+                .title("Test Title 1")
+                .content("Test Content 1")
+                .status(PostStatus.ACTIVE)
+                .user(user)
+                .build();
+        // postId 설정 (reflection 사용)
+        ReflectionTestUtils.setField(post1, "postId", 100L);
+
+        Post post2 = Post.builder()
+                .title("Test Title 2")
+                .content("Test Content 2")
+                .status(PostStatus.ACTIVE)
+                .user(user)
+                .build();
+        ReflectionTestUtils.setField(post2, "postId", 99L);
+
+        when(postRepository.findByStatusWithoutCursor(eq(PostStatus.ACTIVE), any(Pageable.class)))
+                .thenReturn(List.of(post1, post2));
+
+        // When
+        Map<String, Object> result = postService.getPosts(cursor, null, limit, sort);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).containsKey("posts");
+        assertThat(result).containsKey("nextCursor");
+        assertThat(result).containsKey("hasMore");
+
+        @SuppressWarnings("unchecked")
+        List<PostResponse> posts = (List<PostResponse>) result.get("posts");
+        assertThat(posts).hasSize(2);
+
+        assertThat(result.get("nextCursor")).isNull();
+        assertThat(result.get("hasMore")).isEqualTo(false);
+
+        verify(postRepository, times(1)).findByStatusWithoutCursor(eq(PostStatus.ACTIVE), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("게시글 목록 조회 성공 - Offset (likes)")
+    void getPosts_Offset_Success() {
         // Given
         int offset = 0;
         int limit = 10;
-        String sort = "latest";
+        String sort = "likes";
 
         User user = User.builder()
                 .email("test@example.com")
@@ -146,7 +200,7 @@ class PostServiceTest {
                 .thenReturn(postPage);
 
         // When
-        Map<String, Object> result = postService.getPosts(offset, limit, sort);
+        Map<String, Object> result = postService.getPosts(null, offset, limit, sort);
 
         // Then
         assertThat(result).isNotNull();

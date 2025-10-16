@@ -34,16 +34,18 @@ public class PostController {
 
     /**
      * 게시글 목록 조회 (API.md Section 3.1)
-     * GET /posts?offset=0&limit=10&sort=latest
+     * - latest: GET /posts?cursor=123&limit=10&sort=latest
+     * - likes: GET /posts?offset=0&limit=10&sort=likes
      * Tier 3: 제한 없음 (조회 API, 페이지네이션 있음)
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPosts(
-            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(required = false) Integer offset,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        Map<String, Object> result = postService.getPosts(offset, limit, sort);
+        Map<String, Object> result = postService.getPosts(cursor, offset, limit, sort);
         return ResponseEntity.ok(ApiResponse.success("get_posts_success", result));
     }
 
@@ -164,9 +166,18 @@ public class PostController {
 
     /**
      * 인증된 사용자 ID 추출
+     * JWT subject에서 userId 직접 파싱 (성능 최적화)
      */
     private Long getUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return userService.findUserIdByEmail(email);
+        String username = authentication.getName(); // JWT subject = userId (문자열)
+        
+        // 빠른 경로: userId 직접 변환 (DB 조회 없음)
+        try {
+            return Long.parseLong(username);
+        } catch (NumberFormatException e) {
+            // Fallback: 테스트 환경 등에서 email 사용 시
+            log.debug("Username is not numeric (likely email), falling back to DB lookup: {}", username);
+            return userService.findUserIdByEmail(username);
+        }
     }
 }
