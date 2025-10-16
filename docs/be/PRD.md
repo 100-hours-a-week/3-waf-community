@@ -70,7 +70,7 @@
 #### FR-USER-001: 사용자 프로필 조회 (P0)
 **입력**: User ID  
 **출력**: nickname, email, profile_image  
-**권한**: 인증된 사용자만
+**권한**: 누구나 (공개 프로필)
 
 ---
 
@@ -110,10 +110,17 @@
 ---
 
 #### FR-POST-002: 게시글 목록 조회 (P0)
-**입력**: offset(기본 0), limit(기본 10), sort(latest|likes)  
-**출력**: 게시글 목록(작성자 정보 포함), total_count  
+**입력**: 
+- **최신순 (sort=latest)**: cursor(선택), limit(기본 10)
+- **좋아요순 (sort=likes)**: offset(기본 0), limit(기본 10)
+
+**출력**: 
+- **최신순**: 게시글 목록, nextCursor, hasMore (Cursor 페이지네이션)
+- **좋아요순**: 게시글 목록, total_count (Offset 페이지네이션)
+
 **필터링**: ACTIVE만  
-**권한**: 누구나
+**권한**: 누구나  
+**참고**: 하이브리드 전략 - 최신순은 무한 스크롤(cursor), 좋아요순은 페이지 번호(offset)
 
 ---
 
