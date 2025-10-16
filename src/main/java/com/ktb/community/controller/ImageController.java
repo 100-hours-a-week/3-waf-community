@@ -25,9 +25,10 @@ public class ImageController {
     private final ImageService imageService;
 
     /**
-     * 이미지 업로드
+     * 이미지 업로드 (API.md Section 4.1)
      * POST /images
-     * Rate Limit: 분당 10회
+     * Authorization: Bearer {access_token}
+     * Tier 2: 중간 제한 (파일 업로드 부하)
      *
      * @param file 업로드할 이미지 파일
      * @return 이미지 정보 (image_id, image_url)

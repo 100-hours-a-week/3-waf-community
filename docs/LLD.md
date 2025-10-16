@@ -44,6 +44,7 @@ MySQL Database
 - DTO 검증: @Valid + Bean Validation (표준), Manual Validation (@RequestPart 예외)
 - 요청 → Service 전달, 응답 포매팅
 - 예외 메시지: 영어 통일 (ErrorCode 기본 메시지와 일관성)
+- **권한**: GET(조회)는 public, POST/PATCH/DELETE(작성/수정/삭제)는 Authentication 필수
 - 위치: `com.ktb.community.controller`
 
 **Service:**
@@ -60,16 +61,16 @@ MySQL Database
 ## 3. 패키지 구조
 
 **주요 패키지:**
-- `config/` - SecurityConfig, JwtConfig, WebConfig
-- `controller/` - AuthController, UserController, PostController, CommentController, LikeController
+- `config/` - SecurityConfig, JpaAuditingConfig, S3Config, RateLimit, RateLimitAspect
+- `controller/` - AuthController, UserController, PostController, CommentController, ImageController
 - `service/` - AuthService, UserService, PostService, CommentService, LikeService, ImageService
 - `repository/` - UserRepository, PostRepository, CommentRepository, PostLikeRepository, ImageRepository, UserTokenRepository, PostStatsRepository
-- `entity/` - User, Post, Comment, PostLike, Image, UserToken, PostStats, PostImage
+- `entity/` - User, Post, Comment, PostLike, Image, UserToken, PostStats, PostImage, PostImageId, BaseTimeEntity, BaseCreatedTimeEntity
 - `dto/request/` - LoginRequest, SignupRequest, PostCreateRequest, CommentCreateRequest
 - `dto/response/` - ApiResponse, UserResponse, PostResponse, CommentResponse
 - `security/` - JwtTokenProvider, JwtAuthenticationFilter, CustomUserDetailsService
-- `exception/` - GlobalExceptionHandler, CustomException 계층
-- `util/` - PasswordValidator, DateTimeUtil
+- `exception/` - GlobalExceptionHandler, BusinessException
+- `util/` - PasswordValidator, FileValidator, S3KeyGenerator
 - `enums/` - UserStatus, PostStatus, CommentStatus, UserRole
 
 **상세 파일 구조:** 필요 시 IDE 탐색 또는 프로젝트 루트 참조
@@ -149,16 +150,47 @@ Client → POST /auth/refresh_token → user_tokens 테이블 검증 → 새 Acc
 **SecurityConfig 핵심:**
 ```java
 @Bean
-public SecurityFilterChain filterChain(HttpSecurity http) {
-    http.csrf(csrf -> csrf.disable())
-        .sessionManagement(session -> 
-            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/auth/**", "/posts").permitAll()
-            .anyRequest().authenticated())
-        .addFilterBefore(jwtAuthenticationFilter(), 
-            UsernamePasswordAuthenticationFilter.class);
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> 
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                    // 공개 엔드포인트
+                    .requestMatchers(
+                            "/auth/login",
+                            "/auth/refresh_token",
+                            "/users/signup",
+                            "/posts",
+                            "/posts/*",
+                            "/posts/*/comments"
+                    ).permitAll()
+                    // 나머지는 인증 필요
+                    .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+    
     return http.build();
+}
+```
+
+**권한 제어 구조:**
+- **Spring Security 레벨**: permitAll()로 URL 접근 허용 (Spring Security 필터 통과)
+- **Controller 레벨**: Authentication 파라미터 유무로 실제 권한 제어
+  - GET 엔드포인트: Authentication 파라미터 없음 → 누구나 조회 가능
+  - POST/PATCH/DELETE: Authentication 파라미터 필수 → getUserId()에서 null 체크
+- **장점**: URL 패턴 관리 단순화, Controller에서 유연한 권한 제어
+
+**예시:**
+```java
+// GET /posts - 누구나 가능
+@GetMapping
+public ResponseEntity<...> getPosts(...) { }
+
+// POST /posts - 인증 필수
+@PostMapping
+public ResponseEntity<...> createPost(..., Authentication authentication) {
+    Long userId = getUserId(authentication); // null이면 예외
 }
 ```
 
@@ -185,7 +217,7 @@ public class PasswordValidator {
 ### 6.5 Rate Limiting
 
 **정책:**
-- 제한: 분당 100회
+- 제한: 엔드포인트별 개별 설정 (5~200회/분, Tier 전략)
 - 키: FQCN.methodName + IP 주소 + 사용자 ID (인증 시)
 - 저장소: 인메모리 (Caffeine Cache), 추후 Redis
 - 응답: 429 Too Many Requests
@@ -225,7 +257,7 @@ public class RateLimitAspect {
         return pjp.proceed();
     }
 
-    // 키 예시: "com.ktb.community.controller.AuthController.login:192.168.1.1:user@example.com"
+    // 키 예시: "com.ktb.community.controller.AuthController.login:192.168.1.1:123" (FQCN:IP:userId)
     private String getClientKey(ProceedingJoinPoint pjp) {
         String methodName = pjp.getSignature().getDeclaringTypeName()
                           + "." + pjp.getSignature().getName();
@@ -267,10 +299,10 @@ public class RateLimitAspect {
 ```java
 @Transactional
 public PostResponse createPost(PostCreateRequest request, Long userId) {
-    // 1. 사용자 검증
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -&gt; new BusinessException(ErrorCode.USER_NOT_FOUND,
-                    "User not found with id: " + userId));
+    // 1. 사용자 검증 (ACTIVE 필터링 - Soft Delete 정책)
+    User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
+                    "User not found or inactive with id: " + userId));
 
     // 2. 게시글 생성 및 저장
     Post post = request.toEntity(user);
@@ -288,7 +320,7 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
     // 5. 이미지 TTL 해제 (imageId 있을 경우)
     if (request.getImageId() != null) {
         Image image = imageRepository.findById(request.getImageId())
-                .orElseThrow(() -&gt; new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
                         "Image not found with id: " + request.getImageId()));
         
         image.clearExpiresAt();  // expires_at → NULL (영구 보존)
@@ -342,7 +374,7 @@ Page<Post> page = postRepository.findByStatus(PostStatus.ACTIVE, pageable);
 - 장점: 페이지 번호 이동, Spring Data 지원
 - 단점: Offset 클수록 성능 저하
 
-**Cursor 기반 (모바일 무한 스크롤):**
+**Cursor 기반 (모바일 무한 스크롤 - 현재 미구현, Phase 6+ 확장 예정):**
 ```java
 List<Post> posts = cursor == null 
     ? postRepository.findTopN(...) 
@@ -352,7 +384,8 @@ Long nextCursor = posts.isEmpty() ? null : posts.get(posts.size()-1).getId();
 - 장점: 인덱스 활용, 실시간 안정성
 - 단점: 특정 페이지 이동 불가
 
-**권장:** 웹은 Offset/Limit, 모바일은 Cursor
+**현재 구현:** Offset/Limit만 지원 (PostService.getPosts)  
+**향후 계획:** 모바일 API용 Cursor 기반 추가 예정
 
 ### 7.4 댓글 작성 흐름
 
@@ -362,13 +395,13 @@ Long nextCursor = posts.isEmpty() ? null : posts.get(posts.size()-1).getId();
 public CommentResponse createComment(Long postId, CommentCreateRequest request, Long userId) {
     // 1. 게시글 존재 확인 (Fetch Join, ACTIVE만)
     Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
-            .orElseThrow(() -&gt; new BusinessException(ErrorCode.POST_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
                     "Post not found with id: " + postId));
 
-    // 2. 사용자 확인
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -&gt; new BusinessException(ErrorCode.USER_NOT_FOUND,
-                    "User not found with id: " + userId));
+    // 2. 사용자 확인 (ACTIVE 필터링 - Soft Delete 정책)
+    User user = userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE)
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
+                    "User not found or inactive with id: " + userId));
 
     // 3. 댓글 생성 및 저장
     Comment comment = request.toEntity(post, user);
@@ -440,10 +473,10 @@ public AuthResponse signup(SignupRequest request, MultipartFile profileImage) {
     
     // 5. 프로필 이미지 업로드 (있을 경우)
     Image image = null;
-    if (profileImage != null &amp;&amp; !profileImage.isEmpty()) {
+    if (profileImage != null && !profileImage.isEmpty()) {
         ImageResponse imageResponse = imageService.uploadImage(profileImage);
         image = imageRepository.findById(imageResponse.getImageId())
-                .orElseThrow(() -&gt; new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
         image.clearExpiresAt();  // TTL 해제 (영구 보존)
     }
     
@@ -468,7 +501,7 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
     // 이미지 연결 (imageId가 있을 경우)
     if (request.getImageId() != null) {
         Image image = imageRepository.findById(request.getImageId())
-                .orElseThrow(() -&gt; new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
                         "Image not found with id: " + request.getImageId()));
         
         image.clearExpiresAt();  // TTL 해제 (영구 보존)
@@ -488,7 +521,7 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
 **TTL 패턴 (공통 핵심):**
 - **업로드 시**: ImageService가 `expires_at = NOW() + 1시간` 설정
 - **사용 시**: `image.clearExpiresAt()` 호출 → `expires_at = NULL` (영구 보존)
-- **미사용 시**: Phase 4 배치가 expires_at &lt; NOW() 조건으로 S3 + DB 삭제
+- **미사용 시**: Phase 4 배치가 expires_at < NOW() 조건으로 S3 + DB 삭제
 - **인덱스**: `idx_images_expires` 활용으로 빠른 조회
 
 **설계 결정사항:**
@@ -509,10 +542,10 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
 
 ### 8.1 예외 처리 구조
 
-**3-Layer 아키텍처:**
-- **ErrorCode enum**: 에러 정보 중앙 관리 (28개 에러 코드)
-- **BusinessException**: 통합 예외 클래스 (ErrorCode 래핑)
-- **GlobalExceptionHandler**: 중앙 예외 처리 (@RestControllerAdvice)
+**단일 통합 예외 아키텍처:**
+- **ErrorCode enum**: 에러 정보 중앙 관리 (28개 에러 코드) - HTTP 상태, 에러 코드, 메시지 포함
+- **BusinessException**: 단일 통합 예외 클래스 (ErrorCode 래핑, 4가지 생성자 지원)
+- **GlobalExceptionHandler**: 중앙 예외 처리 (@RestControllerAdvice, 7개 핸들러)
 
 **ErrorCode 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
 
@@ -539,10 +572,10 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
 **통합 예외 처리 (BusinessException):**
 ```java
 @ExceptionHandler(BusinessException.class)
-public ResponseEntity&lt;ApiResponse&lt;ErrorDetails&gt;&gt; handleBusinessException(BusinessException ex) {
+public ResponseEntity<ApiResponse<ErrorDetails>> handleBusinessException(BusinessException ex) {
     ErrorCode errorCode = ex.getErrorCode();
     ErrorDetails errorDetails = ErrorDetails.of(ex.getMessage());
-    ApiResponse&lt;ErrorDetails&gt; response = ApiResponse.error(errorCode.getCode(), errorDetails);
+    ApiResponse<ErrorDetails> response = ApiResponse.error(errorCode.getCode(), errorDetails);
     
     return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
 }
@@ -603,16 +636,20 @@ public Post toEntity(User user) {
 
 | 항목 | 설정값 | 설명 |
 |------|--------|------|
-| **HikariCP** | maximum-pool-size: 10 | DB 커넥션 풀 크기 |
+| **HikariCP** | Spring Boot default | DB 커넥션 풀 (default: 10) |
 | **Multipart** | max-file-size: 5MB, max-request-size: 10MB | 이미지 업로드 제한 |
-| **JPA** | ddl-auto: validate, open-in-view: false | 운영 모드, OSIV 비활성화 |
-| **JWT** | access: 30분, refresh: 7일 | 토큰 유효기간 |
-| **S3** | bucket/region 환경 변수 주입 | AWS 인증 자동 인식 |
-| **Rate Limit** | requests-per-minute: 100 | 기본 제한 (엔드포인트별 override 가능) |
+| **JPA** | ddl-auto: validate, open-in-view: false, default_batch_fetch_size: 100 | 운영 모드, OSIV 비활성화, N+1 최적화 |
+| **JWT** | access: 30분 (1800000ms), refresh: 7일 (604800000ms) | 토큰 유효기간 |
+| **S3** | bucket/region 환경 변수 주입 | DefaultCredentialsProvider 체인 |
+| **Rate Limit** | 코드 기반 (@RateLimit 어노테이션) | 엔드포인트별 개별 설정 |
+| **Logging** | root: INFO, com.ktb.community: DEBUG | 개발 환경 로깅 레벨 |
+| **Server** | port: 8080 | 서버 포트 |
 
 **환경 변수 (필수):**
 ```bash
-# Phase 1-2
+# Phase 1-2 (Database & JWT)
+DB_URL=jdbc:mysql://localhost:3306/community
+DB_USERNAME=root
 DB_PASSWORD=<MySQL 비밀번호>
 JWT_SECRET=<256bit 이상 시크릿>
 
@@ -747,14 +784,11 @@ int decrementLikeCount(@Param("postId") Long postId);
 
 ## 13. 배포 및 운영
 
-**환경 변수:**
-```bash
-DB_PASSWORD=<MySQL 비밀번호>
-JWT_SECRET=<256bit 이상 시크릿>
-```
+**환경 변수:** `@docs/LLD.md Section 10` 참조 (6개 필수 변수)
 
-**배치 작업 (추후):**
-- 만료 토큰 정리: 매일 새벽 3시, @Scheduled
+**배치 작업:**
+- 고아 이미지 정리: 매일 새벽 3시, @Scheduled (ImageCleanupBatchService)
+- TTL 만료 이미지 (expires_at < NOW) 자동 삭제 (S3 + DB)
 
 **로그 레벨:**
 - 운영: INFO, 개발: DEBUG

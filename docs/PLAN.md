@@ -91,18 +91,19 @@
 
 **테스트:**
 - [x] 단위 테스트 작성 (AuthService, UserService, JwtTokenProvider, RateLimitAspect)
-  - AuthServiceTest: 10/10 통과
-  - UserServiceTest: 8/8 통과
-  - JwtTokenProviderTest: 10/10 통과
-  - RateLimitAspectTest: 11/11 통과
-- [x] Service Layer 커버리지 100% (18/18 통과)
-- [x] Config Layer 테스트 (RateLimitAspect 11/11 통과)
+  - AuthServiceTest: 8/8 통과
+  - UserServiceTest: 7/7 통과
+  - JwtTokenProviderTest: 9/9 통과
+  - RateLimitAspectTest: 10/10 통과
+- [x] Service Layer 커버리지 100% (15/15 통과)
+- [x] Security Layer 테스트 (JwtTokenProvider 9/9 통과)
+- [x] Config Layer 테스트 (RateLimitAspect 10/10 통과)
 - [x] Repository Layer 테스트 (Phase 3에서 완료, H2 환경 12/12 통과)
 
 ### 완료 조건
 - [x] 회원가입 → 로그인 → 토큰 발급 → 인증 API 호출 플로우 작동
 - [x] 비밀번호 정책 검증 통과
-- [x] 모든 단위 테스트 통과 (Service Layer 18/18, Config Layer 11/11)
+- [x] 모든 단위 테스트 통과 (Service Layer 15/15, Security Layer 9/9, Config Layer 10/10)
 
 **참조**: **@docs/LLD.md Section 6 (인증)**, **Section 7.2 (좋아요 동시성), Section 12.3 (동시성 제어)**
 

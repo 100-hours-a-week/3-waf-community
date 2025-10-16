@@ -133,14 +133,12 @@
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "user_status": "INACTIVE" }`
-
-**필수:** user_status(String) - "INACTIVE" (DDL: ACTIVE, INACTIVE, DELETED)
-
 **응답:**
 - 200: `account_deactivated_success`
 - 404: USER-001 (User not found)
 - 401/403/500: [공통 에러 코드](#응답-코드) 참조
+
+**Note:** Request Body 없이 서버에서 자동으로 INACTIVE 상태로 변경
 
 ---
 
@@ -219,19 +217,17 @@
 ---
 
 ### 3.5 게시글 삭제
-**Endpoint:** `DELETE /posts/{postId}` or `PUT /posts/{postId}`
+**Endpoint:** `DELETE /posts/{postId}`
 
 **헤더:** Authorization: Bearer {access_token}
-
-**Request:** `{ "post_status": "DELETED" }`
-
-**필수:** post_status(String) - "DELETED" (DDL: ACTIVE, DELETED, DRAFT)
 
 **응답:**
 - 204: 삭제 성공 (응답 body 없음)
 - 404: POST-001 (Post not found)
 - 403: POST-002 (Owner mismatch)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**Note:** Soft Delete - Request Body 없이 서버에서 자동으로 DELETED 상태로 변경
 
 ---
 
@@ -304,21 +300,17 @@
 ---
 
 ### 5.4 댓글 삭제
-**Endpoint:** `PATCH /posts/{postId}/comments/{commentId}`
+**Endpoint:** `DELETE /posts/{postId}/comments/{commentId}`
 
 **헤더:** Authorization: Bearer {access_token}
-
-**Request:** `{ "comment_status": "DELETED" }`
-
-**필수:** comment_status(String) - "DELETED" (DDL: ACTIVE, DELETED)
-
-**Note:** Soft delete 방식으로 PATCH 사용
 
 **응답:**
 - 204: 삭제 성공 (응답 body 없음)
 - 404: POST-001 (Post not found), COMMENT-001 (Comment not found)
 - 403: COMMENT-002 (Owner mismatch)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**Note:** Soft Delete - Request Body 없이 서버에서 자동으로 DELETED 상태로 변경
 
 ---
 

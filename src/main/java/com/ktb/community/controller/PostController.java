@@ -164,9 +164,18 @@ public class PostController {
 
     /**
      * 인증된 사용자 ID 추출
+     * JWT subject에서 userId 직접 파싱 (성능 최적화)
      */
     private Long getUserId(Authentication authentication) {
-        String email = authentication.getName();
-        return userService.findUserIdByEmail(email);
+        String username = authentication.getName(); // JWT subject = userId (문자열)
+        
+        // 빠른 경로: userId 직접 변환 (DB 조회 없음)
+        try {
+            return Long.parseLong(username);
+        } catch (NumberFormatException e) {
+            // Fallback: 테스트 환경 등에서 email 사용 시
+            log.debug("Username is not numeric (likely email), falling back to DB lookup: {}", username);
+            return userService.findUserIdByEmail(username);
+        }
     }
 }

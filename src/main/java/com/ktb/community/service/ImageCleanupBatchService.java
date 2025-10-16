@@ -51,21 +51,10 @@ public class ImageCleanupBatchService {
     /**
      * 고아 이미지 정리 배치 작업 (FR-IMAGE-002)
      * - 스케줄: 매일 새벽 3시 (CRON: 0 0 3 * * ?)
-     * - expires_at < NOW() 조건 이미지 조회
-     * - S3 파일 삭제
-     * - DB 레코드 삭제 (Hard Delete)
-     * - 배치 로그 기록 (성공/실패 카운트)
+     * - TTL 만료 이미지 삭제 (S3 + DB Hard Delete)
+     * - Self-injection으로 REQUIRES_NEW 트랜잭션 보장
      * 
-     * 트랜잭션 전략:
-     * - 배치 전체는 비트랜잭션 (조회만 수행)
-     * - 각 이미지 삭제는 self.deleteImageInNewTransaction()을 통해 프록시 호출
-     * - 프록시를 통한 호출로 REQUIRES_NEW 트랜잭션이 실제로 적용됨
-     * - 개별 실패가 전체 배치에 영향을 주지 않음
-     * 
-     * Spring AOP 프록시 우회 방지:
-     * - Self-injection 패턴으로 자신의 프록시를 주입받음
-     * - 내부 메서드 호출 시 this 대신 self 사용
-     * - @Lazy로 순환 의존성 방지
+     * 상세: LLD.md Section 7.5 참조
      */
     @Scheduled(cron = "0 0 3 * * ?")
     public void cleanupOrphanImages() {

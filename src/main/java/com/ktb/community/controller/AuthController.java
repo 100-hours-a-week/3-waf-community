@@ -25,7 +25,7 @@ public class AuthController {
     private final AuthService authService;
     
     /**
-     * 로그인 (API.md 1.1)
+     * 로그인 (API.md Section 1.1)
      * POST /auth/login
      * Tier 1: 강한 제한 (brute-force 방지)
      */
@@ -37,7 +37,7 @@ public class AuthController {
     }
     
     /**
-     * 로그아웃 (API.md 1.2)
+     * 로그아웃 (API.md Section 1.2)
      * POST /auth/logout
      * Tier 3: 제한 없음 (공격 동인 없음)
      */
@@ -48,7 +48,7 @@ public class AuthController {
     }
     
     /**
-     * 액세스 토큰 재발급 (API.md 1.3)
+     * 액세스 토큰 재발급 (API.md Section 1.3)
      * POST /auth/refresh_token
      * Tier 2: 중간 제한 (비정상 토큰 갱신 감지)
      */
