@@ -32,8 +32,31 @@ async function fetchWithAuth(url, options = {}) {
     try {
         const response = await fetch(`${API_BASE_URL}${url}`, config);
 
-        // 401 Unauthorized → 토큰 갱신 시도
+        // 401 Unauthorized → 에러 코드 우선 체크
         if (response.status === 401) {
+            // ① 에러 코드 먼저 확인 (response.clone() 사용)
+            const clonedResponse = response.clone();
+            try {
+                const errorData = await clonedResponse.json();
+
+                // ② 로그인 실패 등 인증 정보 오류는 토큰 갱신하지 않고 바로 throw
+                const authFailures = ['AUTH-001']; // Invalid credentials
+                const errorCode = errorData.message?.match(/([A-Z]+-\d+)/)?.[1];
+
+                if (authFailures.includes(errorCode)) {
+                    throw new Error(errorData.message);
+                }
+            } catch (parseError) {
+                // JSON 파싱 실패 또는 에러 throw 시
+                if (parseError.message?.match(/([A-Z]+-\d+)/)) {
+                    // 명시적으로 던진 에러면 그대로 throw
+                    throw parseError;
+                }
+                // JSON 파싱 실패면 기존 로직 진행
+                console.warn('Failed to parse 401 error response:', parseError);
+            }
+
+            // ③ 그 외 401(토큰 만료 등)은 기존 로직 유지
             const refreshed = await refreshAccessToken();
             if (refreshed) {
                 // 토큰 갱신 성공 → 원래 요청 재시도
