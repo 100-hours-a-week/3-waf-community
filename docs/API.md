@@ -143,15 +143,54 @@
 ## 3. 게시글 (Posts)
 
 ### 3.1 게시글 목록 조회
-**Endpoint:** `GET /posts?offset=0&limit=10&sort=latest`
+**하이브리드 페이지네이션**: latest(cursor), likes(offset)
 
-**쿼리:** offset(Number), limit(Number), sort(String: latest|likes)
+#### latest (최신순, Cursor 방식)
+**Endpoint:** `GET /posts?cursor=123&limit=10&sort=latest`
+
+**쿼리:** cursor(Long, optional), limit(Number, default 10), sort=latest
+
+**응답:**
+- 200: `get_posts_success` → posts[], nextCursor, hasMore
+- 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**데이터 구조 (Cursor):**
+```json
+{
+  "posts": [{
+    "postId": 123,
+    "title": "...",
+    "content": "...",
+    "createdAt": "2025-09-30T10:00:00Z",
+    "updatedAt": "2025-09-30T10:00:00Z",
+    "author": { "userId": 1, "nickname": "...", "profileImage": "..." },
+    "stats": { "likeCount": 42, "commentCount": 15, "viewCount": 230 }
+  }],
+  "nextCursor": 100,
+  "hasMore": true
+}
+```
+
+**참고:**
+- cursor=null → 첫 페이지
+- nextCursor=null → 마지막 페이지
+- hasMore=false → 더 이상 데이터 없음
+
+**⚠️ Breaking Change (Phase 5):**
+- latest 정렬은 **offset 파라미터를 지원하지 않습니다**
+- `GET /posts?offset=20&sort=latest` 요청 시 offset은 무시되고 첫 페이지 반환
+- 무한 스크롤 구현 시 cursor 방식을 사용하세요
+
+#### likes (인기순, Offset 방식)
+**Endpoint:** `GET /posts?offset=0&limit=10&sort=likes`
+
+**쿼리:** offset(Number, default 0), limit(Number, default 10), sort=likes
 
 **응답:**
 - 200: `get_posts_success` → posts[], pagination.total_count
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
-**데이터 구조:**
+**데이터 구조 (Offset):**
 ```json
 {
   "posts": [{
@@ -166,6 +205,8 @@
   "pagination": { "total_count": 150 }
 }
 ```
+
+**참고:** likes 정렬은 추후 cursor 방식으로 전환 예정
 
 ---
 

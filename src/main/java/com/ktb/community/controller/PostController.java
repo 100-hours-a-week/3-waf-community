@@ -34,16 +34,18 @@ public class PostController {
 
     /**
      * 게시글 목록 조회 (API.md Section 3.1)
-     * GET /posts?offset=0&limit=10&sort=latest
+     * - latest: GET /posts?cursor=123&limit=10&sort=latest
+     * - likes: GET /posts?offset=0&limit=10&sort=likes
      * Tier 3: 제한 없음 (조회 API, 페이지네이션 있음)
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPosts(
-            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(required = false) Integer offset,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        Map<String, Object> result = postService.getPosts(offset, limit, sort);
+        Map<String, Object> result = postService.getPosts(cursor, offset, limit, sort);
         return ResponseEntity.ok(ApiResponse.success("get_posts_success", result));
     }
 

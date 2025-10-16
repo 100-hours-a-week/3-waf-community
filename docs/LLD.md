@@ -351,26 +351,65 @@ int incrementLikeCount(@Param("postId") Long postId);
 
 ### 7.3 페이지네이션
 
-**Offset/Limit (웹 환경):**
-```java
-Pageable pageable = PageRequest.of(offset / limit, limit, getSort(sort));
-Page<Post> page = postRepository.findByStatus(PostStatus.ACTIVE, pageable);
-```
-- 장점: 페이지 번호 이동, Spring Data 지원
-- 단점: Offset 클수록 성능 저하
+**하이브리드 전략 (Phase 5)**: latest(cursor), likes(offset)
 
-**Cursor 기반 (모바일 무한 스크롤 - 현재 미구현, Phase 6+ 확장 예정):**
+#### Cursor 기반 (latest 전용)
 ```java
-List<Post> posts = cursor == null 
-    ? postRepository.findTopN(...) 
-    : postRepository.findByIdLessThan(cursor, ...);
-Long nextCursor = posts.isEmpty() ? null : posts.get(posts.size()-1).getId();
-```
-- 장점: 인덱스 활용, 실시간 안정성
-- 단점: 특정 페이지 이동 불가
+// Repository
+@Query("SELECT p FROM Post p JOIN FETCH p.user LEFT JOIN FETCH p.stats " +
+       "WHERE p.postStatus = :status AND p.postId < :cursor " +
+       "ORDER BY p.postId DESC")
+List<Post> findByStatusWithCursor(PostStatus status, Long cursor, Pageable pageable);
 
-**현재 구현:** Offset/Limit만 지원 (PostService.getPosts)  
-**향후 계획:** 모바일 API용 Cursor 기반 추가 예정
+// Service (limit+1 패턴)
+List<Post> posts = (cursor == null)
+    ? postRepository.findByStatusWithoutCursor(PostStatus.ACTIVE, PageRequest.of(0, limit + 1))
+    : postRepository.findByStatusWithCursor(PostStatus.ACTIVE, cursor, PageRequest.of(0, limit + 1));
+
+boolean hasMore = posts.size() > limit;
+if (hasMore) posts.remove(limit);
+
+Long nextCursor = hasMore && !posts.isEmpty()
+    ? posts.get(posts.size() - 1).getPostId()
+    : null;
+
+// 응답: { posts, nextCursor, hasMore }
+```
+
+**장점:**
+- 인덱스 활용 (postId PRIMARY KEY)
+- 실시간 안정성 (중간 데이터 변경에 안전)
+- 무한 스크롤 최적화
+
+**단점:**
+- 특정 페이지 번호 이동 불가
+- total_count 제공 불가
+
+#### Offset/Limit (likes 등)
+```java
+int page = offset / limit;
+Pageable pageable = PageRequest.of(page, limit, getSort(sort));
+Page<Post> postPage = postRepository.findByStatusWithUserAndStats(PostStatus.ACTIVE, pageable);
+
+// 응답: { posts, pagination: { total_count } }
+```
+
+**장점:**
+- 페이지 번호 네비게이션
+- total_count 제공 (UX)
+
+**단점:**
+- Offset 클수록 성능 저하
+- 실시간 데이터 변경에 취약
+
+**현재 구현:**
+- GET /posts?sort=latest → Cursor
+- GET /posts?sort=likes → Offset
+- GET /posts/{postId}/comments → Offset (변경 없음)
+
+**향후 계획:**
+- likes 정렬 cursor 전환 (복합 cursor: likeCount:postId)
+- GET /posts/users/me/likes cursor 전환
 
 ### 7.4 댓글 작성 흐름
 

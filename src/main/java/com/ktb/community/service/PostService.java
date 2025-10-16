@@ -103,11 +103,58 @@ public class PostService {
      * 게시글 목록 조회 (FR-POST-002)
      * - ACTIVE 상태만 조회
      * - Fetch Join (N+1 방지)
-     * - 정렬: latest (최신순) / likes (인기순)
-     * - 페이지네이션 (offset/limit)
+     * - 정렬: latest (cursor) / likes (offset)
+     * - 하이브리드 페이지네이션
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> getPosts(int offset, int limit, String sort) {
+    public Map<String, Object> getPosts(Long cursor, Integer offset, int limit, String sort) {
+        if ("latest".equalsIgnoreCase(sort)) {
+            return getPostsCursor(cursor, limit);
+        } else {
+            return getPostsOffset(offset != null ? offset : 0, limit, sort);
+        }
+    }
+
+    /**
+     * Cursor 기반 게시글 목록 조회 (latest 전용)
+     */
+    private Map<String, Object> getPostsCursor(Long cursor, int limit) {
+        // limit+1 조회 (hasMore 판단용)
+        List<Post> posts = (cursor == null)
+                ? postRepository.findByStatusWithoutCursor(PostStatus.ACTIVE, PageRequest.of(0, limit + 1))
+                : postRepository.findByStatusWithCursor(PostStatus.ACTIVE, cursor, PageRequest.of(0, limit + 1));
+
+        // hasMore 판단 및 초과 데이터 제거
+        boolean hasMore = posts.size() > limit;
+        if (hasMore) {
+            posts.remove(limit);
+        }
+
+        // nextCursor 계산
+        Long nextCursor = hasMore && !posts.isEmpty()
+                ? posts.get(posts.size() - 1).getPostId()
+                : null;
+
+        // DTO 변환
+        List<PostResponse> postResponses = posts.stream()
+                .map(PostResponse::from)
+                .collect(Collectors.toList());
+
+        // 응답 구성 (cursor 방식)
+        Map<String, Object> response = new HashMap<>();
+        response.put("posts", postResponses);
+        response.put("nextCursor", nextCursor);
+        response.put("hasMore", hasMore);
+
+        log.debug("[Post] Cursor 게시글 목록 조회 완료: cursor={}, count={}, hasMore={}", cursor, posts.size(), hasMore);
+
+        return response;
+    }
+
+    /**
+     * Offset 기반 게시글 목록 조회 (likes 등)
+     */
+    private Map<String, Object> getPostsOffset(int offset, int limit, String sort) {
         // 페이지 정보 생성
         int page = offset / limit;
         Pageable pageable = PageRequest.of(page, limit, getSort(sort));
@@ -120,13 +167,15 @@ public class PostService {
                 .map(PostResponse::from)
                 .collect(Collectors.toList());
 
-        // 응답 구성
+        // 응답 구성 (offset 방식)
         Map<String, Object> response = new HashMap<>();
         response.put("posts", posts);
 
         Map<String, Object> pagination = new HashMap<>();
         pagination.put("total_count", postPage.getTotalElements());
         response.put("pagination", pagination);
+
+        log.debug("[Post] Offset 게시글 목록 조회 완료: offset={}, count={}, total={}", offset, posts.size(), postPage.getTotalElements());
 
         return response;
     }

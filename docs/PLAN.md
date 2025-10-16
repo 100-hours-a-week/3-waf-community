@@ -293,6 +293,15 @@
 
 ### 체크리스트
 
+**페이지네이션:**
+- [x] Cursor 페이지네이션 전환 (최신순만, 하이브리드 방식)
+  - Repository: findByStatusWithCursor, findByStatusWithoutCursor 추가
+  - Service: getPosts 시그니처 변경 (cursor, offset 파라미터)
+  - Controller: cursor/offset 파라미터 추가
+  - 응답 구조: latest (cursor/hasMore), likes (offset/total_count)
+- [ ] Cursor 페이지네이션 확장 (likes 정렬, 추후 작업)
+- [ ] GET /posts/users/me/likes cursor 전환 (추후 작업)
+
 **테스트:**
 - [ ] 전체 Service Layer 테스트 (커버리지 80%+)
 - [ ] Repository Layer 테스트 (커버리지 60%+)
