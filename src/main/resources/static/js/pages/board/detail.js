@@ -270,7 +270,7 @@
 
         // UI 업데이트
         prependComment(newComment);
-        updateCommentCount(state.comments.length + 1);
+        updateCommentCount(state.comments.length);
       }
 
       // 폼 초기화
@@ -331,7 +331,7 @@
 
       // UI 업데이트
       removeCommentFromList(commentId);
-      updateCommentCount(state.comments.length - 1);
+      updateCommentCount(state.comments.length);
 
     } catch (error) {
       console.error('Failed to delete comment:', error);
