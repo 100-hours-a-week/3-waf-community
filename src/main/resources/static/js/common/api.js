@@ -5,6 +5,7 @@
  */
 
 // API Base URL
+// 추후 서버 분리시, 환경 변수 처리 필수
 const API_BASE_URL = 'http://localhost:8080';
 
 /**

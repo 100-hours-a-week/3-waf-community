@@ -53,11 +53,11 @@ src/main/resources/
   - isValidEmail, isValidPassword 등
   - 참조: @CLAUDE.md Section 5.2
 
-### Phase 2: Authentication Flow
-- [ ] **Task 2.1**: login.js 구현 (3h)
+### Phase 2: Authentication Flow ✅
+- [x] **Task 2.1**: login.js 구현 (3h)
   - 참조: @CLAUDE.md Section 4.4, @docs/be/API.md Section 1.1
 
-- [ ] **Task 2.2**: register.js 구현 (4h)
+- [x] **Task 2.2**: register.js 구현 (4h)
   - 참조: @CLAUDE.md Section 4.5, @docs/be/API.md Section 2.1
 
 ### Phase 3: Board List & Detail
