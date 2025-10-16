@@ -1,0 +1,364 @@
+/**
+ * Comment Component
+ *
+ * 댓글 컴포넌트
+ * Outstanding Design System 기반
+ *
+ * Components:
+ * - .comment-form - 댓글 작성 폼
+ * - .comment-list - 댓글 목록
+ * - .comment-item - 개별 댓글 아이템
+ */
+
+/* ========================================
+   Comment Form
+   ======================================== */
+
+.comment-form {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  padding: var(--spacing-4);
+}
+
+.comment-form__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.comment-form__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--color-bg-tertiary);
+}
+
+.comment-form__user {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.comment-form__textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--spacing-3);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.comment-form__textarea:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+.comment-form__textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.comment-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.comment-form__count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-right: auto;
+}
+
+.comment-form__count--warning {
+  color: var(--color-warning);
+}
+
+.comment-form__count--error {
+  color: var(--color-error);
+}
+
+/* ========================================
+   Comment List
+   ======================================== */
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.comment-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2);
+}
+
+.comment-list__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.comment-list__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.comment-list__empty {
+  text-align: center;
+  padding: var(--spacing-10) var(--spacing-6);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* ========================================
+   Comment Item
+   ======================================== */
+
+.comment-item {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  padding: var(--spacing-4);
+  transition: all var(--transition-fast);
+}
+
+.comment-item:hover {
+  border-color: var(--color-border-hover);
+}
+
+.comment-item--editing {
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+/* Comment Header */
+.comment-item__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.comment-item__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--color-bg-tertiary);
+}
+
+.comment-item__info {
+  flex: 1;
+}
+
+.comment-item__author {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.comment-item__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.comment-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.comment-item__action {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.comment-item__action:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.comment-item__action--delete {
+  color: var(--color-error);
+}
+
+.comment-item__action--delete:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+/* Comment Content */
+.comment-item__content {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Edit Form inside Comment */
+.comment-item__edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.comment-item__edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--spacing-3);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.comment-item__edit-textarea:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+}
+
+.comment-item__edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+/* ========================================
+   Comment Stats (Optional)
+   ======================================== */
+
+.comment-item__stats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.comment-item__stat {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.comment-item__stat:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.comment-item__stat svg {
+  width: 14px;
+  height: 14px;
+}
+
+.comment-item__stat--liked {
+  color: var(--color-error);
+}
+
+/* ========================================
+   Nested Comments (Optional)
+   ======================================== */
+
+.comment-item--nested {
+  margin-left: var(--spacing-8);
+  border-left: 2px solid var(--color-border-default);
+  padding-left: var(--spacing-4);
+}
+
+.comment-item__reply-button {
+  font-size: var(--font-size-xs);
+  color: var(--color-brand-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  margin-top: var(--spacing-2);
+}
+
+.comment-item__reply-button:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* ========================================
+   Loading State
+   ======================================== */
+
+.comment-list__loading {
+  text-align: center;
+  padding: var(--spacing-6);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.comment-item--skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .comment-form,
+  .comment-item {
+    padding: var(--spacing-3);
+  }
+
+  .comment-form__textarea,
+  .comment-item__edit-textarea {
+    min-height: 60px;
+  }
+
+  .comment-item--nested {
+    margin-left: var(--spacing-4);
+  }
+
+  .comment-item__action {
+    font-size: 10px;
+    padding: var(--spacing-1);
+  }
+}

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<!--
+  Modal Fragment
+
+  이 파일은 전역에서 사용되는 모달/다이얼로그 템플릿입니다.
+  Utils.modal 헬퍼 함수와 연동되어 동적으로 생성됩니다.
+
+  사용 방법:
+  scripts/common/utils.js의 modal 헬퍼 함수를 통해 호출
+-->
+
+<!-- ========================================
+     Confirm Modal Template
+     ======================================== -->
+<template id="modal-confirm-template">
+  <div class="modal-overlay" data-modal="confirm">
+    <div class="modal modal--confirm">
+      <div class="modal__header">
+        <h3 class="modal__title" data-field="title">확인</h3>
+        <button class="modal__close" data-action="close-modal">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="modal__icon modal__icon--warning" data-field="icon" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+        </div>
+        <div class="modal__message" data-field="message">메시지</div>
+        <div class="modal__description" data-field="description"></div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--secondary" data-action="cancel">취소</button>
+        <button class="btn btn--primary" data-action="confirm">확인</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ========================================
+     Alert Modal Template
+     ======================================== -->
+<template id="modal-alert-template">
+  <div class="modal-overlay" data-modal="alert">
+    <div class="modal modal--alert">
+      <div class="modal__header">
+        <h3 class="modal__title" data-field="title">알림</h3>
+        <button class="modal__close" data-action="close-modal">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="modal__message" data-field="message">메시지</div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--primary" data-action="confirm">확인</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ========================================
+     Input Modal Template (비밀번호 입력 등)
+     ======================================== -->
+<template id="modal-input-template">
+  <div class="modal-overlay" data-modal="input">
+    <div class="modal modal--input">
+      <div class="modal__header">
+        <h3 class="modal__title" data-field="title">입력</h3>
+        <button class="modal__close" data-action="close-modal">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <p data-field="description">설명</p>
+        <div class="input-field">
+          <label class="input-field__label" data-field="label">입력</label>
+          <input
+            type="text"
+            class="input-field__input"
+            data-field="input"
+            placeholder=""
+          >
+          <span class="input-field__error" data-field="error"></span>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--secondary" data-action="cancel">취소</button>
+        <button class="btn btn--primary" data-action="confirm">확인</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ========================================
+     Delete Confirmation Modal (게시글/댓글 삭제용)
+     ======================================== -->
+<template id="modal-delete-template">
+  <div class="modal-overlay" data-modal="delete">
+    <div class="modal modal--confirm">
+      <div class="modal__header">
+        <h3 class="modal__title">삭제 확인</h3>
+        <button class="modal__close" data-action="close-modal">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="delete-modal__content">
+          <div class="delete-modal__icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+          </div>
+          <h4 class="delete-modal__title" data-field="title">정말 삭제하시겠습니까?</h4>
+          <p class="delete-modal__description" data-field="description">
+            이 작업은 되돌릴 수 없습니다.
+          </p>
+          <p class="delete-modal__warning">신중하게 결정해주세요.</p>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--secondary" data-action="cancel">취소</button>
+        <button class="btn btn--danger" data-action="confirm">삭제</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ========================================
+     Password Input Modal (회원탈퇴 등)
+     ======================================== -->
+<template id="modal-password-template">
+  <div class="modal-overlay" data-modal="password">
+    <div class="modal modal--input">
+      <div class="modal__header">
+        <h3 class="modal__title" data-field="title">비밀번호 확인</h3>
+        <button class="modal__close" data-action="close-modal">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="password-modal__form">
+          <p class="password-modal__description" data-field="description">
+            계속하려면 비밀번호를 입력해주세요.
+          </p>
+          <div class="input-field">
+            <label class="input-field__label">비밀번호*</label>
+            <input
+              type="password"
+              class="input-field__input"
+              data-field="password"
+              placeholder="비밀번호를 입력해주세요"
+              autocomplete="current-password"
+            >
+            <span class="input-field__error" data-field="error"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--secondary" data-action="cancel">취소</button>
+        <button class="btn btn--danger" data-action="confirm">확인</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!--
+  JavaScript 사용 예시:
+
+  // scripts/common/utils.js
+
+  const Utils = {
+    modal: {
+      // Confirm Dialog
+      confirm(title, message) {
+        return new Promise((resolve) => {
+          const template = document.getElementById('modal-confirm-template');
+          const clone = template.content.cloneNode(true);
+          const overlay = clone.querySelector('.modal-overlay');
+
+          // Set content
+          overlay.querySelector('[data-field="title"]').textContent = title;
+          overlay.querySelector('[data-field="message"]').textContent = message;
+
+          // Event listeners
+          overlay.querySelector('[data-action="confirm"]').addEventListener('click', () => {
+            closeModal(overlay);
+            resolve(true);
+          });
+
+          overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+            closeModal(overlay);
+            resolve(false);
+          });
+
+          overlay.querySelector('[data-action="close-modal"]').addEventListener('click', () => {
+            closeModal(overlay);
+            resolve(false);
+          });
+
+          // Overlay click to close
+          overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+              closeModal(overlay);
+              resolve(false);
+            }
+          });
+
+          // Append and show
+          document.body.appendChild(overlay);
+          document.body.classList.add('modal-open');
+
+          setTimeout(() => {
+            overlay.classList.add('is-active');
+          }, 10);
+        });
+      },
+
+      // Alert Dialog
+      alert(title, message) {
+        return new Promise((resolve) => {
+          const template = document.getElementById('modal-alert-template');
+          const clone = template.content.cloneNode(true);
+          const overlay = clone.querySelector('.modal-overlay');
+
+          // Set content
+          overlay.querySelector('[data-field="title"]').textContent = title;
+          overlay.querySelector('[data-field="message"]').textContent = message;
+
+          // Event listeners
+          overlay.querySelector('[data-action="confirm"]').addEventListener('click', () => {
+            closeModal(overlay);
+            resolve(true);
+          });
+
+          // Append and show
+          document.body.appendChild(overlay);
+          document.body.classList.add('modal-open');
+
+          setTimeout(() => {
+            overlay.classList.add('is-active');
+          }, 10);
+        });
+      },
+
+      // Password Input Modal
+      async password(title, description) {
+        return new Promise((resolve) => {
+          const template = document.getElementById('modal-password-template');
+          const clone = template.content.cloneNode(true);
+          const overlay = clone.querySelector('.modal-overlay');
+
+          // Set content
+          overlay.querySelector('[data-field="title"]').textContent = title;
+          overlay.querySelector('[data-field="description"]').textContent = description;
+
+          const passwordInput = overlay.querySelector('[data-field="password"]');
+          const errorSpan = overlay.querySelector('[data-field="error"]');
+
+          // Event listeners
+          overlay.querySelector('[data-action="confirm"]').addEventListener('click', () => {
+            const password = passwordInput.value.trim();
+
+            if (!password) {
+              errorSpan.textContent = '비밀번호를 입력해주세요';
+              return;
+            }
+
+            closeModal(overlay);
+            resolve(password);
+          });
+
+          overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+            closeModal(overlay);
+            resolve(null);
+          });
+
+          // Append and show
+          document.body.appendChild(overlay);
+          document.body.classList.add('modal-open');
+
+          setTimeout(() => {
+            overlay.classList.add('is-active');
+            passwordInput.focus();
+          }, 10);
+        });
+      }
+    }
+  };
+
+  function closeModal(overlay) {
+    overlay.classList.remove('is-active');
+
+    setTimeout(() => {
+      overlay.remove();
+
+      // Check if no other modals are open
+      if (!document.querySelector('.modal-overlay')) {
+        document.body.classList.remove('modal-open');
+      }
+    }, 300);
+  }
+
+  // Usage Examples:
+
+  // Confirm
+  const confirmed = await Utils.modal.confirm(
+    '게시글 삭제',
+    '정말 이 게시글을 삭제하시겠습니까?'
+  );
+
+  if (confirmed) {
+    // Delete post
+  }
+
+  // Alert
+  await Utils.modal.alert('성공', '게시글이 작성되었습니다');
+
+  // Password
+  const password = await Utils.modal.password(
+    '회원 탈퇴',
+    '회원 탈퇴를 진행하려면 비밀번호를 입력해주세요.'
+  );
+
+  if (password) {
+    // Proceed with account deletion
+  }
+-->
