@@ -81,8 +81,6 @@
 ### 2.2 사용자 정보 조회
 **Endpoint:** `GET /users/{userID}`
 
-**헤더:** Authorization: Bearer {access_token}
-
 **응답:**
 - 200: `get_profile_success` → image, nickname, email 반환
 - 404: USER-001 (User not found)

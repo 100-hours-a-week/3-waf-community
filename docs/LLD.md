@@ -174,25 +174,10 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 }
 ```
 
-**권한 제어 구조:**
-- **Spring Security 레벨**: permitAll()로 URL 접근 허용 (Spring Security 필터 통과)
-- **Controller 레벨**: Authentication 파라미터 유무로 실제 권한 제어
-  - GET 엔드포인트: Authentication 파라미터 없음 → 누구나 조회 가능
-  - POST/PATCH/DELETE: Authentication 파라미터 필수 → getUserId()에서 null 체크
-- **장점**: URL 패턴 관리 단순화, Controller에서 유연한 권한 제어
-
-**예시:**
-```java
-// GET /posts - 누구나 가능
-@GetMapping
-public ResponseEntity<...> getPosts(...) { }
-
-// POST /posts - 인증 필수
-@PostMapping
-public ResponseEntity<...> createPost(..., Authentication authentication) {
-    Long userId = getUserId(authentication); // null이면 예외
-}
-```
+**권한 제어:**
+- Spring Security가 HTTP Method별로 엔드포인트 접근 제어
+- GET(조회)는 permitAll(), POST/PATCH/DELETE는 authenticated()
+- Controller는 Authentication 파라미터로 userId 추출 (Security 검증 완료 후)
 
 ### 6.4 비밀번호 정책
 

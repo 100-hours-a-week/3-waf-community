@@ -34,9 +34,9 @@ ON UPDATE RESTRICT,
 CONSTRAINT chk_users_nickname_len -- 닉네임 길이 제한
 CHECK (CHAR_LENGTH(nickname) <= 10),
 CONSTRAINT chk_users_role -- 역할 값 검증
-CHECK (role IN ('USER', 'ADMIN')),
+CHECK (role IN ('USER', 'ADMIN')),  -- JPA: @Enumerated(EnumType.STRING), CHECK는 DB 레벨 추가 검증
 CONSTRAINT chk_users_status -- 상태 값 검증
-CHECK (user_status IN ('ACTIVE', 'INACTIVE', 'DELETED')),
+CHECK (user_status IN ('ACTIVE', 'INACTIVE', 'DELETED')),  -- JPA: @Enumerated(EnumType.STRING)
 CONSTRAINT chk_users_email_trim_lower -- 이메일 공백 제거 및 소문자 변환
 CHECK (email = LOWER(TRIM(email))),
 CONSTRAINT chk_users_email_no_ws -- 이메일 내부 공백 문자 포함 금지
@@ -63,7 +63,7 @@ post_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- 상태 값 (임시 저장 
     CONSTRAINT chk_posts_title_len -- 제목 길이 제한
       CHECK (CHAR_LENGTH(post_title) <= 27),
     CONSTRAINT chk_posts_status -- 상태 값 검증
-      CHECK (post_status IN ('ACTIVE', 'DELETED', 'DRAFT'))
+      CHECK (post_status IN ('ACTIVE', 'DELETED', 'DRAFT'))  -- JPA: @Enumerated(EnumType.STRING)
 );
 
 -- 게시글 통계 테이블
@@ -104,7 +104,7 @@ comment_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- 상태 값
     CONSTRAINT chk_comments_len -- 댓글 길이 제한
       CHECK (CHAR_LENGTH(comment_content) <= 200),
     CONSTRAINT chk_comments_status -- 상태 값 검증
-      CHECK (comment_status IN ('ACTIVE', 'DELETED'))
+      CHECK (comment_status IN ('ACTIVE', 'DELETED'))  -- JPA: @Enumerated(EnumType.STRING)
 );
 
 -- 게시글 이미지 브릿지 테이블(순서 관리 포함)
