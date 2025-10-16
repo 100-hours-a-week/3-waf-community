@@ -79,7 +79,7 @@ MySQL Database
 
 ## 4. 데이터베이스 설계
 
-**테이블 구조 및 DDL:** `@docs/DDL.md` 참조
+**테이블 구조 및 DDL:** `@docs/be/DDL.md` 참조
 
 **핵심 관계:**
 - `users` 1:N → `posts`, `comments`, `post_likes`, `user_tokens`
@@ -96,7 +96,7 @@ MySQL Database
 
 ## 5. API 설계
 
-**전체 API 스펙:** `@docs/API.md` 참조
+**전체 API 스펙:** `@docs/be/API.md` 참조
 
 ### 공통 응답 구조
 ```json
@@ -452,7 +452,7 @@ if (!comment.getUser().getUserId().equals(userId)) {
 }
 ```
 
-**참조**: CommentService.java (전체 CRUD), **@docs/API.md Section 5**, **@docs/DDL.md** (comments 테이블)
+**참조**: CommentService.java (전체 CRUD), **@docs/be/API.md Section 5**, **@docs/be/DDL.md** (comments 테이블)
 
 ---
 
@@ -557,8 +557,8 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
 - AuthService.signup() - 패턴 1 전체 구현
 - PostService.createPost() - 패턴 2 전체 구현
 - ImageService.uploadImage() - 공통 검증 로직
-- **@docs/API.md Section 2.1, 3.3, 4.1**
-- **@docs/DDL.md** (images 테이블)
+- **@docs/be/API.md Section 2.1, 3.3, 4.1**
+- **@docs/be/DDL.md** (images 테이블)
 
 ---
 
@@ -808,7 +808,7 @@ int decrementLikeCount(@Param("postId") Long postId);
 
 ## 13. 배포 및 운영
 
-**환경 변수:** `@docs/LLD.md Section 10` 참조 (6개 필수 변수)
+**환경 변수:** `@docs/be/LLD.md Section 10` 참조 (6개 필수 변수)
 
 **배치 작업:**
 - 고아 이미지 정리: 매일 새벽 3시, @Scheduled (ImageCleanupBatchService)

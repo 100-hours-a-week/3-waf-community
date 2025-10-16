@@ -43,7 +43,7 @@
 - [x] Enum 클래스 4개 (UserRole, UserStatus, PostStatus, CommentStatus)
 - [x] 패키지 구조 설계
 
-**참조**: **@docs/LLD.md Section 3** (패키지 구조), **@docs/DDL.md** (스키마)
+**참조**: **@docs/be/LLD.md Section 3** (패키지 구조), **@docs/be/DDL.md** (스키마)
 
 ---
 
@@ -75,7 +75,7 @@
 **API 구현:**
 - [x] 인증 API 3개 (POST /auth/login, /auth/logout, /auth/refresh_token)
 - [x] 사용자 API 5개 (POST /users/signup, GET/PATCH /users/{id}, /users/{id}/password 등)
-- 상세 스펙: **@docs/API.md Section 1-2**
+- 상세 스펙: **@docs/be/API.md Section 1-2**
 
 **비즈니스 로직:**
 - [x] 비밀번호 정책 검증 (8-20자, 대/소/특수문자)
@@ -87,7 +87,7 @@
   - incrementViewCount(), incrementLikeCount(), decrementLikeCount()
   - incrementCommentCount(), decrementCommentCount()
 - [ ] Service 계층 통합 (Phase 3에서 PostService, CommentService, LikeService 구현 시)
-- 상세: **@docs/LLD.md Section 7.2, 12.3**
+- 상세: **@docs/be/LLD.md Section 7.2, 12.3**
 
 **테스트:**
 - [x] 단위 테스트 작성 (AuthService, UserService, JwtTokenProvider, RateLimitAspect)
@@ -105,7 +105,7 @@
 - [x] 비밀번호 정책 검증 통과
 - [x] 모든 단위 테스트 통과 (Service Layer 15/15, Security Layer 9/9, Config Layer 10/10)
 
-**참조**: **@docs/LLD.md Section 6 (인증)**, **Section 7.2 (좋아요 동시성), Section 12.3 (동시성 제어)**
+**참조**: **@docs/be/LLD.md Section 6 (인증)**, **Section 7.2 (좋아요 동시성), Section 12.3 (동시성 제어)**
 
 ---
 
@@ -163,7 +163,7 @@
 - [x] 권한 검증 정상 작동
 - [x] 모든 단위 테스트 통과
 
-**참조**: **@docs/LLD.md Section 7 (비즈니스 로직), Section 12 (성능 최적화)**
+**참조**: **@docs/be/LLD.md Section 7 (비즈니스 로직), Section 12 (성능 최적화)**
 
 ---
 
@@ -203,7 +203,7 @@
 - [x] 게시글/프로필 이미지 연결 작동
 - [x] 모든 단위 테스트 통과
 
-**참조**: **@docs/LLD.md Section 7.5** (이미지 업로드 흐름), **@docs/API.md Section 4.1**
+**참조**: **@docs/be/LLD.md Section 7.5** (이미지 업로드 흐름), **@docs/be/API.md Section 4.1**
 
 ---
 
@@ -252,7 +252,7 @@
 - [x] Manual Validation으로 입력 검증 (Bean Validation 대체)
 - [x] 모든 단위 테스트 통과 (102 tests, 0 failures, 100% success)
 
-**참조**: **@docs/LLD.md Section 7.5** (2가지 업로드 패턴), **@docs/API.md Section 2.1, 2.3**
+**참조**: **@docs/be/LLD.md Section 7.5** (2가지 업로드 패턴), **@docs/be/API.md Section 2.1, 2.3**
 
 ---
 
@@ -283,7 +283,7 @@
 - 고아 이미지 배치 작업 스케줄 실행
 - 배치 로그 확인
 
-**참조**: **@docs/LLD.md Section 7.5** (고아 이미지 처리)
+**참조**: **@docs/be/LLD.md Section 7.5** (고아 이미지 처리)
 
 ---
 
@@ -308,7 +308,7 @@
 - [ ] 통합 테스트 주요 플로우
 
 **문서화:**
-- [ ] @docs/API.md 최종 검토
+- [ ] @docs/be/API.md 최종 검토
 - [ ] Postman Collection 작성
 - [ ] README 업데이트
 
@@ -331,7 +331,7 @@
 feat: FR-POST-001 게시글 작성 API 구현
 test: FR-AUTH-001 회원가입 단위 테스트 추가
 fix: FR-LIKE-001 중복 좋아요 방지 버그 수정
-docs: @docs/API.md 게시글 섹션 업데이트
+docs: @docs/be/API.md 게시글 섹션 업데이트
 ```
 
 **Phase 완료 기준:**
@@ -341,9 +341,9 @@ docs: @docs/API.md 게시글 섹션 업데이트
 4. PLAN.md 체크박스 업데이트
 
 **문서 동기화:**
-- 설계 변경 시 → @docs/LLD.md 업데이트
-- API 변경 시 → @docs/API.md 업데이트
-- 스키마 변경 시 → @docs/DDL.md 업데이트
+- 설계 변경 시 → @docs/be/LLD.md 업데이트
+- API 변경 시 → @docs/be/API.md 업데이트
+- 스키마 변경 시 → @docs/be/DDL.md 업데이트
 
 ---
 
@@ -361,7 +361,7 @@ docs: @docs/API.md 게시글 섹션 업데이트
 - Soft Delete: User, Post, Comment (status 변경)
 - Hard Delete: UserToken (배치 작업), 만료된 Image (Phase 4)
 
-상세: @docs/PRD.md Section 5, @docs/LLD.md Section 7.5
+상세: @docs/be/PRD.md Section 5, @docs/be/LLD.md Section 7.5
 
 ---
 
@@ -392,8 +392,8 @@ docs: @docs/API.md 게시글 섹션 업데이트
 
 ## 참고 문서
 
-- **요구사항**: @docs/PRD.md (FR/NFR 코드)
-- **설계**: @docs/LLD.md (아키텍처, 패턴)
-- **스키마**: @docs/DDL.md
-- **API**: @docs/API.md
+- **요구사항**: @docs/be/PRD.md (FR/NFR 코드)
+- **설계**: @docs/be/LLD.md (아키텍처, 패턴)
+- **스키마**: @docs/be/DDL.md
+- **API**: @docs/be/API.md
 - **가이드**: @CLAUDE.md
