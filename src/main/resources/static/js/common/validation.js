@@ -1,214 +1,158 @@
 /**
  * Validation Utility
- * 폼 검증 유틸리티
+ * 클라이언트 검증 함수
+ * 참조: @CLAUDE.md Section 5.2, @docs/be/LLD.md Section 6.4
  */
 
-(function(window) {
-  'use strict';
+/**
+ * 이메일 형식 검증
+ * RFC 5322 간소화 버전
+ *
+ * @param {string} email
+ * @returns {boolean}
+ */
+function isValidEmail(email) {
+    if (!email || typeof email !== 'string') return false;
 
-  const Validation = {
-    /**
-     * 이메일 검증
-     */
-    email(value) {
-      if (!value) {
-        return { valid: false, message: '이메일을 입력해주세요.' };
-      }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email.trim());
+}
 
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!regex.test(value)) {
-        return { valid: false, message: '올바른 이메일 형식이 아닙니다.' };
-      }
+/**
+ * 비밀번호 정책 검증
+ * - 8-20자
+ * - 대문자 최소 1개 ([A-Z])
+ * - 소문자 최소 1개 ([a-z])
+ * - 특수문자 최소 1개 ([!@#$%^&*(),.?":{}|<>])
+ *
+ * 참조: @docs/be/LLD.md Section 6.4
+ *
+ * @param {string} password
+ * @returns {boolean}
+ */
+function isValidPassword(password) {
+    if (!password || typeof password !== 'string') return false;
 
-      return { valid: true };
-    },
+    // 길이 검증
+    if (password.length < 8 || password.length > 20) return false;
 
-    /**
-     * 비밀번호 검증
-     * 8-20자, 영문 대소문자, 숫자, 특수문자 각 1개 이상
-     */
-    password(value) {
-      if (!value) {
-        return { valid: false, message: '비밀번호를 입력해주세요.' };
-      }
+    // 대문자, 소문자, 특수문자 각 1개 이상
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-      if (value.length < 8 || value.length > 20) {
-        return {
-          valid: false,
-          message: '비밀번호는 8자 이상, 20자 이하여야 합니다.'
-        };
-      }
+    return hasUpper && hasLower && hasSpecial;
+}
 
-      const hasUpper = /[A-Z]/.test(value);
-      const hasLower = /[a-z]/.test(value);
-      const hasNumber = /[0-9]/.test(value);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(value);
+/**
+ * 닉네임 검증
+ * 1-10자 (한글 기준)
+ *
+ * 참조: @docs/be/DDL.md (users 테이블, CHECK 제약)
+ *
+ * @param {string} nickname
+ * @returns {boolean}
+ */
+function isValidNickname(nickname) {
+    if (!nickname || typeof nickname !== 'string') return false;
 
-      if (!(hasUpper && hasLower && hasNumber && hasSpecial)) {
-        return {
-          valid: false,
-          message: '비밀번호는 영문 대소문자, 숫자, 특수문자를 각각 최소 1개 포함해야 합니다.'
-        };
-      }
+    const trimmed = nickname.trim();
+    return trimmed.length >= 1 && trimmed.length <= 10;
+}
 
-      return { valid: true };
-    },
+/**
+ * 게시글 제목 검증
+ * 1-27자 (한글 기준)
+ *
+ * 참조: @docs/be/DDL.md (posts 테이블, CHECK 제약)
+ *
+ * @param {string} title
+ * @returns {boolean}
+ */
+function isValidTitle(title) {
+    if (!title || typeof title !== 'string') return false;
 
-    /**
-     * 비밀번호 강도 계산
-     * @returns {string} 'weak', 'medium', 'strong'
-     */
-    passwordStrength(value) {
-      if (!value) return 'weak';
+    const trimmed = title.trim();
+    return trimmed.length >= 1 && trimmed.length <= 27;
+}
 
-      let strength = 0;
+/**
+ * 댓글 검증
+ * 1-200자 (한글 기준)
+ *
+ * 참조: @docs/be/DDL.md (comments 테이블, CHECK 제약)
+ *
+ * @param {string} content
+ * @returns {boolean}
+ */
+function isValidComment(content) {
+    if (!content || typeof content !== 'string') return false;
 
-      if (value.length >= 8) strength++;
-      if (value.length >= 12) strength++;
-      if (/[A-Z]/.test(value)) strength++;
-      if (/[a-z]/.test(value)) strength++;
-      if (/[0-9]/.test(value)) strength++;
-      if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) strength++;
+    const trimmed = content.trim();
+    return trimmed.length >= 1 && trimmed.length <= 200;
+}
 
-      if (strength <= 2) return 'weak';
-      if (strength <= 4) return 'medium';
-      return 'strong';
-    },
+/**
+ * 비밀번호 확인 일치 검증
+ *
+ * @param {string} password
+ * @param {string} confirmPassword
+ * @returns {boolean}
+ */
+function isPasswordMatch(password, confirmPassword) {
+    if (!password || !confirmPassword) return false;
+    return password === confirmPassword;
+}
 
-    /**
-     * 비밀번호 확인
-     */
-    passwordMatch(password, confirmPassword) {
-      if (!confirmPassword) {
-        return { valid: false, message: '비밀번호를 입력해주세요.' };
-      }
+/**
+ * 이미지 파일 검증
+ * - 최대 5MB
+ * - JPG/PNG/GIF만 허용
+ *
+ * 참조: @docs/be/API.md Section 4.1 (IMAGE-002, IMAGE-003)
+ *
+ * @param {File} file
+ * @returns {boolean}
+ */
+function isValidImageFile(file) {
+    if (!file) return false;
 
-      if (password !== confirmPassword) {
-        return { valid: false, message: '비밀번호와 다릅니다.' };
-      }
+    // 5MB 제한
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) return false;
 
-      return { valid: true };
-    },
+    // JPG/PNG/GIF만 허용
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    return allowedTypes.includes(file.type);
+}
 
-    /**
-     * 닉네임 검증
-     * 2-10자
-     */
-    nickname(value) {
-      if (!value) {
-        return { valid: false, message: '닉네임을 입력해주세요.' };
-      }
+/**
+ * 이미지 파일 에러 메시지
+ * 검증 실패 시 사용자에게 보여줄 메시지 반환
+ *
+ * @param {File} file
+ * @returns {string|null} - 에러 메시지 (문제 없으면 null)
+ */
+function getImageFileError(file) {
+    if (!file) return '파일을 선택해주세요.';
 
-      if (value.length < 2 || value.length > 10) {
-        return {
-          valid: false,
-          message: '닉네임은 2자 이상, 10자 이하여야 합니다.'
-        };
-      }
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) return '이미지 파일 크기는 5MB 이하여야 합니다.';
 
-      return { valid: true };
-    },
-
-    /**
-     * 제목 검증
-     * 최대 26자
-     */
-    title(value, maxLength = 26) {
-      if (!value) {
-        return { valid: false, message: '제목을 입력해주세요.' };
-      }
-
-      if (value.length > maxLength) {
-        return {
-          valid: false,
-          message: `제목은 최대 ${maxLength}자까지 입력 가능합니다.`
-        };
-      }
-
-      return { valid: true };
-    },
-
-    /**
-     * 내용 검증
-     */
-    content(value) {
-      if (!value) {
-        return { valid: false, message: '내용을 입력해주세요.' };
-      }
-
-      return { valid: true };
-    },
-
-    /**
-     * 파일 검증
-     */
-    file(file, options = {}) {
-      const {
-        maxSize = 10 * 1024 * 1024, // 10MB
-        allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
-      } = options;
-
-      if (!file) {
-        return { valid: true }; // 선택 사항
-      }
-
-      // 파일 크기 검증
-      if (file.size > maxSize) {
-        const maxSizeMB = maxSize / (1024 * 1024);
-        return {
-          valid: false,
-          message: `파일 크기는 최대 ${maxSizeMB}MB까지 업로드 가능합니다.`
-        };
-      }
-
-      // 파일 타입 검증
-      if (!allowedTypes.includes(file.type)) {
-        return {
-          valid: false,
-          message: '지원하지 않는 파일 형식입니다.'
-        };
-      }
-
-      return { valid: true };
-    },
-
-    /**
-     * 필수 입력 검증
-     */
-    required(value) {
-      if (!value || (typeof value === 'string' && !value.trim())) {
-        return { valid: false, message: '필수 입력 항목입니다.' };
-      }
-
-      return { valid: true };
-    },
-
-    /**
-     * 폼 전체 검증
-     * @param {Object} rules - { fieldName: validationFunction }
-     * @param {Object} values - { fieldName: value }
-     * @returns {Object} { valid: boolean, errors: {} }
-     */
-    validateForm(rules, values) {
-      const errors = {};
-      let valid = true;
-
-      Object.keys(rules).forEach(fieldName => {
-        const validationFn = rules[fieldName];
-        const value = values[fieldName];
-        const result = validationFn(value);
-
-        if (!result.valid) {
-          errors[fieldName] = result.message;
-          valid = false;
-        }
-      });
-
-      return { valid, errors };
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        return 'JPG, PNG, GIF 파일만 업로드 가능합니다.';
     }
-  };
 
-  // Export
-  window.Validation = Validation;
+    return null;
+}
 
-})(window);
+/**
+ * 비밀번호 정책 설명
+ * 에러 메시지로 사용
+ *
+ * @returns {string}
+ */
+function getPasswordPolicyMessage() {
+    return '비밀번호는 8-20자, 대문자/소문자/특수문자를 각각 1개 이상 포함해야 합니다.';
+}

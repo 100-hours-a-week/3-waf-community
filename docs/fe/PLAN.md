@@ -40,16 +40,16 @@ src/main/resources/
 
 ## 2. 구현 우선순위
 
-### Phase 1: Core Infrastructure (필수 선행)
-- [ ] **Task 1.1**: api.js 재구현 (4h)
+### Phase 1: Core Infrastructure (필수 선행) ✅
+- [x] **Task 1.1**: api.js 재구현 (4h)
   - fetchWithAuth, refreshAccessToken, logout 구현
   - 참조: @CLAUDE.md Section 3.1, 3.2
 
-- [ ] **Task 1.2**: utils.js 구현 (2h)
+- [x] **Task 1.2**: utils.js 구현 (2h)
   - escapeHtml, formatDate, showError 등
   - 참조: @CLAUDE.md Section 5.3
 
-- [ ] **Task 1.3**: validation.js 구현 (2h)
+- [x] **Task 1.3**: validation.js 구현 (2h)
   - isValidEmail, isValidPassword 등
   - 참조: @CLAUDE.md Section 5.2
 
