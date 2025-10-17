@@ -77,8 +77,8 @@
             });
 
             // 토큰 저장
-            localStorage.setItem('access_token', response.access_token);
-            localStorage.setItem('refresh_token', response.refresh_token);
+            localStorage.setItem('access_token', response.accessToken);
+            localStorage.setItem('refresh_token', response.refreshToken);
 
             // 성공 메시지 (선택)
             // showSuccess('로그인되었습니다.');
