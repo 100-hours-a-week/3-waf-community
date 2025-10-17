@@ -195,8 +195,7 @@ public class PostService {
         // 조회수 증가 (동시성 제어)
         postStatsRepository.incrementViewCount(postId);
 
-        // Optimistic Update: 조회수는 F5 새로고침 시 최신화
-        // clearAutomatically=false로 영속성 컨텍스트 유지, refresh 불필요
+        // Optimistic Update: 클라이언트가 UI에서 +1 처리 (detail.js)
         return PostResponse.from(post);
     }
 

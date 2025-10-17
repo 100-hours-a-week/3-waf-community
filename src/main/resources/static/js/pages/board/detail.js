@@ -478,7 +478,32 @@
     // 통계
     const stats = post.stats || { likeCount: 0, commentCount: 0, viewCount: 0 };
     updateLikeCount(stats.likeCount);
-    updateViewCount(stats.viewCount);
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Optimistic Update: 조회수는 서버 응답값 + 1 표시
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //
+    // [이유]
+    // 서버는 JPQL UPDATE로 조회수를 증가시키지만 (DB에는 +1 반영)
+    // 영속성 컨텍스트를 우회하므로 응답에는 증가 전 값이 담깁니다.
+    // 클라이언트가 +1 보정하여 사용자에게 정확한 값을 표시합니다.
+    //
+    // [예시]
+    // - DB 조회수: 100
+    // - 서버 처리: UPDATE (101) → 응답 { viewCount: 100 } (stale)
+    // - UI 표시: 100 + 1 = 101 ✅
+    //
+    // [주의사항]
+    // - 다중 탭 동시 접속 시 네트워크 지연으로 일시적 불일치 가능
+    //   예) 탭2 먼저 도착(102) → 탭1 늦게 도착(101) → 탭1에 101 표시
+    // - F5 새로고침 시 정확한 값으로 자연스럽게 동기화
+    //
+    // [참조]
+    // - PostService.java:195-199 (백엔드 구현)
+    // - docs/be/API.md Section 3.2 (API 명세 및 Rollback 가이드)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    updateViewCount((stats.viewCount || 0) + 1);
+
     updateCommentCount(stats.commentCount);
 
     // 좋아요 상태 (추후 API로 확인 필요, 현재는 false)
