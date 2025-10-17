@@ -220,6 +220,76 @@
 - 404: POST-001 (Post not found)
 - 500: [공통 에러 코드](#응답-코드) 참조
 
+**응답 예시:**
+```json
+{
+  "message": "get_post_detail_success",
+  "data": {
+    "postId": 123,
+    "title": "게시글 제목",
+    "content": "게시글 내용",
+    "author": {
+      "userId": 1,
+      "nickname": "작성자",
+      "profileImage": "https://..."
+    },
+    "stats": {
+      "viewCount": 100,    // ⚠️ 클라이언트는 UI에 101(+1) 표시
+      "likeCount": 42,
+      "commentCount": 15
+    },
+    "createdAt": "2025-10-18T10:00:00",
+    "updatedAt": "2025-10-18T10:00:00"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**구현 노트 (Optimistic Update 패턴):**
+
+서버는 조회수 증가 전 값을 응답하고, 클라이언트가 UI에서 +1 보정합니다.
+
+| 항목 | 설명 |
+|------|------|
+| 서버 처리 | JPQL UPDATE로 조회수 증가 (영속성 컨텍스트 우회) |
+| 응답 값 | 증가 전 값 반환 (stale viewCount) |
+| 클라이언트 | UI에서 응답값 + 1 표시 (detail.js:505) |
+| 동기화 | F5 새로고침 시 정확한 값으로 동기화 |
+
+**시나리오:**
+```
+1. 첫 방문: DB 100 → UPDATE 101 → 응답 100 → UI 101 ✅
+2. F5: DB 101 → UPDATE 102 → 응답 101 → UI 102 ✅
+3. 다중 탭 (주의):
+   - 탭1: DB 100 → UPDATE 101 → 응답 100 (늦게 도착) → UI 101
+   - 탭2: DB 101 → UPDATE 102 → 응답 101 (먼저 도착) → UI 102
+   - 일시적 불일치 발생 가능, F5로 해결
+```
+
+**설계 배경:**
+- Phase 5에서 좋아요/댓글과 패턴 통일 (Optimistic Update)
+- detached entity 이슈 해결 (refresh() 제거)
+- 동시성 제어는 JPQL UPDATE로 보장
+
+**Rollback 가이드:**
+
+정확한 조회수가 즉시 필요한 요구사항 발생 시:
+
+```java
+// PostService.java:getPostDetail() 메서드에 추가
+postStatsRepository.incrementViewCount(postId);
+
+if (post.getStats() != null) {
+    entityManager.refresh(post.getStats());  // 추가
+}
+
+return PostResponse.from(post);
+```
+
+단, refresh() 사용 시:
+- `clearAutomatically=false` 유지 (detached entity 방지)
+- detail.js의 `+1` 제거 필요: `updateViewCount(stats.viewCount)`
+
 ---
 
 ### 3.3 새 게시글 작성
@@ -363,10 +433,26 @@
 **헤더:** Authorization: Bearer {access_token}
 
 **응답:**
-- 200: `like_success` → like count 반환
+- 200: `like_success` → 성공 메시지만 반환
 - 404: POST-001 (Post not found)
 - 409: LIKE-001 (Already liked)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "like_success",
+  "data": {
+    "message": "like_success"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**변경사항 (Phase 5):**
+- Optimistic Update 패턴 도입으로 like_count 응답 제거
+- 클라이언트가 UI에서 즉시 +1 처리
+- 다음 GET 요청 시 정확한 값 동기화
 
 ---
 
@@ -376,9 +462,25 @@
 **헤더:** Authorization: Bearer {access_token}
 
 **응답:**
-- 200: `unlike_success` → like count 반환
+- 200: `unlike_success` → 성공 메시지만 반환
 - 404: POST-001 (Post not found), LIKE-002 (Like not found)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "unlike_success",
+  "data": {
+    "message": "unlike_success"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**변경사항 (Phase 5):**
+- Optimistic Update 패턴 도입으로 like_count 응답 제거
+- 클라이언트가 UI에서 즉시 -1 처리
+- 다음 GET 요청 시 정확한 값 동기화
 
 ---
 
