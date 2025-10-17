@@ -4,34 +4,34 @@
 
 ### 1.1 필수 환경 변수
 
-```bash
-# 데이터베이스
-export DB_URL="jdbc:mysql://localhost:3306/community"
-export DB_USERNAME="root"
-export DB_PASSWORD="your_password"
+환경 변수는 `.env` 파일로 관리됩니다 (Spring Boot dotenv 자동 로드)
 
-# JWT
-export JWT_SECRET="your-256bit-secret-key-here-minimum-32-characters-required"
+프로젝트 루트에 `.env` 파일이 이미 준비되어 있습니다:
+```bash
+DB_URL=jdbc:mysql://localhost:3306/community
+DB_USERNAME=root
+DB_PASSWORD=your_password
+
+JWT_SECRET=your-256bit-secret-key-here-minimum-32-characters-required
 
 # AWS S3 (Phase 3.5+)
-export AWS_ACCESS_KEY_ID="your-access-key"
-export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_REGION="ap-northeast-2"
-export AWS_S3_BUCKET="ktb-3-community-images-dev"
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_REGION=ap-northeast-2
+AWS_S3_BUCKET=ktb-3-community-images-dev
 ```
 
-### 1.2 데이터베이스 준비
+**참고**: Spring Boot가 dotenv를 통해 자동으로 로드하므로 export 명령어 불필요
 
+### 1.2 데이터베이스
+
+**데이터베이스는 다른 담당자가 관리합니다 (이미 준비됨)**
+
+테스트 시 DB 접근 확인만 필요:
 ```bash
-# MySQL 접속
-mysql -u root -p
-
-# 데이터베이스 생성
-CREATE DATABASE IF NOT EXISTS community CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-# DDL 실행
-USE community;
-source /path/to/docs/be/DDL.md;  # SQL 부분만 추출하여 실행
+# MySQL 접속 확인
+mysql -u root -p -e "USE community; SHOW TABLES;"
+# 8개 테이블 확인: users, posts, post_stats, comments, post_likes, images, post_images, user_tokens
 ```
 
 ### 1.3 백엔드 서버 실행
@@ -260,3 +260,4 @@ source /path/to/docs/be/DDL.md;  # SQL 부분만 추출하여 실행
 | 날짜 | 버전 | 변경 내용 |
 |------|------|-----------|
 | 2025-10-16 | 1.0 | 초기 연동 테스트 가이드 작성 |
+| 2025-10-17 | 1.1 | 환경 변수 방법 통일 (dotenv 사용), DB 관리 주체 명시 |

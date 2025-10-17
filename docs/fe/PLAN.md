@@ -5,9 +5,9 @@
 | 항목 | 내용 |
 |------|------|
 | 작성일 | 2025-10-16 |
-| 최종 갱신 | 2025-10-16 (v2.0) |
+| 최종 갱신 | 2025-10-17 (v2.1) |
 | 용도 | 프론트엔드 구현 완료 현황 및 연동 테스트 계획 |
-| 참조 | **@CLAUDE.md**, **@docs/be/API.md**, **@docs/test/INTEGRATION_TEST.md** |
+| 참조 | **@docs/be/API.md**, **@docs/test/INTEGRATION_TEST.md** |
 
 ---
 
@@ -74,7 +74,7 @@ src/main/resources/
   - 이메일, 비밀번호 (8-20자, 대/소/특수), 닉네임 (10자)
   - 게시글 제목 (27자), 댓글 (200자)
 
-**참조:** @CLAUDE.md Section 3.1, 3.2, 5.2, 5.3
+**참조:** @docs/test/INTEGRATION_TEST.md Phase 1
 
 ---
 
@@ -92,7 +92,7 @@ src/main/resources/
   - 프로필 이미지 업로드 (선택)
   - 자동 로그인
 
-**참조:** @CLAUDE.md Section 4.4, 4.5, @docs/be/API.md Section 1.1, 2.1
+**참조:** @docs/be/API.md Section 1.1, 2.1
 
 ---
 
@@ -112,7 +112,7 @@ src/main/resources/
 
 **버그 수정:** 댓글 카운트 off-by-one (a933570)
 
-**참조:** @CLAUDE.md Section 4.1, 4.2, @docs/be/API.md Section 3.1, 3.2, 5, 6
+**참조:** @docs/be/API.md Section 3.1, 3.2, 5, 6
 
 ---
 
@@ -130,7 +130,7 @@ src/main/resources/
   - 기존 이미지 유지/변경/삭제
   - 새 이미지 업로드 지원
 
-**참조:** @CLAUDE.md Section 4.3, @docs/be/API.md Section 3.3, 3.4, 4.1
+**참조:** @docs/be/API.md Section 3.3, 3.4, 4.1
 
 ---
 
@@ -305,9 +305,9 @@ AWS_REGION=ap-northeast-2
 | 문서 | 용도 | 위치 |
 |------|------|------|
 | **INTEGRATION_TEST.md** | 연동 테스트 상세 가이드 | @docs/test/INTEGRATION_TEST.md |
-| **API.md** | REST API 명세 (28개 엔드포인트) | @docs/be/API.md |
-| **LLD.md** | 아키텍처, 보안, 에러 코드 | @docs/be/LLD.md |
-| **CLAUDE.md** | 프론트엔드 구현 가이드 | @CLAUDE.md |
+| **API.md** | REST API 명세 (21개 엔드포인트) | @docs/be/API.md |
+| **LLD.md** | 아키텍처, 보안, 에러 코드 (28개) | @docs/be/LLD.md |
+| **CLAUDE.md** | 연동 테스트 진입점 | @CLAUDE.md |
 | **claude-frontend-guide.md** | 코드 품질 기준 | @docs/fe/claude-frontend-guide.md |
 
 ---
@@ -319,3 +319,4 @@ AWS_REGION=ap-northeast-2
 | 2025-10-16 | 1.0 | 초기 PLAN.md 작성 (작업 현황 및 TODO만 포함) |
 | 2025-10-16 | 1.1 | 모든 문서 참조 경로 절대 경로로 통일 (@CLAUDE.md, @docs/be/API.md) |
 | 2025-10-16 | 2.0 | Phase 3-5 완료, 연동 테스트 단계 진입, INTEGRATION_TEST.md 참조 추가 |
+| 2025-10-17 | 2.1 | 순환 참조 제거 (@CLAUDE.md 참조 삭제), API 개수 정정 (28 → 21), 에러 코드 개수 명시 (28개) |
