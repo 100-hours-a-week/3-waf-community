@@ -363,10 +363,26 @@
 **헤더:** Authorization: Bearer {access_token}
 
 **응답:**
-- 200: `like_success` → like count 반환
+- 200: `like_success` → 성공 메시지만 반환
 - 404: POST-001 (Post not found)
 - 409: LIKE-001 (Already liked)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "like_success",
+  "data": {
+    "message": "like_success"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**변경사항 (Phase 5):**
+- Optimistic Update 패턴 도입으로 like_count 응답 제거
+- 클라이언트가 UI에서 즉시 +1 처리
+- 다음 GET 요청 시 정확한 값 동기화
 
 ---
 
@@ -376,9 +392,25 @@
 **헤더:** Authorization: Bearer {access_token}
 
 **응답:**
-- 200: `unlike_success` → like count 반환
+- 200: `unlike_success` → 성공 메시지만 반환
 - 404: POST-001 (Post not found), LIKE-002 (Like not found)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "unlike_success",
+  "data": {
+    "message": "unlike_success"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**변경사항 (Phase 5):**
+- Optimistic Update 패턴 도입으로 like_count 응답 제거
+- 클라이언트가 UI에서 즉시 -1 처리
+- 다음 GET 요청 시 정확한 값 동기화
 
 ---
 

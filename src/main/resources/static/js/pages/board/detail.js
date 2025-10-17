@@ -193,26 +193,38 @@
       return;
     }
 
+    // 현재 값 백업 (에러 시 롤백용)
+    const originalCount = parseInt(elements.postLikes.textContent.replace(/[^0-9]/g, '')) || 0;
+    const originalLiked = state.isLiked;
+
     try {
       if (state.isLiked) {
-        // 좋아요 취소
-        const result = await fetchWithAuth(`/posts/${state.postId}/like`, {
-          method: 'DELETE'
-        });
+        // Optimistic Update: UI 즉시 업데이트
         state.isLiked = false;
         updateLikeButton(false);
-        updateLikeCount(result.likeCount);
-      } else {
-        // 좋아요 추가
-        const result = await fetchWithAuth(`/posts/${state.postId}/like`, {
-          method: 'POST'
+        updateLikeCount(originalCount - 1);
+
+        // 좋아요 취소 API 호출
+        await fetchWithAuth(`/posts/${state.postId}/like`, {
+          method: 'DELETE'
         });
+      } else {
+        // Optimistic Update: UI 즉시 업데이트
         state.isLiked = true;
         updateLikeButton(true);
-        updateLikeCount(result.likeCount);
+        updateLikeCount(originalCount + 1);
+
+        // 좋아요 추가 API 호출
+        await fetchWithAuth(`/posts/${state.postId}/like`, {
+          method: 'POST'
+        });
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
+      // Rollback: 원래 상태로 복원
+      state.isLiked = originalLiked;
+      updateLikeButton(originalLiked);
+      updateLikeCount(originalCount);
       showError(error.message);
     }
   }
