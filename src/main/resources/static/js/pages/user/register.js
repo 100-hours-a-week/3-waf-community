@@ -146,8 +146,8 @@
 
             if (response.ok) {
                 // 자동 로그인 (토큰 저장)
-                localStorage.setItem('access_token', data.data.access_token);
-                localStorage.setItem('refresh_token', data.data.refresh_token);
+                localStorage.setItem('access_token', data.data.accessToken);
+                localStorage.setItem('refresh_token', data.data.refreshToken);
 
                 // 게시글 목록으로 리다이렉트
                 window.location.href = '/board/list.html';
