@@ -61,8 +61,9 @@ public class SecurityConfig {
                         // 0. 정적 리소스 (HTML, CSS, JS, images)
                         .requestMatchers(
                                 "/",
-                                "/board/**",
-                                "/user/**",
+                                "/pages/**",       // Vanilla HTML 페이지
+                                "/board/**",       // 하위 호환성 (추후 제거 가능)
+                                "/user/**",        // 하위 호환성 (추후 제거 가능)
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
