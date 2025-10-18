@@ -195,10 +195,8 @@ public class PostService {
         // 조회수 증가 (동시성 제어)
         postStatsRepository.incrementViewCount(postId);
 
-        // 영속성 컨텍스트에서 stats를 DB 상태로 동기화
-        if (post.getStats() != null) {
-            entityManager.refresh(post.getStats());
-        }return PostResponse.from(post);
+        // Optimistic Update: 클라이언트가 UI에서 +1 처리 (detail.js)
+        return PostResponse.from(post);
     }
 
     /**

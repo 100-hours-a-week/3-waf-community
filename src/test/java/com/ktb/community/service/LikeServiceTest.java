@@ -86,15 +86,14 @@ class LikeServiceTest {
         when(postLikeRepository.existsByUserUserIdAndPostPostId(userId, postId)).thenReturn(false);
         when(postLikeRepository.save(any(PostLike.class))).thenReturn(null);
         when(postStatsRepository.incrementLikeCount(postId)).thenReturn(1);
-        when(postStatsRepository.findById(postId)).thenReturn(Optional.of(stats));
 
         // When
-        Map<String, Integer> result = likeService.addLike(postId, userId);
+        Map<String, String> result = likeService.addLike(postId, userId);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result).containsKey("like_count");
-        assertThat(result.get("like_count")).isEqualTo(0);  // PostStats의 초기값
+        assertThat(result).containsKey("message");
+        assertThat(result.get("message")).isEqualTo("like_success");
 
         verify(postLikeRepository, times(1)).save(any(PostLike.class));
         verify(postStatsRepository, times(1)).incrementLikeCount(postId);
@@ -221,14 +220,14 @@ class LikeServiceTest {
         when(postLikeRepository.findByUserUserIdAndPostPostId(userId, postId))
                 .thenReturn(Optional.of(postLike));
         when(postStatsRepository.decrementLikeCount(postId)).thenReturn(1);
-        when(postStatsRepository.findById(postId)).thenReturn(Optional.of(stats));
 
         // When
-        Map<String, Integer> result = likeService.removeLike(postId, userId);
+        Map<String, String> result = likeService.removeLike(postId, userId);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result).containsKey("like_count");
+        assertThat(result).containsKey("message");
+        assertThat(result.get("message")).isEqualTo("unlike_success");
 
         verify(postLikeRepository, times(1)).delete(postLike);
         verify(postStatsRepository, times(1)).decrementLikeCount(postId);

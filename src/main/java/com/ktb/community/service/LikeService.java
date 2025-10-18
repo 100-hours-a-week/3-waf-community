@@ -44,9 +44,10 @@ public class LikeService {
      * - 게시글 존재 확인 (ACTIVE만)
      * - 중복 방지 (UNIQUE KEY)
      * - 좋아요 수 자동 증가 (동시성 제어)
+     * - Optimistic Update: 응답에 like_count 제거
      */
     @Transactional
-    public Map<String, Integer> addLike(Long postId, Long userId) {
+    public Map<String, String> addLike(Long postId, Long userId) {
         // 게시글 존재 확인 (ACTIVE만)
         Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
@@ -73,15 +74,11 @@ public class LikeService {
         // 좋아요 수 자동 증가 (동시성 제어)
         postStatsRepository.incrementLikeCount(postId);
 
-        // 현재 좋아요 수 조회
-        int likeCount = postStatsRepository.findById(postId)
-                .map(stats -> stats.getLikeCount())
-                .orElse(0);
+        log.debug("[Like] 좋아요 추가 완료: postId={}", postId);
 
-        log.debug("[Like] 좋아요 추가 완료: postId={}, likeCount={}", postId, likeCount);
-
-        Map<String, Integer> response = new HashMap<>();
-        response.put("like_count", likeCount);
+        // Optimistic Update: 클라이언트가 UI에서 즉시 +1 처리
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "like_success");
         return response;
     }
 
@@ -90,9 +87,10 @@ public class LikeService {
      * - 좋아요 존재 확인
      * - Hard Delete (영구 삭제)
      * - 좋아요 수 자동 감소 (동시성 제어)
+     * - Optimistic Update: 응답에 like_count 제거
      */
     @Transactional
-    public Map<String, Integer> removeLike(Long postId, Long userId) {
+    public Map<String, String> removeLike(Long postId, Long userId) {
         // 게시글 존재 확인
         if (!postRepository.existsByPostIdAndPostStatus(postId, PostStatus.ACTIVE)) {
             throw new BusinessException(ErrorCode.POST_NOT_FOUND,
@@ -110,15 +108,11 @@ public class LikeService {
         // 좋아요 수 자동 감소 (동시성 제어)
         postStatsRepository.decrementLikeCount(postId);
 
-        // 현재 좋아요 수 조회
-        int likeCount = postStatsRepository.findById(postId)
-                .map(stats -> stats.getLikeCount())
-                .orElse(0);
+        log.debug("[Like] 좋아요 취소 완료: postId={}", postId);
 
-        log.debug("[Like] 좋아요 취소 완료: postId={}, likeCount={}", postId, likeCount);
-
-        Map<String, Integer> response = new HashMap<>();
-        response.put("like_count", likeCount);
+        // Optimistic Update: 클라이언트가 UI에서 즉시 -1 처리
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "unlike_success");
         return response;
     }
 

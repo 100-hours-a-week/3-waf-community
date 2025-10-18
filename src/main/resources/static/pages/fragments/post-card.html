@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!--
+  Post Card Fragment
+
+  이 파일은 게시글 목록 페이지에서 사용되는 게시글 카드 템플릿입니다.
+  JavaScript 템플릿 함수로 동적 생성됩니다.
+
+  사용 방법:
+  scripts/board/list.js의 createPostCard() 함수에서 이 구조를 참조
+-->
+
+<!-- ========================================
+     Post Card Template
+     ======================================== -->
+<template id="post-card-template">
+  <article class="post-card" data-post-id="">
+    <!-- Post Header: Author Info -->
+    <div class="post-card__header">
+      <img
+        src=""
+        alt="작성자 프로필"
+        class="post-card__avatar"
+        data-field="authorImage"
+      >
+      <div class="post-card__author">
+        <div class="post-card__author-name" data-field="authorName">사용자</div>
+        <div class="post-card__date" data-field="createdAt">2024-01-01</div>
+      </div>
+    </div>
+
+    <!-- Post Image (Optional) -->
+    <div class="post-card__image-wrapper" data-field="imageWrapper" style="display: none;">
+      <img
+        src=""
+        alt="게시글 이미지"
+        class="post-card__image"
+        data-field="image"
+      >
+    </div>
+
+    <!-- Post Content -->
+    <h3 class="post-card__title" data-field="title">게시글 제목</h3>
+
+    <!-- Post Meta: Stats -->
+    <div class="post-card__meta">
+      <div class="post-card__stat" data-field="likes">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+        <span>0</span>
+      </div>
+
+      <div class="post-card__stat" data-field="comments">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+        </svg>
+        <span>0</span>
+      </div>
+
+      <div class="post-card__stat" data-field="views">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+        </svg>
+        <span>0</span>
+      </div>
+    </div>
+  </article>
+</template>
+
+<!--
+  JavaScript 사용 예시:
+
+  // scripts/board/list.js
+
+  function createPostCard(post) {
+    const template = document.getElementById('post-card-template');
+    const clone = template.content.cloneNode(true);
+    const card = clone.querySelector('.post-card');
+
+    // Set post ID
+    card.setAttribute('data-post-id', post.postId);
+    card.setAttribute('href', `/board/detail.html?id=${post.postId}`);
+
+    // Author info
+    const avatar = card.querySelector('[data-field="authorImage"]');
+    avatar.src = post.author.profileImage || '/images/default-avatar.png';
+
+    const authorName = card.querySelector('[data-field="authorName"]');
+    authorName.textContent = post.author.nickname;
+
+    const createdAt = card.querySelector('[data-field="createdAt"]');
+    createdAt.textContent = Utils.formatDate(post.createdAt);
+
+    // Post image (if exists)
+    if (post.image) {
+      const imageWrapper = card.querySelector('[data-field="imageWrapper"]');
+      imageWrapper.style.display = 'block';
+
+      const image = card.querySelector('[data-field="image"]');
+      image.src = post.image;
+    }
+
+    // Post title
+    const title = card.querySelector('[data-field="title"]');
+    title.textContent = post.title;
+
+    // Stats
+    const likesSpan = card.querySelector('[data-field="likes"] span');
+    likesSpan.textContent = Utils.formatNumber(post.likeCount);
+
+    const commentsSpan = card.querySelector('[data-field="comments"] span');
+    commentsSpan.textContent = Utils.formatNumber(post.commentCount);
+
+    const viewsSpan = card.querySelector('[data-field="views"] span');
+    viewsSpan.textContent = Utils.formatNumber(post.viewCount);
+
+    // If liked by current user
+    if (post.isLiked) {
+      const likeStat = card.querySelector('[data-field="likes"]');
+      likeStat.classList.add('post-card__stat--liked');
+    }
+
+    return card;
+  }
+
+  // Usage:
+  const postCard = createPostCard(postData);
+  postList.appendChild(postCard);
+-->
+
+<!-- ========================================
+     Alternative: JavaScript Template Literal
+     ======================================== -->
+<!--
+  // Pure JavaScript without HTML template
+
+  function createPostCardHTML(post) {
+    const {
+      postId,
+      title,
+      image,
+      author,
+      createdAt,
+      likeCount,
+      commentCount,
+      viewCount,
+      isLiked
+    } = post;
+
+    const hasImage = image ? '' : 'style="display: none;"';
+    const likedClass = isLiked ? 'post-card__stat--liked' : '';
+
+    return `
+      <article class="post-card" data-post-id="${postId}">
+        <div class="post-card__header">
+          <img
+            src="${author.profileImage || '/images/default-avatar.png'}"
+            alt="${author.nickname} 프로필"
+            class="post-card__avatar"
+          >
+          <div class="post-card__author">
+            <div class="post-card__author-name">${Utils.escapeHtml(author.nickname)}</div>
+            <div class="post-card__date">${Utils.formatDate(createdAt)}</div>
+          </div>
+        </div>
+
+        <div class="post-card__image-wrapper" ${hasImage}>
+          <img src="${image}" alt="${Utils.escapeHtml(title)}" class="post-card__image">
+        </div>
+
+        <h3 class="post-card__title">${Utils.escapeHtml(title)}</h3>
+
+        <div class="post-card__meta">
+          <div class="post-card__stat ${likedClass}">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <span>${Utils.formatNumber(likeCount)}</span>
+          </div>
+
+          <div class="post-card__stat">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            </svg>
+            <span>${Utils.formatNumber(commentCount)}</span>
+          </div>
+
+          <div class="post-card__stat">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
+            <span>${Utils.formatNumber(viewCount)}</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  // Usage:
+  const html = createPostCardHTML(postData);
+  postList.insertAdjacentHTML('beforeend', html);
+-->

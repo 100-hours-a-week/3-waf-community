@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시글 목록 - 아무 말 대잔치</title>
+
+  <!-- Common Styles -->
+  <link rel="stylesheet" href="/css/common/reset.css">
+  <link rel="stylesheet" href="/css/common/variables.css">
+  <link rel="stylesheet" href="/css/common/typography.css">
+  <link rel="stylesheet" href="/css/common/layout.css">
+
+  <!-- Component Styles -->
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/header.css">
+  <link rel="stylesheet" href="/css/components/card.css">
+
+  <!-- Page Styles -->
+  <link rel="stylesheet" href="/css/pages/board/list.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header__container">
+      <h1 class="header__title">아무 말 대잔치</h1>
+      <button class="header__profile" data-action="toggle-menu" aria-label="프로필 메뉴">
+        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" alt="프로필" class="header__profile-image" data-profile="image">
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Welcome Section -->
+      <section class="welcome-section">
+        <div class="welcome-section__content">
+          <h2 class="welcome-section__title">안녕하세요,</h2>
+          <p class="welcome-section__subtitle">아무 말 대잔치 게시판 입니다.</p>
+        </div>
+        <button class="btn btn--primary" data-action="write-post">
+          게시글 작성
+        </button>
+      </section>
+
+      <!-- Post List -->
+      <section class="post-list" data-list="posts">
+        <!-- Posts will be dynamically loaded here by list.js -->
+      </section>
+
+      <!-- Loading Indicator -->
+      <div class="loading-indicator" data-loading="posts" style="display: none;">
+        <div class="loading-indicator__spinner"></div>
+        <span class="loading-indicator__text">게시글을 불러오는 중...</span>
+      </div>
+
+      <!-- Load More Button (Alternative to infinite scroll) -->
+      <div class="load-more-container" style="display: none;">
+        <button class="btn btn--secondary" data-action="load-more">
+          더보기
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" data-empty="posts" style="display: none;">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M3 9H21" stroke="currentColor" stroke-width="2"/>
+          <path d="M9 21V9" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <h3 class="empty-state__title">게시글이 없습니다</h3>
+        <p class="empty-state__description">첫 번째 게시글을 작성해보세요!</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Common Scripts -->
+  <script src="/js/common/api.js"></script>
+  <script src="/js/common/validation.js"></script>
+  <script src="/js/common/utils.js"></script>
+
+  <!-- Page Script -->
+  <script src="/js/pages/board/list.js"></script>
+</body>
+</html>

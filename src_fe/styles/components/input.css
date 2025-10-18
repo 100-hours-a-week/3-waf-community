@@ -1,0 +1,230 @@
+/**
+ * Input Component
+ * 입력 필드 컴포넌트 스타일
+ */
+
+/* Input Field Container */
+.input-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.input-field__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.input-field__label--required::after {
+  content: '*';
+  color: var(--color-error);
+  margin-left: 2px;
+}
+
+/* Input Element */
+.input-field__input {
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--input-font-size);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  border: var(--input-border-width) solid var(--color-border-default);
+  border-radius: var(--input-radius);
+  transition: var(--transition-colors);
+}
+
+.input-field__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input-field__input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+.input-field__input:disabled,
+.input-field__input[readonly] {
+  background-color: rgba(26, 26, 26, 0.5);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+/* Helper Text */
+.input-field__helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Error State */
+.input-field--error .input-field__input {
+  border-color: var(--color-border-error);
+}
+
+.input-field__error {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+/* Success State */
+.input-field--success .input-field__input {
+  border-color: var(--color-success);
+}
+
+.input-field__success {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+}
+
+/* Input with Counter */
+.input-field__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.input-field__counter {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Textarea Field */
+.textarea-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.textarea-field__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.textarea-field__textarea {
+  min-height: 120px;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--input-font-size);
+  font-family: var(--font-family-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  border: var(--input-border-width) solid var(--color-border-default);
+  border-radius: var(--input-radius);
+  resize: vertical;
+  transition: var(--transition-colors);
+  line-height: var(--line-height-relaxed);
+}
+
+.textarea-field__textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.textarea-field__textarea:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+/* File Upload */
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.file-upload__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.file-upload__input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.file-upload__input {
+  display: none;
+}
+
+.file-upload__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.file-upload__button:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.file-upload__filename {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Profile Upload (Circle) */
+.profile-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.profile-upload__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.profile-upload__circle {
+  position: relative;
+  width: var(--avatar-xl);
+  height: var(--avatar-xl);
+}
+
+.profile-upload__input {
+  display: none;
+}
+
+.profile-upload__label-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-colors);
+  overflow: hidden;
+}
+
+.profile-upload__label-circle:hover {
+  background-color: var(--color-profile-upload-hover);
+}
+
+.profile-upload__icon {
+  font-size: 40px;
+  color: var(--color-text-secondary);
+}
+
+.profile-upload__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-upload__helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

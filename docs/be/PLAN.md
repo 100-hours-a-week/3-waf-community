@@ -28,7 +28,8 @@
 | Phase 3.5 | 5 | 이미지 업로드 (S3) | IMAGE-001, IMAGE-003 | ✅ 완료 |
 | Phase 3.6 | 5 | Multipart 전환 + P0/P1 수정 | AUTH-001, USER-002 | ✅ 완료 |
 | Phase 4 | 6 | 통계 및 배치 | IMAGE-002 (고아 이미지) | ✅ 완료 |
-| Phase 5 | 7 | 테스트/문서 | - | ⏳ 대기 |
+| Phase 5 | 7 | 테스트/문서 + 버그 수정 | detached entity 해결 | ⏳ 진행 예정 |
+| Phase 6 | 8+ | Redis 도입 (조건부) | 성능 최적화 | ⏸️ 조건 대기 |
 
 ---
 
@@ -293,6 +294,21 @@
 
 ### 체크리스트
 
+**Phase 4 버그 수정:**
+- [x] PostService detached entity 문제 해결
+  - 해결: `clearAutomatically = false` 적용 (PostStatsRepository 5개 메서드)
+  - 부가효과: Optimistic Update 패턴 도입으로 DB 통신 17% 감소
+  - 영향: PostService.getPostDetail(), LikeService (2개 메서드), PostController (2개 메서드)
+  - 변경 파일: 9개 (Backend 5개, Frontend 1개, Docs 2개, Test 1개)
+  - 상세: 이 대화 스레드 "Optimistic Update 패턴 도입" 참조
+
+**Optimistic Update 패턴:**
+- [x] 좋아요 API 응답 간소화 (like_count 제거)
+- [x] 클라이언트 UI 즉시 업데이트 + 에러 시 Rollback
+- [x] 원자적 쿼리 유지 (100% 데이터 정확도)
+- [x] DB 통신: 6번 → 5번 (17% 성능 개선)
+
+
 **페이지네이션:**
 - [x] Cursor 페이지네이션 전환 (최신순만, 하이브리드 방식)
   - Repository: findByStatusWithCursor, findByStatusWithoutCursor 추가
@@ -364,18 +380,6 @@ docs: @docs/be/API.md 게시글 섹션 업데이트
 상세: @docs/be/PRD.md Section 5, @docs/be/LLD.md Section 7.5
 
 ---
-
-## Phase 6+ 확장 계획
-
-**고도화:**
-- [ ] Admin 관리 기능
-- [ ] 게시글 검색 (제목/내용/작성자)
-- [ ] 알림 기능
-
-**인프라:**
-- [ ] Redis 도입 (토큰/캐싱)
-- [ ] Docker 컨테이너화
-- [ ] CI/CD 파이프라인
 
 ---
 

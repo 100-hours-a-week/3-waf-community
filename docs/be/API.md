@@ -68,7 +68,7 @@
 - `email` (String, 필수) - 이메일 주소
 - `password` (String, 필수) - 비밀번호 (8-20자, 대/소/특수문자 각 1개+)
 - `nickname` (String, 필수) - 닉네임 (10자 이내)
-- `profile_image` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
+- `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
 - 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
@@ -99,7 +99,7 @@
 
 **Request Parts:**
 - `nickname` (String, 선택) - 닉네임 (10자 이내)
-- `profile_image` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
+- `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
 - 200: `update_profile_success` → 수정된 정보 반환
@@ -220,6 +220,76 @@
 - 404: POST-001 (Post not found)
 - 500: [공통 에러 코드](#응답-코드) 참조
 
+**응답 예시:**
+```json
+{
+  "message": "get_post_detail_success",
+  "data": {
+    "postId": 123,
+    "title": "게시글 제목",
+    "content": "게시글 내용",
+    "author": {
+      "userId": 1,
+      "nickname": "작성자",
+      "profileImage": "https://..."
+    },
+    "stats": {
+      "viewCount": 100,    // ⚠️ 클라이언트는 UI에 101(+1) 표시
+      "likeCount": 42,
+      "commentCount": 15
+    },
+    "createdAt": "2025-10-18T10:00:00",
+    "updatedAt": "2025-10-18T10:00:00"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**구현 노트 (Optimistic Update 패턴):**
+
+서버는 조회수 증가 전 값을 응답하고, 클라이언트가 UI에서 +1 보정합니다.
+
+| 항목 | 설명 |
+|------|------|
+| 서버 처리 | JPQL UPDATE로 조회수 증가 (영속성 컨텍스트 우회) |
+| 응답 값 | 증가 전 값 반환 (stale viewCount) |
+| 클라이언트 | UI에서 응답값 + 1 표시 (detail.js:505) |
+| 동기화 | F5 새로고침 시 정확한 값으로 동기화 |
+
+**시나리오:**
+```
+1. 첫 방문: DB 100 → UPDATE 101 → 응답 100 → UI 101 ✅
+2. F5: DB 101 → UPDATE 102 → 응답 101 → UI 102 ✅
+3. 다중 탭 (주의):
+   - 탭1: DB 100 → UPDATE 101 → 응답 100 (늦게 도착) → UI 101
+   - 탭2: DB 101 → UPDATE 102 → 응답 101 (먼저 도착) → UI 102
+   - 일시적 불일치 발생 가능, F5로 해결
+```
+
+**설계 배경:**
+- Phase 5에서 좋아요/댓글과 패턴 통일 (Optimistic Update)
+- detached entity 이슈 해결 (refresh() 제거)
+- 동시성 제어는 JPQL UPDATE로 보장
+
+**Rollback 가이드:**
+
+정확한 조회수가 즉시 필요한 요구사항 발생 시:
+
+```java
+// PostService.java:getPostDetail() 메서드에 추가
+postStatsRepository.incrementViewCount(postId);
+
+if (post.getStats() != null) {
+    entityManager.refresh(post.getStats());  // 추가
+}
+
+return PostResponse.from(post);
+```
+
+단, refresh() 사용 시:
+- `clearAutomatically=false` 유지 (detached entity 방지)
+- detail.js의 `+1` 제거 필요: `updateViewCount(stats.viewCount)`
+
 ---
 
 ### 3.3 새 게시글 작성
@@ -227,10 +297,10 @@
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "title": "...", "content": "...", "image_id": 1 }`
+**Request:** `{ "title": "...", "content": "...", "imageId": 1 }`
 
-**필수:** title(String), content(String)  
-**선택:** image_id(Number) - POST /images로 먼저 업로드 필요
+**필수:** title(String), content(String)
+**선택:** imageId(Number) - POST /images로 먼저 업로드 필요
 
 **응답:**
 - 201: `create_post_success` → postId 반환
@@ -244,9 +314,9 @@
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "title": "...", "content": "...", "image_id": 1 }`
+**Request:** `{ "title": "...", "content": "...", "imageId": 1 }`
 
-**선택:** title(String), content(String), image_id(Number)  
+**선택:** title(String), content(String), imageId(Number)
 **참고:** PATCH는 부분 업데이트, 최소 1개 필드 필요 , 변경이 없을 경우 WAS 내에서 처리바람.
 
 **응답:**
@@ -284,7 +354,7 @@
 **제약:** JPG/PNG/GIF, 최대 5MB
 
 **응답:**
-- 201: `upload_image_success` → image_id, image_url 반환
+- 201: `upload_image_success` → imageId, imageUrl 반환
 - 413: IMAGE-002 (File too large)
 - 400: IMAGE-003 (Invalid file type)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
@@ -293,7 +363,7 @@
 
 ## 5. 댓글 (Comments)
 
-**댓글 객체:** `{ comment_id, content, created_at, updated_at, author: { user_id, nickname, profile_image } }`
+**댓글 객체:** `{ commentId, content, createdAt, updatedAt, author: { userId, nickname, profileImage } }`
 
 ### 5.1 댓글 목록 조회
 **Endpoint:** `GET /posts/{postId}/comments?offset=0&limit=10`
@@ -363,10 +433,26 @@
 **헤더:** Authorization: Bearer {access_token}
 
 **응답:**
-- 200: `like_success` → like count 반환
+- 200: `like_success` → 성공 메시지만 반환
 - 404: POST-001 (Post not found)
 - 409: LIKE-001 (Already liked)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "like_success",
+  "data": {
+    "message": "like_success"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**변경사항 (Phase 5):**
+- Optimistic Update 패턴 도입으로 like_count 응답 제거
+- 클라이언트가 UI에서 즉시 +1 처리
+- 다음 GET 요청 시 정확한 값 동기화
 
 ---
 
@@ -376,9 +462,25 @@
 **헤더:** Authorization: Bearer {access_token}
 
 **응답:**
-- 200: `unlike_success` → like count 반환
+- 200: `unlike_success` → 성공 메시지만 반환
 - 404: POST-001 (Post not found), LIKE-002 (Like not found)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "unlike_success",
+  "data": {
+    "message": "unlike_success"
+  },
+  "timestamp": "2025-10-18T10:00:00"
+}
+```
+
+**변경사항 (Phase 5):**
+- Optimistic Update 패턴 도입으로 like_count 응답 제거
+- 클라이언트가 UI에서 즉시 -1 처리
+- 다음 GET 요청 시 정확한 값 동기화
 
 ---
 

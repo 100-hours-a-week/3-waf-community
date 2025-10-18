@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원정보 수정 - 아무 말 대잔치</title>
+  <!-- Common Styles -->
+  <link rel="stylesheet" href="/css/common/reset.css">
+  <link rel="stylesheet" href="/css/common/variables.css">
+  <link rel="stylesheet" href="/css/common/typography.css">
+  <link rel="stylesheet" href="/css/common/layout.css">
+
+  <!-- Component Styles -->
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/input.css">
+  <link rel="stylesheet" href="/css/components/header.css">
+
+  <!-- Page Styles -->
+  <link rel="stylesheet" href="/css/pages/user/profile-edit.css">
+</head>
+<body>
+  <header class="header header--with-back">
+    <div class="header__container">
+      <button class="header__back" data-action="go-back"><svg width="24" height="24"><path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2"/></svg></button>
+      <h1 class="header__title">회원정보 수정</h1>
+      <div class="header__spacer"></div>
+    </div>
+  </header>
+  <main class="main main--centered">
+    <div class="register-container">
+      <div class="register-card">
+        <h2 class="register-card__title">회원정보 수정</h2>
+
+        <form class="profile-edit-form" data-form="profile-edit">
+          <div class="profile-upload">
+            <label for="profile-image" class="profile-upload__label">
+              <div class="profile-upload__preview">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" alt="프로필" class="profile-upload__image" data-image="profile">
+                <div class="profile-upload__placeholder"><svg width="40" height="40"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2"/></svg></div>
+              </div>
+              <span class="profile-upload__text">프로필 사진 변경</span>
+            </label>
+            <input type="file" id="profile-image" name="profileImage" class="profile-upload__input" accept="image/*" data-field="profileImage">
+          </div>
+          <div class="input-field">
+            <label for="nickname" class="input-field__label">닉네임*</label>
+            <input type="text" id="nickname" name="nickname" class="input-field__input" placeholder="닉네임" maxlength="10" data-field="nickname" required>
+            <span class="input-field__helper">* 2-10자</span>
+            <span class="input-field__error" data-error="nickname"></span>
+          </div>
+          <button type="submit" class="btn btn--primary btn--full" data-action="save">저장</button>
+          <button type="button" class="btn btn--danger btn--full" data-action="withdraw">회원탈퇴</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="/js/common/api.js"></script>
+  <script src="/js/common/validation.js"></script>
+  <script src="/js/common/utils.js"></script>
+  <script src="/js/pages/user/profile-edit.js"></script>
+</body>
+</html>

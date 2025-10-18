@@ -1,0 +1,353 @@
+/**
+ * Modal Component
+ *
+ * 모달/다이얼로그 컴포넌트
+ * Outstanding Design System 기반
+ *
+ * Variants:
+ * - .modal - 기본 모달
+ * - .modal--confirm - 확인 모달
+ * - .modal--input - 입력 모달
+ * - .modal--alert - 알림 모달
+ */
+
+/* ========================================
+   Modal Overlay
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-modal);
+  padding: var(--spacing-4);
+
+  /* Animation */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.modal-overlay.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ========================================
+   Modal Container
+   ======================================== */
+
+.modal {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* Animation */
+  transform: scale(0.9) translateY(20px);
+  transition: transform var(--transition-base);
+}
+
+.modal-overlay.is-active .modal {
+  transform: scale(1) translateY(0);
+}
+
+/* ========================================
+   Modal Header
+   ======================================== */
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.modal__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.modal__close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__close:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.modal__close svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ========================================
+   Modal Body
+   ======================================== */
+
+.modal__body {
+  padding: var(--spacing-6);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal__body p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ========================================
+   Modal Footer
+   ======================================== */
+
+.modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* ========================================
+   Modal Variants
+   ======================================== */
+
+/* Confirm Modal */
+.modal--confirm .modal__body {
+  text-align: center;
+  padding: var(--spacing-8) var(--spacing-6);
+}
+
+.modal--confirm .modal__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-4);
+  color: var(--color-text-tertiary);
+}
+
+.modal--confirm .modal__icon--warning {
+  color: var(--color-warning);
+}
+
+.modal--confirm .modal__icon--danger {
+  color: var(--color-error);
+}
+
+.modal--confirm .modal__icon--success {
+  color: var(--color-success);
+}
+
+.modal--confirm .modal__message {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.modal--confirm .modal__description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Alert Modal */
+.modal--alert .modal__footer {
+  justify-content: center;
+}
+
+/* Input Modal */
+.modal--input .input-field {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   Delete Confirmation Modal (Specific)
+   ======================================== */
+
+.delete-modal__content {
+  text-align: center;
+}
+
+.delete-modal__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-4);
+  color: var(--color-error);
+}
+
+.delete-modal__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.delete-modal__description {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-2);
+}
+
+.delete-modal__warning {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ========================================
+   Password Input Modal (Specific)
+   ======================================== */
+
+.password-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.password-modal__description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+/* ========================================
+   Toast Notification (Modal variant)
+   ======================================== */
+
+.toast {
+  position: fixed;
+  bottom: var(--spacing-6);
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  padding: var(--spacing-4) var(--spacing-6);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-index-toast);
+  max-width: 480px;
+  width: calc(100% - var(--spacing-8));
+
+  /* Animation */
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-base);
+}
+
+.toast.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast__content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.toast__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.toast__message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+/* Toast Variants */
+.toast--success {
+  border-color: var(--color-success);
+}
+
+.toast--success .toast__icon {
+  color: var(--color-success);
+}
+
+.toast--error {
+  border-color: var(--color-error);
+}
+
+.toast--error .toast__icon {
+  color: var(--color-error);
+}
+
+.toast--warning {
+  border-color: var(--color-warning);
+}
+
+.toast--warning .toast__icon {
+  color: var(--color-warning);
+}
+
+.toast--info {
+  border-color: var(--color-brand-primary);
+}
+
+.toast--info .toast__icon {
+  color: var(--color-brand-primary);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .modal {
+    max-width: 100%;
+    margin: var(--spacing-4);
+  }
+
+  .modal__header,
+  .modal__body,
+  .modal__footer {
+    padding: var(--spacing-4);
+  }
+
+  .modal__footer {
+    flex-direction: column;
+  }
+
+  .modal__footer .btn {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+}

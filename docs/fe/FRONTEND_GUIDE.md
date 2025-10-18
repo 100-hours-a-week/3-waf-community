@@ -2,7 +2,7 @@
 
 **버전**: 1.0
 **Base URL**: `http://localhost:8080`
-**상세 API 스펙**: [API.md](API.md) 참조
+**상세 API 스펙**: [API.md](../be/API.md) 참조
 
 ---
 
@@ -144,7 +144,7 @@ async function fetchWithAuth(url, options = {}) {
 | /auth/logout | POST | ✅ | 로그아웃 (Authorization 헤더 + refresh_token 필요) |
 | /auth/refresh_token | POST | ❌ | Access Token 갱신 |
 
-상세 스펙: [API.md Section 1](API.md#1-인증-authentication)
+상세 스펙: [API.md Section 1](../be/API.md#1-인증-authentication)
 
 ---
 
@@ -266,7 +266,7 @@ formData.append('nickname', '테스트유저');
 
 // 프로필 이미지 (선택)
 if (fileInput.files[0]) {
-  formData.append('profile_image', fileInput.files[0]);
+  formData.append('profileImage', fileInput.files[0]);
 }
 
 const response = await fetch('http://localhost:8080/users/signup', {
@@ -307,7 +307,7 @@ const postResponse = await fetchWithAuth('http://localhost:8080/posts', {
   body: JSON.stringify({
     title: '게시글 제목',
     content: '게시글 내용',
-    image_id: imageId  // 업로드된 이미지 ID
+    imageId: imageId  // 업로드된 이미지 ID
   })
 });
 ```
@@ -399,7 +399,7 @@ function validateSignupForm(formData) {
 | IMAGE-003 | 400 | 유효하지 않은 파일 형식 | JPG/PNG/GIF 안내 |
 | COMMON-004 | 429 | Rate Limit | 재시도 (지수 백오프) |
 
-**전체 에러 코드**: [API.md Section 7](API.md#7-공통-사양) 참조
+**전체 에러 코드**: [API.md Section 7](../be/API.md#7-공통-사양) 참조
 
 ### 6.2 에러 핸들러 구현
 
@@ -547,7 +547,7 @@ A1. 401 에러 발생 시 Refresh Token으로 갱신 후 재시도 (Section 2.2 
 A2. 최신순은 무한 스크롤(cursor), 좋아요순은 페이지 번호(offset) 필요 (Section 3 참조)
 
 **Q3. 회원가입 시 이미지 필수?**
-A3. 선택 사항. `profile_image` 생략 가능
+A3. 선택 사항. `profileImage` 생략 가능
 
 **Q4. Rate Limit에 걸리면?**
 A4. 429 응답 시 1-2초 대기 후 재시도 (Section 6.3 참조)
@@ -556,10 +556,10 @@ A4. 429 응답 시 1-2초 대기 후 재시도 (Section 6.3 참조)
 
 ## 참고 문서
 
-- **전체 API 스펙**: [API.md](API.md)
-- **에러 코드 전체**: [API.md Section 7](API.md#7-공통-사양)
-- **DB 스키마**: [DDL.md](DDL.md)
-- **설계 문서**: [LLD.md](LLD.md)
+- **전체 API 스펙**: [API.md](../be/API.md)
+- **에러 코드 전체**: [API.md Section 7](../be/API.md#7-공통-사양)
+- **DB 스키마**: [DDL.md](../be/DDL.md)
+- **설계 문서**: [LLD.md](../be/LLD.md)
 
 ---
 

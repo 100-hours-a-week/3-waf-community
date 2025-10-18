@@ -1,0 +1,48 @@
+/* ============================================
+   Login Page Styles
+   ============================================ */
+
+/* Login Container */
+.login-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Login Card */
+.login-card {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-8);
+  box-shadow: var(--shadow-lg);
+}
+
+.login-card__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+}
+
+/* Login Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+/* Input Fields - Inherits from components/input.css */
+.login-form .input-field {
+  margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-card {
+    padding: var(--spacing-6);
+  }
+
+  .login-card__title {
+    font-size: var(--font-size-xl);
+  }
+}

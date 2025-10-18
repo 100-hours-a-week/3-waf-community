@@ -1,0 +1,360 @@
+/**
+ * Header Component
+ *
+ * 애플리케이션 헤더 컴포넌트
+ * Outstanding Design System 기반
+ *
+ * Variants:
+ * - .header - 기본 헤더 (로고 + 프로필)
+ * - .header--with-back - 뒤로가기 버튼 포함 헤더
+ * - .header--sticky - 고정 헤더
+ */
+
+/* ========================================
+   Base Header
+   ======================================== */
+
+.header {
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-default);
+  padding: var(--spacing-4) var(--spacing-6);
+  position: relative;
+  z-index: var(--z-index-header);
+}
+
+.header--sticky {
+  position: sticky;
+  top: 0;
+}
+
+/* ========================================
+   Header Container
+   ======================================== */
+
+.header__container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+}
+
+/* ========================================
+   Header Left
+   ======================================== */
+
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* Back Button */
+.header__back {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header__back:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.header__back svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Logo */
+.header__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  transition: color var(--transition-fast);
+}
+
+.header__logo:hover {
+  color: var(--color-brand-primary);
+}
+
+.header__logo-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.header__logo-text {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+   Header Right
+   ======================================== */
+
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* Profile Button */
+.header__profile {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.header__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--color-bg-tertiary);
+  border: 2px solid transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.header__profile:hover .header__avatar {
+  border-color: var(--color-brand-primary);
+}
+
+.header__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-tertiary);
+}
+
+.header__avatar--placeholder svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Login/Register Links */
+.header__auth {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.header__auth-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.header__auth-link:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+.header__auth-link--primary {
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-primary);
+}
+
+.header__auth-link--primary:hover {
+  background-color: var(--color-brand-primary-hover);
+}
+
+/* ========================================
+   Profile Dropdown Menu
+   ======================================== */
+
+.header__dropdown {
+  position: absolute;
+  top: calc(100% + var(--spacing-2));
+  right: 0;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-lg);
+  min-width: 200px;
+  padding: var(--spacing-2);
+  z-index: var(--z-index-dropdown);
+
+  /* Animation */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all var(--transition-fast);
+}
+
+.header__profile.is-active + .header__dropdown,
+.header__dropdown.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.header__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.header__dropdown-item:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.header__dropdown-item svg {
+  width: 20px;
+  height: 20px;
+}
+
+.header__dropdown-divider {
+  height: 1px;
+  background-color: var(--color-border-default);
+  margin: var(--spacing-2) 0;
+}
+
+.header__dropdown-item--danger {
+  color: var(--color-error);
+}
+
+.header__dropdown-item--danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+/* ========================================
+   Search Bar (Optional)
+   ======================================== */
+
+.header__search {
+  flex: 1;
+  max-width: 480px;
+  position: relative;
+}
+
+.header__search-input {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-2) var(--spacing-10);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+}
+
+.header__search-input:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+.header__search-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.header__search-icon {
+  position: absolute;
+  left: var(--spacing-3);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+/* ========================================
+   Notification Badge
+   ======================================== */
+
+.header__notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  background-color: var(--color-error);
+  border: 2px solid var(--color-bg-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .header {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
+  .header__container {
+    gap: var(--spacing-2);
+  }
+
+  .header__logo-text {
+    font-size: var(--font-size-lg);
+  }
+
+  .header__search {
+    max-width: 100%;
+  }
+
+  .header__auth {
+    gap: var(--spacing-1);
+  }
+
+  .header__auth-link {
+    padding: var(--spacing-1) var(--spacing-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .header__dropdown {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+  }
+
+  .header__dropdown.is-active {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Hide on very small screens */
+@media (max-width: 480px) {
+  .header__logo-text {
+    display: none;
+  }
+}

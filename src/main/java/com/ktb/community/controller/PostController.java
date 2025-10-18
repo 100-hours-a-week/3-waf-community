@@ -121,12 +121,12 @@ public class PostController {
      */
     @PostMapping("/{postId}/like")
     @RateLimit(requestsPerMinute = 200)
-    public ResponseEntity<ApiResponse<Map<String, Integer>>> addLike(
+    public ResponseEntity<ApiResponse<Map<String, String>>> addLike(
             @PathVariable Long postId,
             Authentication authentication
     ) {
         Long userId = getUserId(authentication);
-        Map<String, Integer> result = likeService.addLike(postId, userId);
+        Map<String, String> result = likeService.addLike(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("like_success", result));
     }
 
@@ -138,12 +138,12 @@ public class PostController {
      */
     @DeleteMapping("/{postId}/like")
     @RateLimit(requestsPerMinute = 200)
-    public ResponseEntity<ApiResponse<Map<String, Integer>>> removeLike(
+    public ResponseEntity<ApiResponse<Map<String, String>>> removeLike(
             @PathVariable Long postId,
             Authentication authentication
     ) {
         Long userId = getUserId(authentication);
-        Map<String, Integer> result = likeService.removeLike(postId, userId);
+        Map<String, String> result = likeService.removeLike(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("unlike_success", result));
     }
 
