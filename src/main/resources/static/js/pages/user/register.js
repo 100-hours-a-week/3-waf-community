@@ -4,28 +4,42 @@
  * 참조: @CLAUDE.md Section 4.5, @docs/be/API.md Section 2.1
  */
 
-(function() {
+(function(window, document) {
     'use strict';
 
-    // DOM Elements
-    let form;
-    let profileImageInput;
-    let profileImagePreview;
-    let profileImageElement;
-    let profilePlaceholder;
-    let emailInput;
-    let passwordInput;
-    let passwordConfirmInput;
-    let nicknameInput;
-    let submitButton;
-    let goBackButton;
+    // ============================================
+    // Configuration
+    // ============================================
+    const CONFIG = {
+        LIST_URL: '/pages/board/list.html',
+        API_BASE_URL: 'http://localhost:8080',
+        MAX_NICKNAME_LENGTH: 10,
+        MAX_FILE_SIZE: 5 * 1024 * 1024,
+        ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/gif']
+    };
 
-    // Error elements
-    let profileImageError;
-    let emailError;
-    let passwordError;
-    let passwordConfirmError;
-    let nicknameError;
+    // ============================================
+    // DOM Element Caching
+    // ============================================
+    const elements = {
+        form: null,
+        profileImageInput: null,
+        profileImagePreview: null,
+        profileImageElement: null,
+        profilePlaceholder: null,
+        emailInput: null,
+        passwordInput: null,
+        passwordConfirmInput: null,
+        nicknameInput: null,
+        submitButton: null,
+        goBackButton: null,
+        // Error elements
+        profileImageError: null,
+        emailError: null,
+        passwordError: null,
+        passwordConfirmError: null,
+        nicknameError: null
+    };
 
     /**
      * 초기화
@@ -33,7 +47,7 @@
     function init() {
         // 이미 로그인되어 있으면 리다이렉트
         if (isAuthenticated()) {
-            window.location.href = '/pages/board/list.html';
+            window.location.href = CONFIG.LIST_URL;
             return;
         }
 
@@ -45,40 +59,40 @@
      * DOM 요소 캐싱
      */
     function cacheElements() {
-        form = document.querySelector('[data-form="register"]');
-        profileImageInput = document.querySelector('[data-field="profileImage"]');
-        profileImagePreview = document.querySelector('[data-preview="profile"]');
-        profileImageElement = document.querySelector('[data-image="profile"]');
-        profilePlaceholder = document.querySelector('[data-placeholder="profile"]');
-        emailInput = document.querySelector('[data-field="email"]');
-        passwordInput = document.querySelector('[data-field="password"]');
-        passwordConfirmInput = document.querySelector('[data-field="passwordConfirm"]');
-        nicknameInput = document.querySelector('[data-field="nickname"]');
-        submitButton = document.querySelector('[data-action="register"]');
-        goBackButton = document.querySelector('[data-action="go-back"]');
+        elements.form = document.querySelector('[data-form="register"]');
+        elements.profileImageInput = document.querySelector('[data-field="profileImage"]');
+        elements.profileImagePreview = document.querySelector('[data-preview="profile"]');
+        elements.profileImageElement = document.querySelector('[data-image="profile"]');
+        elements.profilePlaceholder = document.querySelector('[data-placeholder="profile"]');
+        elements.emailInput = document.querySelector('[data-field="email"]');
+        elements.passwordInput = document.querySelector('[data-field="password"]');
+        elements.passwordConfirmInput = document.querySelector('[data-field="passwordConfirm"]');
+        elements.nicknameInput = document.querySelector('[data-field="nickname"]');
+        elements.submitButton = document.querySelector('[data-action="register"]');
+        elements.goBackButton = document.querySelector('[data-action="go-back"]');
 
         // Error elements
-        profileImageError = document.querySelector('[data-error="profileImage"]');
-        emailError = document.querySelector('[data-error="email"]');
-        passwordError = document.querySelector('[data-error="password"]');
-        passwordConfirmError = document.querySelector('[data-error="passwordConfirm"]');
-        nicknameError = document.querySelector('[data-error="nickname"]');
+        elements.profileImageError = document.querySelector('[data-error="profileImage"]');
+        elements.emailError = document.querySelector('[data-error="email"]');
+        elements.passwordError = document.querySelector('[data-error="password"]');
+        elements.passwordConfirmError = document.querySelector('[data-error="passwordConfirm"]');
+        elements.nicknameError = document.querySelector('[data-error="nickname"]');
     }
 
     /**
      * 이벤트 바인딩
      */
     function bindEvents() {
-        form.addEventListener('submit', handleSubmit);
-        profileImageInput.addEventListener('change', handleImageChange);
-        goBackButton.addEventListener('click', () => window.history.back());
+        elements.form.addEventListener('submit', handleSubmit);
+        elements.profileImageInput.addEventListener('change', handleImageChange);
+        elements.goBackButton.addEventListener('click', () => window.history.back());
 
         // 입력 시 에러 메시지 제거
-        profileImageInput.addEventListener('change', () => clearError('profileImage'));
-        emailInput.addEventListener('input', () => clearError('email'));
-        passwordInput.addEventListener('input', () => clearError('password'));
-        passwordConfirmInput.addEventListener('input', () => clearError('passwordConfirm'));
-        nicknameInput.addEventListener('input', () => clearError('nickname'));
+        elements.profileImageInput.addEventListener('change', () => clearError('profileImage'));
+        elements.emailInput.addEventListener('input', () => clearError('email'));
+        elements.passwordInput.addEventListener('input', () => clearError('password'));
+        elements.passwordConfirmInput.addEventListener('input', () => clearError('passwordConfirm'));
+        elements.nicknameInput.addEventListener('input', () => clearError('nickname'));
     }
 
     /**
@@ -99,9 +113,9 @@
         // 미리보기 표시
         const reader = new FileReader();
         reader.onload = (e) => {
-            profileImageElement.src = e.target.result;
-            profileImageElement.style.display = 'block';
-            profilePlaceholder.style.display = 'none';
+            elements.profileImageElement.src = e.target.result;
+            elements.profileImageElement.style.display = 'block';
+            elements.profilePlaceholder.style.display = 'none';
         };
         reader.readAsDataURL(file);
     }
@@ -118,10 +132,10 @@
             return;
         }
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        const nickname = nicknameInput.value.trim();
-        const profileImage = profileImageInput.files[0];
+        const email = elements.emailInput.value.trim();
+        const password = elements.passwordInput.value;
+        const nickname = elements.nicknameInput.value.trim();
+        const profileImage = elements.profileImageInput.files[0];
 
         // FormData 구성
         const formData = new FormData();
@@ -137,7 +151,7 @@
             setLoading(true);
 
             // API 호출 (multipart/form-data이므로 fetch 직접 사용)
-            const response = await fetch('http://localhost:8080/users/signup', {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/users/signup`, {
                 method: 'POST',
                 body: formData // Content-Type 자동 설정
             });
@@ -150,7 +164,7 @@
                 localStorage.setItem('refresh_token', data.data.refreshToken);
 
                 // 게시글 목록으로 리다이렉트
-                window.location.href = '/pages/board/list.html';
+                window.location.href = CONFIG.LIST_URL;
             } else {
                 throw new Error(data.message);
             }
@@ -169,10 +183,10 @@
     function validateForm() {
         let isValid = true;
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        const passwordConfirm = passwordConfirmInput.value;
-        const nickname = nicknameInput.value.trim();
+        const email = elements.emailInput.value.trim();
+        const password = elements.passwordInput.value;
+        const passwordConfirm = elements.passwordConfirmInput.value;
+        const nickname = elements.nicknameInput.value.trim();
 
         // 이메일 검증
         if (!email) {
@@ -206,7 +220,7 @@
             showError('nickname', '닉네임을 입력해주세요.');
             isValid = false;
         } else if (!isValidNickname(nickname)) {
-            showError('nickname', '닉네임은 1-10자 이내로 입력해주세요.');
+            showError('nickname', `닉네임은 1-${CONFIG.MAX_NICKNAME_LENGTH}자 이내로 입력해주세요.`);
             isValid = false;
         }
 
@@ -254,19 +268,19 @@
      */
     function showError(field, message) {
         const errorMap = {
-            profileImage: profileImageError,
-            email: emailError,
-            password: passwordError,
-            passwordConfirm: passwordConfirmError,
-            nickname: nicknameError
+            profileImage: elements.profileImageError,
+            email: elements.emailError,
+            password: elements.passwordError,
+            passwordConfirm: elements.passwordConfirmError,
+            nickname: elements.nicknameError
         };
 
         const inputMap = {
-            profileImage: profileImageInput,
-            email: emailInput,
-            password: passwordInput,
-            passwordConfirm: passwordConfirmInput,
-            nickname: nicknameInput
+            profileImage: elements.profileImageInput,
+            email: elements.emailInput,
+            password: elements.passwordInput,
+            passwordConfirm: elements.passwordConfirmInput,
+            nickname: elements.nicknameInput
         };
 
         const errorElement = errorMap[field];
@@ -288,19 +302,19 @@
      */
     function clearError(field) {
         const errorMap = {
-            profileImage: profileImageError,
-            email: emailError,
-            password: passwordError,
-            passwordConfirm: passwordConfirmError,
-            nickname: nicknameError
+            profileImage: elements.profileImageError,
+            email: elements.emailError,
+            password: elements.passwordError,
+            passwordConfirm: elements.passwordConfirmError,
+            nickname: elements.nicknameError
         };
 
         const inputMap = {
-            profileImage: profileImageInput,
-            email: emailInput,
-            password: passwordInput,
-            passwordConfirm: passwordConfirmInput,
-            nickname: nicknameInput
+            profileImage: elements.profileImageInput,
+            email: elements.emailInput,
+            password: elements.passwordInput,
+            passwordConfirm: elements.passwordConfirmInput,
+            nickname: elements.nicknameInput
         };
 
         const errorElement = errorMap[field];
@@ -322,11 +336,11 @@
      */
     function setLoading(loading) {
         if (loading) {
-            submitButton.disabled = true;
-            submitButton.textContent = '회원가입 중...';
+            elements.submitButton.disabled = true;
+            elements.submitButton.textContent = '회원가입 중...';
         } else {
-            submitButton.disabled = false;
-            submitButton.textContent = '회원가입';
+            elements.submitButton.disabled = false;
+            elements.submitButton.textContent = '회원가입';
         }
     }
 
@@ -337,4 +351,4 @@
         init();
     }
 
-})();
+})(window, document);

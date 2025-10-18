@@ -4,16 +4,27 @@
  * 참조: @CLAUDE.md Section 4.4, @docs/be/API.md Section 1.1
  */
 
-(function() {
+(function(window, document) {
     'use strict';
 
-    // DOM Elements
-    let form;
-    let emailInput;
-    let passwordInput;
-    let submitButton;
-    let emailError;
-    let passwordError;
+    // ============================================
+    // Configuration
+    // ============================================
+    const CONFIG = {
+        LIST_URL: '/pages/board/list.html'
+    };
+
+    // ============================================
+    // DOM Element Caching
+    // ============================================
+    const elements = {
+        form: null,
+        emailInput: null,
+        passwordInput: null,
+        submitButton: null,
+        emailError: null,
+        passwordError: null
+    };
 
     /**
      * 초기화
@@ -21,7 +32,7 @@
     function init() {
         // 이미 로그인되어 있으면 리다이렉트
         if (isAuthenticated()) {
-            window.location.href = '/pages/board/list.html';
+            window.location.href = CONFIG.LIST_URL;
             return;
         }
 
@@ -33,23 +44,23 @@
      * DOM 요소 캐싱
      */
     function cacheElements() {
-        form = document.querySelector('[data-form="login"]');
-        emailInput = document.querySelector('[data-field="email"]');
-        passwordInput = document.querySelector('[data-field="password"]');
-        submitButton = document.querySelector('[data-action="login"]');
-        emailError = document.querySelector('[data-error="email"]');
-        passwordError = document.querySelector('[data-error="password"]');
+        elements.form = document.querySelector('[data-form="login"]');
+        elements.emailInput = document.querySelector('[data-field="email"]');
+        elements.passwordInput = document.querySelector('[data-field="password"]');
+        elements.submitButton = document.querySelector('[data-action="login"]');
+        elements.emailError = document.querySelector('[data-error="email"]');
+        elements.passwordError = document.querySelector('[data-error="password"]');
     }
 
     /**
      * 이벤트 바인딩
      */
     function bindEvents() {
-        form.addEventListener('submit', handleSubmit);
+        elements.form.addEventListener('submit', handleSubmit);
 
         // 입력 시 에러 메시지 제거
-        emailInput.addEventListener('input', () => clearError('email'));
-        passwordInput.addEventListener('input', () => clearError('password'));
+        elements.emailInput.addEventListener('input', () => clearError('email'));
+        elements.passwordInput.addEventListener('input', () => clearError('password'));
     }
 
     /**
@@ -64,8 +75,8 @@
             return;
         }
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
+        const email = elements.emailInput.value.trim();
+        const password = elements.passwordInput.value;
 
         try {
             setLoading(true);
@@ -84,7 +95,7 @@
             // showSuccess('로그인되었습니다.');
 
             // 게시글 목록으로 리다이렉트
-            window.location.href = '/pages/board/list.html';
+            window.location.href = CONFIG.LIST_URL;
 
         } catch (error) {
             handleLoginError(error);
@@ -100,8 +111,8 @@
     function validateForm() {
         let isValid = true;
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
+        const email = elements.emailInput.value.trim();
+        const password = elements.passwordInput.value;
 
         // 이메일 검증
         if (!email) {
@@ -151,8 +162,8 @@
      * @param {string} message
      */
     function showError(field, message) {
-        const errorElement = field === 'email' ? emailError : passwordError;
-        const inputElement = field === 'email' ? emailInput : passwordInput;
+        const errorElement = field === 'email' ? elements.emailError : elements.passwordError;
+        const inputElement = field === 'email' ? elements.emailInput : elements.passwordInput;
 
         if (errorElement) {
             errorElement.textContent = message;
@@ -169,8 +180,8 @@
      * @param {string} field - 'email' | 'password'
      */
     function clearError(field) {
-        const errorElement = field === 'email' ? emailError : passwordError;
-        const inputElement = field === 'email' ? emailInput : passwordInput;
+        const errorElement = field === 'email' ? elements.emailError : elements.passwordError;
+        const inputElement = field === 'email' ? elements.emailInput : elements.passwordInput;
 
         if (errorElement) {
             errorElement.textContent = '';
@@ -188,11 +199,11 @@
      */
     function setLoading(loading) {
         if (loading) {
-            submitButton.disabled = true;
-            submitButton.textContent = '로그인 중...';
+            elements.submitButton.disabled = true;
+            elements.submitButton.textContent = '로그인 중...';
         } else {
-            submitButton.disabled = false;
-            submitButton.textContent = '로그인';
+            elements.submitButton.disabled = false;
+            elements.submitButton.textContent = '로그인';
         }
     }
 
@@ -203,4 +214,4 @@
         init();
     }
 
-})();
+})(window, document);
