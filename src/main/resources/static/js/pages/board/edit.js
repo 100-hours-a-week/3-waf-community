@@ -128,7 +128,7 @@
       // 새 이미지 업로드
       if (state.selectedFile) {
         const imageResult = await uploadImage(state.selectedFile);
-        state.uploadedImageId = imageResult.image_id;
+        state.uploadedImageId = imageResult.imageId;  // camelCase 수정
       }
 
       // 게시글 수정 (PATCH)
