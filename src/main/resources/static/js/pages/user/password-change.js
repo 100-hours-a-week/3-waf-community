@@ -78,8 +78,8 @@
       await fetchWithAuth(`/users/${state.userId}/password`, {
         method: 'PATCH',
         body: JSON.stringify({
-          new_password: newPassword,
-          new_password_confirm: newPasswordConfirm
+          newPassword: newPassword,
+          newPasswordConfirm: newPasswordConfirm
         })
       });
 
