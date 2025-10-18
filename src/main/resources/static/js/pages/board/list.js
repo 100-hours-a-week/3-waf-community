@@ -12,9 +12,9 @@
   // ============================================
   const CONFIG = {
     PAGE_SIZE: 10,
-    WRITE_POST_URL: '/board/write.html',
-    POST_DETAIL_URL: '/board/detail.html',
-    LOGIN_URL: '/user/login.html'
+    WRITE_POST_URL: '/pages/board/write.html',
+    POST_DETAIL_URL: '/pages/board/detail.html',
+    LOGIN_URL: '/pages/user/login.html'
   };
 
   // ============================================
