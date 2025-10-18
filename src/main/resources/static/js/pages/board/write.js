@@ -14,8 +14,8 @@
     MAX_TITLE_LENGTH: 27,
     MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
     ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/gif'],
-    LIST_URL: '/board/list.html',
-    DETAIL_URL: '/board/detail.html'
+    LIST_URL: '/pages/board/list.html',
+    DETAIL_URL: '/pages/board/detail.html'
   };
 
   // ============================================

@@ -8,7 +8,7 @@
   'use strict';
 
   const CONFIG = {
-    LIST_URL: '/board/list.html'
+    LIST_URL: '/pages/board/list.html'
   };
 
   const state = {
@@ -30,7 +30,7 @@
     state.userId = getCurrentUserId();
     if (!state.userId) {
       alert('로그인이 필요합니다.');
-      window.location.href = '/user/login.html';
+      window.location.href = '/pages/user/login.html';
       return;
     }
 
@@ -78,14 +78,14 @@
       await fetchWithAuth(`/users/${state.userId}/password`, {
         method: 'PATCH',
         body: JSON.stringify({
-          new_password: newPassword,
-          new_password_confirm: newPasswordConfirm
+          newPassword: newPassword,
+          newPasswordConfirm: newPasswordConfirm
         })
       });
 
       alert('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
       logout();
-      window.location.href = '/user/login.html';
+      window.location.href = '/pages/user/login.html';
     } catch (error) {
       console.error('Failed to change password:', error);
 

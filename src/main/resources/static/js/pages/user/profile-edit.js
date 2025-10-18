@@ -11,7 +11,7 @@
     MAX_NICKNAME_LENGTH: 10,
     MAX_FILE_SIZE: 5 * 1024 * 1024,
     ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/gif'],
-    LIST_URL: '/board/list.html'
+    LIST_URL: '/pages/board/list.html'
   };
 
   const state = {
@@ -33,7 +33,7 @@
     state.userId = getCurrentUserId();
     if (!state.userId) {
       alert('로그인이 필요합니다.');
-      window.location.href = '/user/login.html';
+      window.location.href = '/pages/user/login.html';
       return;
     }
 
@@ -171,7 +171,7 @@
 
       alert('회원탈퇴가 완료되었습니다.');
       logout();
-      window.location.href = '/user/login.html';
+      window.location.href = '/pages/user/login.html';
     } catch (error) {
       console.error('Failed to withdraw:', error);
       alert('회원탈퇴에 실패했습니다.');

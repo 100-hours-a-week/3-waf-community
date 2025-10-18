@@ -11,9 +11,9 @@
   // Configuration
   // ============================================
   const CONFIG = {
-    EDIT_POST_URL: '/board/edit.html',
-    LIST_URL: '/board/list.html',
-    LOGIN_URL: '/user/login.html'
+    EDIT_POST_URL: '/pages/board/edit.html',
+    LIST_URL: '/pages/board/list.html',
+    LOGIN_URL: '/pages/user/login.html'
   };
 
   // ============================================

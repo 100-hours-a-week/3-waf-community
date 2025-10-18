@@ -67,7 +67,7 @@ async function fetchWithAuth(url, options = {}) {
             } else {
                 // 토큰 갱신 실패 → 로그인 페이지로 리다이렉트
                 logout();
-                window.location.href = '/user/login.html';
+                window.location.href = '/pages/user/login.html';
                 throw new Error('Authentication failed');
             }
         }
