@@ -53,7 +53,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 
 ### Phase 1: 회원가입 및 로그인
 
-**접속 경로:** http://localhost:8080/user/register.html
+**접속 경로:** http://localhost:8080/pages/user/register.html
 
 **테스트 항목:**
 1. ✅ 회원가입 폼 렌더링
@@ -61,7 +61,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 3. ✅ 닉네임 중복 검증 (USER-003)
 4. ✅ 비밀번호 정책 검증 (8-20자, 대/소/특수문자)
 5. ✅ 프로필 이미지 업로드 (선택, 5MB 제한)
-6. ✅ 회원가입 성공 → 자동 로그인 → /board/list.html 리다이렉트
+6. ✅ 회원가입 성공 → 자동 로그인 → /pages/board/list.html 리다이렉트
 
 **테스트 데이터:**
 ```
@@ -71,7 +71,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 프로필 이미지: (선택)
 ```
 
-**로그인 테스트:** http://localhost:8080/user/login.html
+**로그인 테스트:** http://localhost:8080/pages/user/login.html
 1. ✅ 잘못된 비밀번호 → AUTH-001 에러 메시지 (토큰 갱신 시도 안함)
 2. ✅ 로그인 성공 → access_token, refresh_token localStorage 저장
 3. ✅ 게시글 목록 페이지로 리다이렉트
@@ -80,7 +80,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 
 ### Phase 2: 게시글 목록 및 상세
 
-**접속 경로:** http://localhost:8080/board/list.html
+**접속 경로:** http://localhost:8080/pages/board/list.html
 
 **게시글 목록 테스트:**
 1. ✅ 최신 10개 게시글 로드 (Cursor 페이지네이션)
@@ -92,7 +92,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 
 **게시글 작성 버튼:**
 1. ✅ 비로그인 → "로그인이 필요합니다" alert
-2. ✅ 로그인 → /board/write.html 이동
+2. ✅ 로그인 → /pages/board/write.html 이동
 
 **게시글 상세 테스트:** (카드 클릭)
 1. ✅ 게시글 상세 정보 렌더링
@@ -126,7 +126,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 
 ### Phase 4: 게시글 작성 및 수정
 
-**게시글 작성:** http://localhost:8080/board/write.html
+**게시글 작성:** http://localhost:8080/pages/board/write.html
 
 1. ✅ 로그인 확인 (비로그인 시 리다이렉트)
 2. ✅ 제목 입력 (27자 제한, 실시간 검증)
@@ -154,7 +154,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 
 ### Phase 5: 프로필 관리
 
-**프로필 수정:** http://localhost:8080/user/profile-edit.html
+**프로필 수정:** http://localhost:8080/pages/user/profile-edit.html
 
 1. ✅ 로그인 확인
 2. ✅ 현재 프로필 정보 로드
@@ -168,7 +168,7 @@ mysql -u root -p -e "USE community; SHOW TABLES;"
 2. ✅ 탈퇴 → PUT /users/{id} (INACTIVE 상태)
 3. ✅ 로그아웃 → 로그인 페이지로 리다이렉트
 
-**비밀번호 변경:** http://localhost:8080/user/password-change.html
+**비밀번호 변경:** http://localhost:8080/pages/user/password-change.html
 
 1. ✅ 현재 비밀번호 입력
 2. ✅ 새 비밀번호 입력 (정책 검증)
