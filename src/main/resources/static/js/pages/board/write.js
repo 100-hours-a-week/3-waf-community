@@ -144,7 +144,7 @@
         body: JSON.stringify({
           title,
           content,
-          image_id: state.uploadedImageId || null
+          imageId: state.uploadedImageId || null  // camelCase로 통일
         })
       });
 

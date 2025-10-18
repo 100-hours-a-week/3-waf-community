@@ -139,9 +139,9 @@
 
       // 이미지 처리
       if (state.removeExistingImage) {
-        body.image_id = null;
+        body.imageId = null;  // camelCase로 통일
       } else if (state.uploadedImageId) {
-        body.image_id = state.uploadedImageId;
+        body.imageId = state.uploadedImageId;  // camelCase로 통일
       }
 
       await fetchWithAuth(`/posts/${state.postId}`, {
