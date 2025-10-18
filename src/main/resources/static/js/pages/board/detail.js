@@ -462,8 +462,8 @@
 
     // 이미지 (있는 경우)
     if (elements.postImage) {
-      if (post.imageUrl) {
-        elements.postImage.src = post.imageUrl;
+      if (post.images && post.images.length > 0) {
+        elements.postImage.src = post.images[0];
         elements.postImage.style.display = 'block';
       } else {
         elements.postImage.style.display = 'none';

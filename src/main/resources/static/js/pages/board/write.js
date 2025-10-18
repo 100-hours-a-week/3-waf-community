@@ -124,8 +124,8 @@
       if (state.selectedFile && !state.uploadedImageId) {
         try {
           const imageResult = await uploadImage(state.selectedFile);
-          state.uploadedImageId = imageResult.image_id;
-          state.uploadedImageUrl = imageResult.image_url;
+          state.uploadedImageId = imageResult.imageId;      // camelCase 수정
+          state.uploadedImageUrl = imageResult.imageUrl;    // camelCase 수정
         } catch (error) {
           console.error('Image upload failed:', error);
           showImageError(error.message);
@@ -144,7 +144,7 @@
         body: JSON.stringify({
           title,
           content,
-          image_id: state.uploadedImageId || null
+          imageId: state.uploadedImageId || null  // camelCase로 통일
         })
       });
 

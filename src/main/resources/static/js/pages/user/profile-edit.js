@@ -106,7 +106,7 @@
       const formData = new FormData();
       formData.append('nickname', nickname);
       if (state.selectedFile) {
-        formData.append('profile_image', state.selectedFile);
+        formData.append('profileImage', state.selectedFile);  // camelCase로 통일
       }
 
       const token = localStorage.getItem('access_token');

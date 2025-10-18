@@ -130,7 +130,7 @@
         formData.append('nickname', nickname);
 
         if (profileImage) {
-            formData.append('profile_image', profileImage);
+            formData.append('profileImage', profileImage);  // camelCase로 통일
         }
 
         try {
