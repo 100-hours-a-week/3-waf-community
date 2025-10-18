@@ -266,7 +266,7 @@ formData.append('nickname', '테스트유저');
 
 // 프로필 이미지 (선택)
 if (fileInput.files[0]) {
-  formData.append('profile_image', fileInput.files[0]);
+  formData.append('profileImage', fileInput.files[0]);
 }
 
 const response = await fetch('http://localhost:8080/users/signup', {
@@ -307,7 +307,7 @@ const postResponse = await fetchWithAuth('http://localhost:8080/posts', {
   body: JSON.stringify({
     title: '게시글 제목',
     content: '게시글 내용',
-    image_id: imageId  // 업로드된 이미지 ID
+    imageId: imageId  // 업로드된 이미지 ID
   })
 });
 ```
@@ -547,7 +547,7 @@ A1. 401 에러 발생 시 Refresh Token으로 갱신 후 재시도 (Section 2.2 
 A2. 최신순은 무한 스크롤(cursor), 좋아요순은 페이지 번호(offset) 필요 (Section 3 참조)
 
 **Q3. 회원가입 시 이미지 필수?**
-A3. 선택 사항. `profile_image` 생략 가능
+A3. 선택 사항. `profileImage` 생략 가능
 
 **Q4. Rate Limit에 걸리면?**
 A4. 429 응답 시 1-2초 대기 후 재시도 (Section 6.3 참조)

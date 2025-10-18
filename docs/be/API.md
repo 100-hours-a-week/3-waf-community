@@ -68,7 +68,7 @@
 - `email` (String, 필수) - 이메일 주소
 - `password` (String, 필수) - 비밀번호 (8-20자, 대/소/특수문자 각 1개+)
 - `nickname` (String, 필수) - 닉네임 (10자 이내)
-- `profile_image` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
+- `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
 - 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
@@ -99,7 +99,7 @@
 
 **Request Parts:**
 - `nickname` (String, 선택) - 닉네임 (10자 이내)
-- `profile_image` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
+- `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
 - 200: `update_profile_success` → 수정된 정보 반환
@@ -297,10 +297,10 @@ return PostResponse.from(post);
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "title": "...", "content": "...", "image_id": 1 }`
+**Request:** `{ "title": "...", "content": "...", "imageId": 1 }`
 
-**필수:** title(String), content(String)  
-**선택:** image_id(Number) - POST /images로 먼저 업로드 필요
+**필수:** title(String), content(String)
+**선택:** imageId(Number) - POST /images로 먼저 업로드 필요
 
 **응답:**
 - 201: `create_post_success` → postId 반환
@@ -314,9 +314,9 @@ return PostResponse.from(post);
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "title": "...", "content": "...", "image_id": 1 }`
+**Request:** `{ "title": "...", "content": "...", "imageId": 1 }`
 
-**선택:** title(String), content(String), image_id(Number)  
+**선택:** title(String), content(String), imageId(Number)
 **참고:** PATCH는 부분 업데이트, 최소 1개 필드 필요 , 변경이 없을 경우 WAS 내에서 처리바람.
 
 **응답:**
@@ -354,7 +354,7 @@ return PostResponse.from(post);
 **제약:** JPG/PNG/GIF, 최대 5MB
 
 **응답:**
-- 201: `upload_image_success` → image_id, image_url 반환
+- 201: `upload_image_success` → imageId, imageUrl 반환
 - 413: IMAGE-002 (File too large)
 - 400: IMAGE-003 (Invalid file type)
 - 401/500: [공통 에러 코드](#응답-코드) 참조
@@ -363,7 +363,7 @@ return PostResponse.from(post);
 
 ## 5. 댓글 (Comments)
 
-**댓글 객체:** `{ comment_id, content, created_at, updated_at, author: { user_id, nickname, profile_image } }`
+**댓글 객체:** `{ commentId, content, createdAt, updatedAt, author: { userId, nickname, profileImage } }`
 
 ### 5.1 댓글 목록 조회
 **Endpoint:** `GET /posts/{postId}/comments?offset=0&limit=10`
