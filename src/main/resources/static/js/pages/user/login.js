@@ -21,7 +21,7 @@
     function init() {
         // 이미 로그인되어 있으면 리다이렉트
         if (isAuthenticated()) {
-            window.location.href = '/board/list.html';
+            window.location.href = '/pages/board/list.html';
             return;
         }
 
@@ -84,7 +84,7 @@
             // showSuccess('로그인되었습니다.');
 
             // 게시글 목록으로 리다이렉트
-            window.location.href = '/board/list.html';
+            window.location.href = '/pages/board/list.html';
 
         } catch (error) {
             handleLoginError(error);

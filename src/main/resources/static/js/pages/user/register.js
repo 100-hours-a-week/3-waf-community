@@ -33,7 +33,7 @@
     function init() {
         // 이미 로그인되어 있으면 리다이렉트
         if (isAuthenticated()) {
-            window.location.href = '/board/list.html';
+            window.location.href = '/pages/board/list.html';
             return;
         }
 
@@ -150,7 +150,7 @@
                 localStorage.setItem('refresh_token', data.data.refreshToken);
 
                 // 게시글 목록으로 리다이렉트
-                window.location.href = '/board/list.html';
+                window.location.href = '/pages/board/list.html';
             } else {
                 throw new Error(data.message);
             }
