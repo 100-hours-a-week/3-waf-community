@@ -12,6 +12,8 @@ import com.ktb.community.exception.BusinessException;
 import com.ktb.community.service.AuthService;
 import com.ktb.community.service.UserService;
 import com.ktb.community.util.PasswordValidator;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,22 +41,43 @@ public class UserController {
      * 회원가입 (API.md Section 2.1)
      * POST /users/signup or POST /users
      * Multipart 방식: 이미지와 데이터 함께 전송
+     * httpOnly Cookie 방식으로 토큰 전달 (자동 로그인)
      * Tier 2: 중간 제한 (spam bot 방지, 정상 사용자 재시도 고려)
      */
     @PostMapping(value = {"/signup", ""}, consumes = "multipart/form-data")
     @RateLimit(requestsPerMinute = 10)
-    public ResponseEntity<ApiResponse<AuthResponse>> signup(
-            @Valid @ModelAttribute SignupRequest request) {
-        
+    public ResponseEntity<ApiResponse<Void>> signup(
+            @Valid @ModelAttribute SignupRequest request,
+            HttpServletResponse response) {
+
         // 비밀번호 정책 검증 (Bean Validation 외 추가 정책)
         if (!PasswordValidator.isValid(request.getPassword())) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY,
                     PasswordValidator.getPolicyDescription());
         }
-        
-        AuthResponse response = authService.signup(request);
+
+        AuthResponse authResponse = authService.signup(request);
+
+        // Access Token → httpOnly 쿠키
+        Cookie accessCookie = new Cookie("access_token", authResponse.getAccessToken());
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(30 * 60);  // 30분
+        accessCookie.setAttribute("SameSite", "Strict");
+        response.addCookie(accessCookie);
+
+        // Refresh Token → httpOnly 쿠키
+        Cookie refreshCookie = new Cookie("refresh_token", authResponse.getRefreshToken());
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
+        refreshCookie.setPath("/auth/refresh_token");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);  // 7일
+        refreshCookie.setAttribute("SameSite", "Strict");
+        response.addCookie(refreshCookie);
+
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("register_success", response));
+                .body(ApiResponse.success("register_success"));
     }
     
     /**
