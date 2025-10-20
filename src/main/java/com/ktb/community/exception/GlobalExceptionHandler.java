@@ -126,37 +126,38 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * 일반 예외 처리 (예상하지 못한 서버 오류)
-     * 
-     * @param ex Exception
-     * @return 500 Internal Server Error
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<ErrorDetails>> handleGeneralException(Exception ex) {
-        
-        log.error("[Error] 예상치 못한 서버 오류 발생", ex);
-        
-        ErrorDetails errorDetails = ErrorDetails.of("An unexpected error occurred");
-        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-    
-    /**
      * NullPointerException 예외 처리
-     * 
+     *
      * @param ex NullPointerException
      * @return 500 Internal Server Error
      */
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ApiResponse<ErrorDetails>> handleNullPointerException(
             NullPointerException ex) {
-        
+
         log.error("[Error] Null 포인터 예외 발생", ex);
-        
+
         ErrorDetails errorDetails = ErrorDetails.of("A required value was null");
         ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
-        
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    /**
+     * 일반 예외 처리 (예상하지 못한 서버 오류)
+     * 모든 구체적 예외 핸들러 이후 마지막 fallback
+     *
+     * @param ex Exception
+     * @return 500 Internal Server Error
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<ErrorDetails>> handleGeneralException(Exception ex) {
+
+        log.error("[Error] 예상치 못한 서버 오류 발생", ex);
+
+        ErrorDetails errorDetails = ErrorDetails.of("An unexpected error occurred");
+        ApiResponse<ErrorDetails> response = ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorDetails);
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

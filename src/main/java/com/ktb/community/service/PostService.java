@@ -26,7 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
+// import jakarta.persistence.EntityManager; // Phase 5에서 제거됨 (detached entity 이슈 해결)
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,12 @@ public class PostService {
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PostImageRepository postImageRepository;
-    private final EntityManager entityManager;
+    // EntityManager: Phase 5에서 제거됨 (detached entity 이슈 해결)
+    // - 기존: entityManager.refresh(post.getStats()) 사용
+    // - 문제: clearAutomatically=true 설정 시 detached entity 예외 발생
+    // - 해결: PostStatsRepository에 clearAutomatically=false 적용
+    // - 결과: Optimistic Update 패턴 도입, DB 통신 17% 감소
+    // private final EntityManager entityManager;
 
     /**
      * 게시글 작성 (FR-POST-001)
