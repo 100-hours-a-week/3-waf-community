@@ -349,9 +349,8 @@
 4. PLAN.md 체크박스 업데이트
 
 **문서 동기화:**
-- 설계 변경 시 → @docs/be/LLD.md 업데이트
-- API 변경 시 → @docs/be/API.md 업데이트
-- 스키마 변경 시 → @docs/be/DDL.md 업데이트
+- 자동: Documentation Sync Manager 스킬 (`문서 동기화`, pre-commit hook)
+- 참조: `.claude/skills/Documentation Sync Manager/SKILL.md`
 
 ---
 
