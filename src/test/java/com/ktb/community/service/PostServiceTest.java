@@ -300,14 +300,14 @@ class PostServiceTest {
                 .user(user)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When
         PostResponse response = postService.updatePost(postId, request, userId);
 
         // Then
         assertThat(response).isNotNull();
-        verify(postRepository, times(1)).findById(postId);
+        verify(postRepository, times(1)).findByIdWithUserAndStats(postId, PostStatus.ACTIVE);
     }
 
     @Test
@@ -320,7 +320,7 @@ class PostServiceTest {
                 .title("Updated Title")
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> postService.updatePost(postId, request, userId))
@@ -354,7 +354,7 @@ class PostServiceTest {
                 .user(owner)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When & Then
         assertThatThrownBy(() -> postService.updatePost(postId, request, requesterId))
@@ -384,13 +384,13 @@ class PostServiceTest {
                 .user(user)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When
         postService.deletePost(postId, userId);
 
         // Then
-        verify(postRepository, times(1)).findById(postId);
+        verify(postRepository, times(1)).findByIdWithUserAndStats(postId, PostStatus.ACTIVE);
         // Soft Delete이므로 실제 삭제 메서드는 호출되지 않음
         verify(postRepository, never()).delete(any(Post.class));
     }
@@ -418,7 +418,7 @@ class PostServiceTest {
                 .user(owner)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When & Then
         assertThatThrownBy(() -> postService.deletePost(postId, requesterId))
