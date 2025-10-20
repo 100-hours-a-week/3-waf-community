@@ -58,19 +58,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // ========== 순서 중요: 구체적인 패턴 먼저! ==========
 
-                        // 0. 정적 리소스 (HTML, CSS, JS, images)
-                        .requestMatchers(
-                                "/",
-                                "/pages/**",       // Vanilla HTML 페이지
-                                "/board/**",       // 하위 호환성 (추후 제거 가능)
-                                "/user/**",        // 하위 호환성 (추후 제거 가능)
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/favicon.ico"
-                        ).permitAll()
-
-                        // 1. 특수 케이스 - GET이지만 인증 필요
+// 1. 특수 케이스 - GET이지만 인증 필요
                         .requestMatchers(HttpMethod.GET, "/posts/users/me/likes").authenticated()
                         
                         // 2. Public GET 엔드포인트
