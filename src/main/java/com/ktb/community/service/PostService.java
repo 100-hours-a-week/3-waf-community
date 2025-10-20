@@ -207,9 +207,9 @@ public class PostService {
      */
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long userId) {
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
-                        "Post not found with id: " + postId));
+                        "Post not found or already deleted with id: " + postId));
 
         // 권한 검증
         if (!post.getUser().getUserId().equals(userId)) {
@@ -261,9 +261,9 @@ public class PostService {
      */
     @Transactional
     public void deletePost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
-                        "Post not found with id: " + postId));
+                        "Post not found or already deleted with id: " + postId));
 
         // 권한 검증
         if (!post.getUser().getUserId().equals(userId)) {

@@ -92,7 +92,7 @@ public class CommentController {
      */
     @DeleteMapping("/{commentId}")
     @RateLimit(requestsPerMinute = 30)
-    public ResponseEntity<ApiResponse<Void>> deleteComment(
+    public ResponseEntity<Void> deleteComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,
             Authentication authentication
