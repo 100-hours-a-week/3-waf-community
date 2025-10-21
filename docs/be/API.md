@@ -21,39 +21,49 @@
 **필수:** email(String), password(String)
 
 **응답:**
-- 200: `login_success` → access_token, refresh_token 반환
+- 200: `login_success` → **httpOnly Cookie로 토큰 전달** (access_token, refresh_token)
+  - Set-Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Set-Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
 - 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**⚠️ Breaking Change**: 응답 body에 토큰 미포함 (Cookie로 전달)
 
 ---
 
 ### 1.2 로그아웃
 **Endpoint:** `POST /auth/logout`
 
-**헤더:** Authorization: Bearer {access_token}
+**Request:** 없음 (Cookie에서 자동 추출)
 
-**Request:** `{ "refresh_token": "..." }`
-
-**필수:** refresh_token(String)
+**처리:**
+- Cookie에서 refresh_token 추출 → DB 삭제
+- 쿠키 삭제 (access_token, refresh_token MaxAge=0)
 
 **응답:**
 - 200: `logout_success`
-- 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**⚠️ Breaking Change**: Authorization header 불필요, Request body 없음
 
 ---
 
 ### 1.3 액세스 토큰 재발급
 **Endpoint:** `POST /auth/refresh_token`
 
-**Request:** `{ "refresh_token": "..." }`
+**Request:** 없음 (Cookie에서 자동 추출)
 
-**필수:** refresh_token(String)
+**처리:**
+- Cookie에서 refresh_token 추출 → 검증
+- 새 access_token 발급 → httpOnly Cookie로 전달
 
 **응답:**
-- 200: `token_refreshed` → access_token 반환
+- 200: `token_refreshed` → **httpOnly Cookie로 access_token 전달**
+  - Set-Cookie: access_token (30분, HttpOnly, SameSite=Strict)
 - 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**⚠️ Breaking Change**: Request body 없음, 응답 body에 토큰 미포함
 
 ---
 
@@ -71,12 +81,16 @@
 - `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
-- 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
+- 201: `register_success` → **httpOnly Cookie로 토큰 전달** (자동 로그인)
+  - Set-Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Set-Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
 - 413: IMAGE-002 (File too large)
 - 400: IMAGE-003 (Invalid file type)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**⚠️ Breaking Change**: 응답 body에 토큰 미포함 (Cookie로 전달)
 
 ---
 
@@ -499,10 +513,51 @@ return PostResponse.from(post);
 
 ## 7. 공통 사양
 
-### 인증 헤더
+### 인증 방식 (httpOnly Cookie)
+
+**자동 전송**: 브라우저가 모든 요청에 Cookie 자동 포함 (credentials: 'include' 필수)
+
+**Express.js 프론트엔드 예시**:
+```javascript
+// 로그인
+const response = await fetch('http://localhost:8080/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',  // 필수
+  body: JSON.stringify({ email, password })
+});
+
+// API 요청 (토큰 자동 전송)
+const posts = await fetch('http://localhost:8080/posts', {
+  credentials: 'include'  // 필수
+});
+```
+
+**CSRF 토큰 처리 (POST/PATCH/DELETE)**:
+```javascript
+// CSRF 토큰 추출
+const csrfToken = document.cookie
+  .split('; ')
+  .find(row => row.startsWith('XSRF-TOKEN='))
+  ?.split('=')[1];
+
+// POST/PATCH/DELETE 요청 시 헤더 추가
+const response = await fetch('http://localhost:8080/posts', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-XSRF-TOKEN': csrfToken  // 필수
+  },
+  credentials: 'include',
+  body: JSON.stringify(data)
+});
+```
+
+**하위 호환성 (Authorization header)**:
 ```
 Authorization: Bearer {access_token}
 ```
+- Cookie 우선, Authorization header는 하위 호환성 지원
 
 ### 페이지네이션
 ```

@@ -246,7 +246,11 @@
 **NFR-SEC-001: 인증 및 권한**
 - JWT 기반 토큰 인증
 - Access Token: 30분, Refresh Token: 7일
-- 토큰 저장: RDB(user_tokens 테이블)
+- **토큰 전달**: httpOnly Cookie (XSS 방어)
+  - access_token: HttpOnly, SameSite=Strict, Path=/, 30분
+  - refresh_token: HttpOnly, SameSite=Strict, Path=/auth/refresh_token, 7일
+- **Refresh Token DB 관리**: user_tokens 테이블 (갱신/무효화)
+- **보안 강화**: JavaScript 접근 불가 (httpOnly), CSRF 방어 (SameSite=Strict)
 
 **NFR-SEC-002: 비밀번호 보안**
 - BCrypt 암호화

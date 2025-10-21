@@ -134,26 +134,60 @@ MySQL Database
 }
 ```
 
-### 6.2 인증 흐름
+### 6.2 인증 흐름 (httpOnly Cookie)
 
-**로그인:**  
-Client → POST /auth/login → 서버 BCrypt 검증 → Access + Refresh 토큰 반환 → Refresh를 user_tokens에 저장
+**로그인 (Cookie 기반):**
+1. Client → POST /auth/login (credentials: 'include')
+2. 서버 → BCrypt 검증
+3. 서버 → Access + Refresh 토큰 생성
+4. 서버 → httpOnly Cookie 발급 (access_token, refresh_token)
+5. 서버 → Refresh를 user_tokens 테이블에 저장
+6. 클라이언트 → Cookie 자동 저장 (JavaScript 접근 불가)
 
-**API 호출:**  
-Client → Authorization: Bearer {token} → JwtAuthenticationFilter 검증 → SecurityContext 저장 → 비즈니스 로직 실행
+**API 호출 (Cookie 자동 전송):**
+1. Client → API 요청 (credentials: 'include')
+2. 브라우저 → Cookie 자동 포함 (access_token)
+3. JwtAuthenticationFilter → Cookie에서 토큰 추출
+4. JwtAuthenticationFilter → 토큰 검증 및 SecurityContext 저장
+5. 비즈니스 로직 실행
 
-**토큰 갱신:**  
-Client → POST /auth/refresh_token → user_tokens 테이블 검증 → 새 Access Token 반환
+**토큰 갱신 (Cookie 기반):**
+1. Client → POST /auth/refresh_token (credentials: 'include')
+2. 서버 → Cookie에서 refresh_token 추출
+3. 서버 → user_tokens 테이블 검증
+4. 서버 → 새 access_token 발급 → httpOnly Cookie 업데이트
 
-### 6.3 핵심 보안 설정
+**하위 호환성:**
+- Authorization header (Bearer token) 지원 유지
+- Cookie 우선, header는 fallback
+
+### 6.3 핵심 보안 설정 (CORS + CSRF)
 
 **SecurityConfig 핵심:**
 ```java
 @Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(List.of(frontendUrl));  // Express.js
+    config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(List.of("*"));
+    config.setAllowCredentials(true);  // Cookie 전송 허용
+    config.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
+}
+
+@Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> 
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf
+                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                    .ignoringRequestMatchers("/auth/login", "/users/signup")
+            )
+            .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                     // 공개 엔드포인트
@@ -169,10 +203,15 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-    
+
     return http.build();
 }
 ```
+
+**보안 강화 요소:**
+- **CORS**: Express.js 연동 (allowCredentials: true)
+- **CSRF**: Cookie 기반 토큰 (httpOnly=false for JavaScript access)
+- **Cookie**: httpOnly (XSS 방어), SameSite=Strict (CSRF 방어)
 
 **권한 제어:**
 - Spring Security가 HTTP Method별로 엔드포인트 접근 제어
