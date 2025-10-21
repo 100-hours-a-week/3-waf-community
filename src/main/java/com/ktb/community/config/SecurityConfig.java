@@ -123,8 +123,11 @@ public class SecurityConfig {
                         
                         // 7. Public - Auth
                         .requestMatchers("/auth/login", "/auth/refresh_token", "/users/signup").permitAll()
-                        
-                        // 8. 나머지는 인증 필요
+
+                        // 8. Public - Legal & Static Resources
+                        .requestMatchers("/terms", "/privacy", "/css/**").permitAll()
+
+                        // 9. 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
