@@ -2,7 +2,7 @@ package com.ktb.community.service;
 
 import com.ktb.community.dto.request.LoginRequest;
 import com.ktb.community.dto.request.SignupRequest;
-import com.ktb.community.dto.response.AuthResponse;
+import com.ktb.community.dto.response.TokenPair;
 import com.ktb.community.entity.User;
 import com.ktb.community.entity.UserToken;
 import com.ktb.community.enums.UserStatus;
@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -29,6 +28,12 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    /**
+     * 인증 결과 (토큰 + 사용자 정보)
+     * Service → Controller 전달용
+     */
+    public record AuthResult(TokenPair tokens, User user) {}
     
     private final UserRepository userRepository;
     private final UserTokenRepository userTokenRepository;
@@ -45,22 +50,22 @@ public class AuthService {
      * - 자동 로그인 (토큰 발급)
      */
     @Transactional
-    public AuthResponse signup(SignupRequest request) {
+    public AuthResult signup(SignupRequest request) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, 
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS,
                     "Email already exists: " + request.getEmail());
         }
-        
+
         // 닉네임 중복 확인
         if (userRepository.existsByNickname(request.getNickname())) {
-            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS, 
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS,
                     "Nickname already exists: " + request.getNickname());
         }
-        
+
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        
+
         // 프로필 이미지 업로드 (있을 경우)
         com.ktb.community.entity.Image image = null;
         if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
@@ -68,9 +73,9 @@ public class AuthService {
             image = imageRepository.findById(imageResponse.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
             image.clearExpiresAt();  // 영구 보존
-            log.info("[Auth] 회원가입 프로필 이미지 업로드: imageId={}", image.getImageId());
+            log.debug("[Auth] 회원가입 프로필 이미지 업로드: imageId={}", image.getImageId());
         }
-        
+
         // 사용자 생성
         User user = request.toEntity(encodedPassword);
         if (image != null) {
@@ -78,8 +83,9 @@ public class AuthService {
         }
         User savedUser = userRepository.save(user);
 
-        // 자동 로그인 - 토큰 발급
-        return generateTokens(savedUser);
+        // 토큰 발급 및 결과 반환
+        TokenPair tokens = generateTokens(savedUser);
+        return new AuthResult(tokens, savedUser);
     }
     
     /**
@@ -88,21 +94,23 @@ public class AuthService {
      * - 계정 상태 확인 (ACTIVE만 허용)
      */
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public AuthResult login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
-        
+
         // 비밀번호 확인
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
-        
+
         // 계정 상태 확인
         if (user.getUserStatus() != UserStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
         }
 
-        return generateTokens(user);
+        // 토큰 발급 및 결과 반환
+        TokenPair tokens = generateTokens(user);
+        return new AuthResult(tokens, user);
     }
     
     /**
@@ -119,57 +127,61 @@ public class AuthService {
      * Access Token 재발급 (FR-AUTH-004)
      * - Refresh Token 유효성 검증
      * - 새 Access Token 발급
+     * - 사용자 정보 반환 (프론트엔드 localStorage 동기화용)
      */
     @Transactional(readOnly = true)
-    public AuthResponse refreshAccessToken(String refreshToken) {
+    public AuthResult refreshAccessToken(String refreshToken) {
         // Refresh Token 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
-        
+
         // DB에서 토큰 확인
         UserToken userToken = userTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
-        
+
         // 만료 확인
         if (userToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BusinessException(ErrorCode.TOKEN_EXPIRED);
         }
-        
+
         // 사용자 조회
         User user = userToken.getUser();
-        
+
         // 새 Access Token 발급
+        String newAccessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        // TokenPair 생성 (refreshToken은 재사용)
+        TokenPair tokens = new TokenPair(newAccessToken, refreshToken);
+        return new AuthResult(tokens, user);
+    }
+    
+    /**
+     * 토큰 생성 및 저장 (내부 메서드)
+     * @return TokenPair (Controller에서 Cookie 설정용)
+     */
+    private TokenPair generateTokens(User user) {
         String accessToken = jwtTokenProvider.createAccessToken(
                 user.getUserId(),
                 user.getEmail(),
                 user.getRole().name()
         );
 
-        return AuthResponse.accessOnly(accessToken);
-    }
-    
-    /**
-     * 토큰 생성 및 저장 (공통 메서드)
-     */
-    private AuthResponse generateTokens(User user) {
-        String accessToken = jwtTokenProvider.createAccessToken(
-                user.getUserId(),
-                user.getEmail(),
-                user.getRole().name()
-        );
-        
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getUserId());
-        
+
         // Refresh Token DB 저장
         UserToken userToken = UserToken.builder()
                 .token(refreshToken)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .user(user)
                 .build();
-        
+
         userTokenRepository.save(userToken);
-        
-        return AuthResponse.of(accessToken, refreshToken);
+
+        return new TokenPair(accessToken, refreshToken);
     }
 }

@@ -21,13 +21,28 @@
 **필수:** email(String), password(String)
 
 **응답:**
-- 200: `login_success` → **httpOnly Cookie로 토큰 전달** (access_token, refresh_token)
-  - Set-Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-  - Set-Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+- 200: `login_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
+  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
-**⚠️ Breaking Change**: 응답 body에 토큰 미포함 (Cookie로 전달)
+**응답 예시:**
+```json
+{
+  "message": "login_success",
+  "data": {
+    "userId": 1,
+    "email": "test@startupcode.kr",
+    "nickname": "testuser",
+    "profileImage": "https://..."
+  },
+  "timestamp": "2025-10-21T10:00:00"
+}
+```
+
+**⚠️ Breaking Change**: 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
 
 ---
 
@@ -56,14 +71,51 @@
 **처리:**
 - Cookie에서 refresh_token 추출 → 검증
 - 새 access_token 발급 → httpOnly Cookie로 전달
+- 사용자 정보 반환 (localStorage 동기화용)
 
 **응답:**
-- 200: `token_refreshed` → **httpOnly Cookie로 access_token 전달**
-  - Set-Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+- 200: `token_refreshed` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
+  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
-**⚠️ Breaking Change**: Request body 없음, 응답 body에 토큰 미포함
+**응답 예시:**
+```json
+{
+  "message": "token_refreshed",
+  "data": {
+    "userId": 1,
+    "email": "test@startupcode.kr",
+    "nickname": "testuser",
+    "profileImage": "https://..."
+  },
+  "timestamp": "2025-10-21T10:00:00"
+}
+```
+
+**⚠️ Breaking Change**: Request body 없음, 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
+
+**프론트엔드 활용:**
+```javascript
+// api.js - 토큰 갱신 시 localStorage 동기화
+async function refreshAccessToken() {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh_token`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        // userId를 localStorage에 저장 (옵션 3 지원)
+        if (data.data && data.data.userId) {
+            localStorage.setItem('userId', data.data.userId);
+        }
+        return true;
+    }
+    return false;
+}
+```
 
 ---
 
@@ -81,16 +133,31 @@
 - `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
-- 201: `register_success` → **httpOnly Cookie로 토큰 전달** (자동 로그인)
-  - Set-Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-  - Set-Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+- 201: `register_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body** (자동 로그인)
+  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
 - 413: IMAGE-002 (File too large)
 - 400: IMAGE-003 (Invalid file type)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
-**⚠️ Breaking Change**: 응답 body에 토큰 미포함 (Cookie로 전달)
+**응답 예시:**
+```json
+{
+  "message": "register_success",
+  "data": {
+    "userId": 1,
+    "email": "test@startupcode.kr",
+    "nickname": "testuser",
+    "profileImage": "https://..."
+  },
+  "timestamp": "2025-10-21T10:00:00"
+}
+```
+
+**⚠️ Breaking Change**: 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
 
 ---
 

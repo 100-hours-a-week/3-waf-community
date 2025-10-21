@@ -35,31 +35,19 @@ public class AuthController {
      */
     @PostMapping("/login")
     @RateLimit(requestsPerMinute = 5)
-    public ResponseEntity<ApiResponse<Void>> login(
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response) {
 
-        AuthResponse authResponse = authService.login(request);
+        AuthService.AuthResult result = authService.login(request);
 
-        // Access Token → httpOnly 쿠키
-        Cookie accessCookie = new Cookie("access_token", authResponse.getAccessToken());
-        accessCookie.setHttpOnly(true);
-        accessCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
-        accessCookie.setPath("/");
-        accessCookie.setMaxAge(30 * 60);  // 30분
-        accessCookie.setAttribute("SameSite", "Strict");  // CSRF 방어
-        response.addCookie(accessCookie);
+        // 토큰 → httpOnly Cookie 설정
+        setCookie(response, "access_token", result.tokens().getAccessToken(), 30 * 60, "/");
+        setCookie(response, "refresh_token", result.tokens().getRefreshToken(), 7 * 24 * 60 * 60, "/auth/refresh_token");
 
-        // Refresh Token → httpOnly 쿠키
-        Cookie refreshCookie = new Cookie("refresh_token", authResponse.getRefreshToken());
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
-        refreshCookie.setPath("/auth/refresh_token");  // refresh 엔드포인트만 전송
-        refreshCookie.setMaxAge(7 * 24 * 60 * 60);  // 7일
-        refreshCookie.setAttribute("SameSite", "Strict");
-        response.addCookie(refreshCookie);
-
-        return ResponseEntity.ok(ApiResponse.success("login_success"));
+        // 사용자 정보 → 응답 body
+        AuthResponse authResponse = AuthResponse.from(result.user());
+        return ResponseEntity.ok(ApiResponse.success("login_success", authResponse));
     }
     
     /**
@@ -107,37 +95,59 @@ public class AuthController {
      * 액세스 토큰 재발급 (API.md Section 1.3)
      * POST /auth/refresh_token
      * Cookie에서 Refresh Token 추출하여 새 Access Token 발급
+     * 사용자 정보도 함께 반환 (프론트엔드 localStorage 동기화용)
      * Tier 2: 중간 제한 (비정상 토큰 갱신 감지)
      */
     @PostMapping("/refresh_token")
     @RateLimit(requestsPerMinute = 30)
-    public ResponseEntity<ApiResponse<Void>> refreshToken(
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(
             HttpServletRequest request,
             HttpServletResponse response) {
 
         // Refresh Token 추출 (Cookie)
-        String refreshToken = null;
+        String refreshToken = extractCookie(request, "refresh_token");
+
+        // 새 Access Token 발급 + 사용자 정보 조회
+        AuthService.AuthResult result = authService.refreshAccessToken(refreshToken);
+
+        // Access Token → httpOnly Cookie (Refresh Token은 그대로 유지)
+        setCookie(response, "access_token", result.tokens().getAccessToken(), 30 * 60, "/");
+
+        // 사용자 정보 → 응답 body
+        AuthResponse authResponse = AuthResponse.from(result.user());
+        return ResponseEntity.ok(ApiResponse.success("token_refreshed", authResponse));
+    }
+
+    /**
+     * Cookie 설정 헬퍼 메서드
+     * @param name 쿠키 이름
+     * @param value 쿠키 값
+     * @param maxAge 만료 시간 (초)
+     * @param path 쿠키 경로
+     */
+    private void setCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
+        cookie.setPath(path);
+        cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Strict");
+        response.addCookie(cookie);
+    }
+
+    /**
+     * Cookie 추출 헬퍼 메서드
+     * @param name 쿠키 이름
+     * @return 쿠키 값 (없으면 null)
+     */
+    private String extractCookie(HttpServletRequest request, String name) {
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("refresh_token".equals(cookie.getName())) {
-                    refreshToken = cookie.getValue();
-                    break;
+                if (name.equals(cookie.getName())) {
+                    return cookie.getValue();
                 }
             }
         }
-
-        // 새 Access Token 발급
-        AuthResponse authResponse = authService.refreshAccessToken(refreshToken);
-
-        // Access Token → httpOnly 쿠키 (Refresh Token은 그대로 유지)
-        Cookie accessCookie = new Cookie("access_token", authResponse.getAccessToken());
-        accessCookie.setHttpOnly(true);
-        accessCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
-        accessCookie.setPath("/");
-        accessCookie.setMaxAge(30 * 60);  // 30분
-        accessCookie.setAttribute("SameSite", "Strict");
-        response.addCookie(accessCookie);
-
-        return ResponseEntity.ok(ApiResponse.success("token_refreshed"));
+        return null;
     }
 }

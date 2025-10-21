@@ -46,7 +46,7 @@ public class UserController {
      */
     @PostMapping(value = {"/signup", ""}, consumes = "multipart/form-data")
     @RateLimit(requestsPerMinute = 10)
-    public ResponseEntity<ApiResponse<Void>> signup(
+    public ResponseEntity<ApiResponse<AuthResponse>> signup(
             @Valid @ModelAttribute SignupRequest request,
             HttpServletResponse response) {
 
@@ -56,28 +56,16 @@ public class UserController {
                     PasswordValidator.getPolicyDescription());
         }
 
-        AuthResponse authResponse = authService.signup(request);
+        AuthService.AuthResult result = authService.signup(request);
 
-        // Access Token → httpOnly 쿠키
-        Cookie accessCookie = new Cookie("access_token", authResponse.getAccessToken());
-        accessCookie.setHttpOnly(true);
-        accessCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
-        accessCookie.setPath("/");
-        accessCookie.setMaxAge(30 * 60);  // 30분
-        accessCookie.setAttribute("SameSite", "Strict");
-        response.addCookie(accessCookie);
+        // 토큰 → httpOnly Cookie 설정
+        setCookie(response, "access_token", result.tokens().getAccessToken(), 30 * 60, "/");
+        setCookie(response, "refresh_token", result.tokens().getRefreshToken(), 7 * 24 * 60 * 60, "/auth/refresh_token");
 
-        // Refresh Token → httpOnly 쿠키
-        Cookie refreshCookie = new Cookie("refresh_token", authResponse.getRefreshToken());
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
-        refreshCookie.setPath("/auth/refresh_token");
-        refreshCookie.setMaxAge(7 * 24 * 60 * 60);  // 7일
-        refreshCookie.setAttribute("SameSite", "Strict");
-        response.addCookie(refreshCookie);
-
+        // 사용자 정보 → 응답 body
+        AuthResponse authResponse = AuthResponse.from(result.user());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("register_success"));
+                .body(ApiResponse.success("register_success", authResponse));
     }
     
     /**
@@ -158,6 +146,23 @@ public class UserController {
     }
     
     /**
+     * Cookie 설정 헬퍼 메서드
+     * @param name 쿠키 이름
+     * @param value 쿠키 값
+     * @param maxAge 만료 시간 (초)
+     * @param path 쿠키 경로
+     */
+    private void setCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
+        cookie.setPath(path);
+        cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Strict");
+        response.addCookie(cookie);
+    }
+
+    /**
      * Authentication에서 사용자 ID 추출
      * JWT 인증: username = userId (숫자)
      * 기타 인증: username = email (fallback to DB lookup)
@@ -165,7 +170,7 @@ public class UserController {
     private Long extractUserIdFromAuthentication(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String username = userDetails.getUsername();
-        
+
         // JWT 인증 경로: username이 userId인 경우 (빠른 경로)
         try {
             return Long.parseLong(username);
