@@ -52,7 +52,9 @@ public class FileValidator {
                 throw new BusinessException(ErrorCode.INVALID_FILE_TYPE);
             }
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            // 디버깅: 파일 읽기 실패 원인 로깅
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, 
+                "Failed to read file bytes: " + e.getMessage());
         }
     }
 

@@ -5,7 +5,7 @@
 | 항목 | 내용                        |
 |------|---------------------------|
 | 프로젝트명 | KTB Community Platform    |
-| 버전 | 1.6                       |
+| 버전 | 1.7                       |
 | 문서 유형 | Low Level Design Document |
 
 ---
@@ -185,21 +185,55 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .ignoringRequestMatchers("/auth/login", "/users/signup")
+                    .ignoringRequestMatchers(
+                            "/auth/**",           // 인증 관련
+                            "/users/**",          // 사용자 관련 (회원가입, 프로필 수정 등)
+                            "/posts/**",          // 게시글 관련 모든 API
+                            "/images/**"          // 이미지 업로드
+                    )
             )
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    // 공개 엔드포인트
-                    .requestMatchers(
-                            "/auth/login",
-                            "/auth/refresh_token",
-                            "/users/signup",
-                            "/posts",
-                            "/posts/*",
-                            "/posts/*/comments"
+                    // ========== 순서 중요: 구체적인 패턴 먼저! ==========
+
+                    // 1. 특수 케이스 - GET이지만 인증 필요
+                    .requestMatchers(HttpMethod.GET, "/posts/users/me/likes").authenticated()
+                    
+                    // 2. Public GET 엔드포인트
+                    .requestMatchers(HttpMethod.GET, 
+                            "/posts",                // 게시글 목록
+                            "/posts/*",              // 게시글 상세
+                            "/posts/*/comments",     // 댓글 목록
+                            "/users/*"               // 사용자 프로필 (공개)
                     ).permitAll()
-                    // 나머지는 인증 필요
+                    
+                    // 3. 인증 필요 - Posts
+                    .requestMatchers(HttpMethod.POST, "/posts").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/posts/*").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/posts/*").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/posts/*/like").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/posts/*/like").authenticated()
+                    
+                    // 4. 인증 필요 - Comments
+                    .requestMatchers(HttpMethod.POST, "/posts/*/comments").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/posts/*/comments/*").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/posts/*/comments/*").authenticated()
+                    
+                    // 5. 인증 필요 - Users
+                    .requestMatchers(HttpMethod.PATCH, "/users/*").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/users/*/password").authenticated()
+                    
+                    // 6. 인증 필요 - Images
+                    .requestMatchers(HttpMethod.POST, "/images").authenticated()
+                    
+                    // 7. Public - Auth
+                    .requestMatchers("/auth/login", "/auth/refresh_token", "/users/signup").permitAll()
+
+                    // 8. Public - Legal & Static Resources
+                    .requestMatchers("/terms", "/privacy", "/css/**").permitAll()
+
+                    // 9. 나머지는 인증 필요
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -210,7 +244,9 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
 **보안 강화 요소:**
 - **CORS**: Express.js 연동 (allowCredentials: true)
-- **CSRF**: Cookie 기반 토큰 (httpOnly=false for JavaScript access)
+- **CSRF**: Cookie 기반 토큰, API 엔드포인트는 제외 (/auth/**, /users/**, /posts/**, /images/**)
+  - 제외 이유: JWT httpOnly Cookie 기반 인증이 CSRF 보호 제공
+  - Cross-origin 환경 (localhost:3000 → localhost:8080)에서 CSRF 토큰 접근 불가 해결
 - **Cookie**: httpOnly (XSS 방어), SameSite=Strict (CSRF 방어)
 
 **권한 제어:**
@@ -909,3 +945,4 @@ int decrementLikeCount(@Param("postId") Long postId);
 | 2025-10-10 | 1.4 | HTML 이스케이프 코드 수정 (Section 6.5) |
 | 2025-10-15 | 1.5 | Section 14 로깅 정책 추가, Service Layer 로그 레벨 조정 |
 | 2025-10-15 | 1.6 | Section 12.1 User Soft Delete 필터링 및 Batch Fetch Size 추가 |
+| 2025-10-21 | 1.7 | Section 6.3 SecurityConfig CSRF 설정 업데이트 (API 엔드포인트 제외 반영) |

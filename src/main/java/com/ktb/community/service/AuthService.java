@@ -95,7 +95,7 @@ public class AuthService {
      */
     @Transactional
     public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
+        User user = userRepository.findByEmailWithProfileImage(request.getEmail().toLowerCase().trim())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
         // 비밀번호 확인
@@ -136,8 +136,8 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        // DB에서 토큰 확인
-        UserToken userToken = userTokenRepository.findByToken(refreshToken)
+        // DB에서 토큰 확인 (User + ProfileImage Fetch Join)
+        UserToken userToken = userTokenRepository.findByTokenWithUser(refreshToken)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
 
         // 만료 확인

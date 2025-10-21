@@ -84,7 +84,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers("/auth/login", "/users/signup")  // 공개 엔드포인트 제외
+                        .ignoringRequestMatchers(
+                                "/auth/**",           // 인증 관련
+                                "/users/**",          // 사용자 관련 (회원가입, 프로필 수정 등)
+                                "/posts/**",          // 게시글 관련 모든 API
+                                "/images/**"          // 이미지 업로드
+                        )
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
