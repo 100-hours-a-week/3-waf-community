@@ -48,4 +48,14 @@ public class Image extends BaseCreatedTimeEntity {
     public void clearExpiresAt() {
         this.expiresAt = null;
     }
+
+    /**
+     * 고아 이미지로 전환 (TTL 복원)
+     * 게시글/프로필에서 제거될 때 호출
+     *
+     * @param expiresAt 만료 시간 (기본: 현재 + 1시간)
+     */
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
 }

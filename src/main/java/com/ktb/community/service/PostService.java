@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // import jakarta.persistence.EntityManager; // Phase 5에서 제거됨 (detached entity 이슈 해결)
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -230,29 +231,38 @@ public class PostService {
             post.updateContent(request.getContent());
         }
 
-        // 이미지 업데이트 (imageId가 있을 경우)
-        if (request.getImageId() != null) {
-            // 기존 이미지 연결 삭제
-            postImageRepository.deleteByPostId(postId);
+        // ========== 이미지 처리 ==========
+
+        // Case 1: 이미지 제거 요청 (removeImage: true)
+        if (Boolean.TRUE.equals(request.getRemoveImage())) {
+            restoreExpiresAtAndDeleteBridge(postId);
+            log.info("[Post] 게시글 이미지 제거: postId={}", postId);
+        }
+        // Case 2: 새 이미지로 교체 (imageId: 123)
+        else if (request.getImageId() != null) {
+            // 기존 이미지 TTL 복원 + 브릿지 삭제
+            restoreExpiresAtAndDeleteBridge(postId);
 
             // 새 이미지 연결
-            Image image = imageRepository.findById(request.getImageId())
+            Image newImage = imageRepository.findById(request.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
                             "Image not found with id: " + request.getImageId()));
 
             // expires_at 클리어 (영구 보존)
-            image.clearExpiresAt();
+            newImage.clearExpiresAt();
 
             // PostImage 브릿지 테이블 저장
             PostImage postImage = PostImage.builder()
                     .post(post)
-                    .image(image)
+                    .image(newImage)
                     .displayOrder(1)
                     .build();
             postImageRepository.save(postImage);
 
-            log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}", postId, image.getImageId());
+            log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}",
+                     postId, newImage.getImageId());
         }
+        // Case 3: 이미지 유지 (둘 다 없음)
 
         log.debug("[Post] 게시글 수정 완료: postId={}", postId);
 
@@ -280,6 +290,30 @@ public class PostService {
         post.updateStatus(PostStatus.DELETED);
 
         log.debug("[Post] 게시글 삭제 완료: postId={}", postId);
+    }
+
+    /**
+     * 게시글의 기존 이미지 TTL 복원 + 브릿지 삭제
+     * - PostImage 조회 (Fetch Join) → Image TTL 복원 (now + 1h) → 브릿지 삭제
+     * - 배치 작업(ImageCleanupBatchService)이 expires_at < NOW() 조건으로 자동 삭제
+     *
+     * @param postId 게시글 ID
+     */
+    private void restoreExpiresAtAndDeleteBridge(Long postId) {
+        // 1. 기존 브릿지 조회 (Fetch Join으로 Image 함께 조회)
+        List<PostImage> existingImages = postImageRepository.findByPostIdWithImage(postId);
+
+        // 2. 각 이미지 TTL 복원 (JPA Dirty Checking으로 UPDATE)
+        for (PostImage postImage : existingImages) {
+            Image image = postImage.getImage();
+            image.setExpiresAt(LocalDateTime.now().plusHours(1));
+
+            log.info("[Post] 고아 이미지 TTL 복원: imageId={}, expiresAt={}",
+                     image.getImageId(), image.getExpiresAt());
+        }
+
+        // 3. 브릿지 삭제 (JPQL Bulk Delete)
+        postImageRepository.deleteByPostId(postId);
     }
 
     /**

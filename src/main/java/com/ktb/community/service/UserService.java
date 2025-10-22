@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -74,12 +75,25 @@ public class UserService {
         
         // 프로필 이미지 업로드 및 변경 (있을 경우)
         if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
+            // 1. 기존 이미지 TTL 복원 (고아 이미지 처리)
+            Image oldImage = user.getProfileImage();
+            if (oldImage != null) {
+                oldImage.setExpiresAt(LocalDateTime.now().plusHours(1));
+                log.info("[User] 고아 이미지 TTL 복원: imageId={}, expiresAt={}",
+                         oldImage.getImageId(), oldImage.getExpiresAt());
+            }
+
+            // 2. 새 이미지 업로드
             com.ktb.community.dto.response.ImageResponse imageResponse = imageService.uploadImage(request.getProfileImage());
-            Image image = imageRepository.findById(imageResponse.getImageId())
+            Image newImage = imageRepository.findById(imageResponse.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-            
-            image.clearExpiresAt();  // 영구 보존
-            user.updateProfileImage(image);
+
+            // 3. 새 이미지 연결 (영구 보존)
+            newImage.clearExpiresAt();
+            user.updateProfileImage(newImage);
+
+            log.info("[User] 프로필 이미지 변경: userId={}, imageId={}",
+                     userId, newImage.getImageId());
         }
 
         return UserResponse.from(user);

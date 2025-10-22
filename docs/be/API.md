@@ -395,10 +395,24 @@ return PostResponse.from(post);
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "title": "...", "content": "...", "imageId": 1 }`
+**Request:**
+```json
+{
+  "title": "...",
+  "content": "...",
+  "imageId": 1,
+  "removeImage": false
+}
+```
 
-**선택:** title(String), content(String), imageId(Number)
+**선택:** title(String), content(String), imageId(Number), removeImage(Boolean)
 **참고:** PATCH는 부분 업데이트, 최소 1개 필드 필요 , 변경이 없을 경우 WAS 내에서 처리바람.
+
+**이미지 처리:**
+- `removeImage: true` - 기존 이미지 제거 (브릿지 삭제 + TTL 1시간 후 배치 삭제)
+- `imageId: 123` - 새 이미지로 교체 (기존 이미지는 고아 처리 → TTL 복원)
+- 둘 다 없음 - 이미지 유지
+- **주의:** removeImage와 imageId 동시 전달 시 imageId가 우선 적용됨
 
 **응답:**
 - 200: `update_post_success` → 수정된 정보 반환

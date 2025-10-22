@@ -30,11 +30,19 @@ public class PostUpdateRequest {
     private Long imageId;
 
     /**
+     * 선택: 이미지 제거 플래그
+     * - true: 기존 이미지 제거 (브릿지 삭제 + TTL 복원)
+     * - false/null: 기존 이미지 유지
+     */
+    private Boolean removeImage;
+
+    /**
      * PATCH 부분 업데이트 검증: 최소 1개 필드 필요
      * Bean Validation에서 자동 검증
      */
     @AssertTrue(message = "최소 1개 필드가 필요합니다")
     public boolean isHasAnyUpdate() {
-        return title != null || content != null || imageId != null;
+        return title != null || content != null || imageId != null
+               || Boolean.TRUE.equals(removeImage);
     }
 }

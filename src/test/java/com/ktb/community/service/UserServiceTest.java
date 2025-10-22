@@ -2,7 +2,9 @@ package com.ktb.community.service;
 
 import com.ktb.community.dto.request.ChangePasswordRequest;
 import com.ktb.community.dto.request.UpdateProfileRequest;
+import com.ktb.community.dto.response.ImageResponse;
 import com.ktb.community.dto.response.UserResponse;
+import com.ktb.community.entity.Image;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.UserRole;
 import com.ktb.community.exception.BusinessException;
@@ -14,8 +16,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +44,12 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private com.ktb.community.repository.ImageRepository imageRepository;
+
+    @Mock
+    private ImageService imageService;
 
     @InjectMocks
     private UserService userService;
@@ -212,5 +224,148 @@ class UserServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED_ACCESS);
 
         verify(userRepository, never()).findById(userId);
+    }
+
+    @Test
+    @DisplayName("프로필 수정 - 프로필 이미지 교체 시 기존 이미지 TTL 복원")
+    void updateProfile_ReplaceProfileImage_ShouldRestoreOldImageTTL() {
+        // Given
+        Long userId = 1L;
+        Long authenticatedUserId = 1L;
+        Long oldImageId = 10L;
+        Long newImageId = 20L;
+
+        // 기존 이미지 (expires_at = NULL, 영구 보존)
+        Image oldImage = Image.builder()
+                .imageUrl("https://s3.amazonaws.com/old-profile.jpg")
+                .fileSize(1024)
+                .originalFilename("old-profile.jpg")
+                .expiresAt(null)
+                .build();
+        ReflectionTestUtils.setField(oldImage, "imageId", oldImageId);
+
+        // User (기존 프로필 이미지 있음)
+        User user = User.builder()
+                .email("test@example.com")
+                .passwordHash("encoded")
+                .nickname("testuser")
+                .role(UserRole.USER)
+                .build();
+        ReflectionTestUtils.setField(user, "userId", userId);
+        ReflectionTestUtils.setField(user, "profileImage", oldImage);
+
+        // 새 이미지 (expires_at = now + 1h, 업로드 직후 상태)
+        Image newImage = Image.builder()
+                .imageUrl("https://s3.amazonaws.com/new-profile.jpg")
+                .fileSize(2048)
+                .originalFilename("new-profile.jpg")
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .build();
+        ReflectionTestUtils.setField(newImage, "imageId", newImageId);
+
+        // Request (닉네임 + 프로필 이미지)
+        MultipartFile profileImage = new MockMultipartFile(
+                "profileImage",
+                "new-profile.jpg",
+                "image/jpeg",
+                "test image content".getBytes()
+        );
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .nickname("newNickname")
+                .profileImage(profileImage)
+                .build();
+
+        // ImageResponse
+        ImageResponse imageResponse = ImageResponse.builder()
+                .imageId(newImageId)
+                .imageUrl("https://s3.amazonaws.com/new-profile.jpg")
+                .build();
+
+        // Mocking
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE))
+                .thenReturn(Optional.of(user));
+        when(userRepository.existsByNickname("newNickname")).thenReturn(false);
+        when(imageService.uploadImage(profileImage)).thenReturn(imageResponse);
+        when(imageRepository.findById(newImageId)).thenReturn(Optional.of(newImage));
+
+        // When
+        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getNickname()).isEqualTo("newNickname");
+
+        // 기존 이미지: TTL 복원 확인
+        assertThat(oldImage.getExpiresAt()).isNotNull();
+        assertThat(oldImage.getExpiresAt()).isAfter(LocalDateTime.now());
+
+        // 새 이미지: 영구 보존 (expires_at = NULL)
+        assertThat(newImage.getExpiresAt()).isNull();
+
+        verify(imageService).uploadImage(profileImage);
+        verify(imageRepository).findById(newImageId);
+    }
+
+    @Test
+    @DisplayName("프로필 수정 - 기존 프로필 이미지 없이 새 이미지 추가")
+    void updateProfile_AddProfileImageWithoutOldImage_ShouldNotRestoreTTL() {
+        // Given
+        Long userId = 1L;
+        Long authenticatedUserId = 1L;
+        Long newImageId = 20L;
+
+        // User (프로필 이미지 없음)
+        User user = User.builder()
+                .email("test@example.com")
+                .passwordHash("encoded")
+                .nickname("testuser")
+                .role(UserRole.USER)
+                .build();
+        ReflectionTestUtils.setField(user, "userId", userId);
+        // profileImage는 기본적으로 null이므로 별도 설정 불필요
+
+        // 새 이미지
+        Image newImage = Image.builder()
+                .imageUrl("https://s3.amazonaws.com/new-profile.jpg")
+                .fileSize(2048)
+                .originalFilename("new-profile.jpg")
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .build();
+        ReflectionTestUtils.setField(newImage, "imageId", newImageId);
+
+        // Request
+        MultipartFile profileImage = new MockMultipartFile(
+                "profileImage",
+                "new-profile.jpg",
+                "image/jpeg",
+                "test image content".getBytes()
+        );
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .profileImage(profileImage)
+                .build();
+
+        // ImageResponse
+        ImageResponse imageResponse = ImageResponse.builder()
+                .imageId(newImageId)
+                .imageUrl("https://s3.amazonaws.com/new-profile.jpg")
+                .build();
+
+        // Mocking
+        when(userRepository.findByUserIdAndUserStatus(userId, UserStatus.ACTIVE))
+                .thenReturn(Optional.of(user));
+        when(imageService.uploadImage(profileImage)).thenReturn(imageResponse);
+        when(imageRepository.findById(newImageId)).thenReturn(Optional.of(newImage));
+
+        // When
+        UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
+
+        // Then
+        assertThat(response).isNotNull();
+
+        // 새 이미지: 영구 보존 (expires_at = NULL)
+        assertThat(newImage.getExpiresAt()).isNull();
+
+        verify(imageService).uploadImage(profileImage);
+        verify(imageRepository).findById(newImageId);
     }
 }
