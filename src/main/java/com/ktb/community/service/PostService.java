@@ -232,11 +232,14 @@ public class PostService {
         }
 
         // ========== 이미지 처리 ==========
+        log.debug("[DEBUG] 이미지 처리 - removeImage: {}, imageId: {}",
+                  request.getRemoveImage(), request.getImageId());
 
         // Case 1: 이미지 제거 요청 (removeImage: true)
         if (Boolean.TRUE.equals(request.getRemoveImage())) {
+            log.info("[Post] 게시글 이미지 제거 시작: postId={}", postId);
             restoreExpiresAtAndDeleteBridge(postId);
-            log.info("[Post] 게시글 이미지 제거: postId={}", postId);
+            log.info("[Post] 게시글 이미지 제거 완료: postId={}", postId);
         }
         // Case 2: 새 이미지로 교체 (imageId: 123)
         else if (request.getImageId() != null) {
@@ -300,8 +303,11 @@ public class PostService {
      * @param postId 게시글 ID
      */
     private void restoreExpiresAtAndDeleteBridge(Long postId) {
+        log.debug("[DEBUG] restoreExpiresAtAndDeleteBridge 시작: postId={}", postId);
+
         // 1. 기존 브릿지 조회 (Fetch Join으로 Image 함께 조회)
         List<PostImage> existingImages = postImageRepository.findByPostIdWithImage(postId);
+        log.debug("[DEBUG] 기존 이미지 개수: {}", existingImages.size());
 
         // 2. 각 이미지 TTL 복원 (JPA Dirty Checking으로 UPDATE)
         for (PostImage postImage : existingImages) {
@@ -313,7 +319,8 @@ public class PostService {
         }
 
         // 3. 브릿지 삭제 (JPQL Bulk Delete)
-        postImageRepository.deleteByPostId(postId);
+        int deletedCount = postImageRepository.deleteByPostId(postId);
+        log.info("[Post] 브릿지 삭제 완료: postId={}, deletedCount={}", postId, deletedCount);
     }
 
     /**
