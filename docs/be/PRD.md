@@ -26,13 +26,11 @@
 #### FR-AUTH-001: 회원가입 (P0)
 **설명**: 신규 사용자가 이메일과 비밀번호로 계정 생성
 
-**입력**: email(필수,유니크), password(필수,8-20자), nickname(필수,10자,유니크), profile_image(선택, File)  
-**요청 형식**: multipart/form-data  
-**출력**: Access Token(30분), Refresh Token(7일)  
-**검증**: 이메일/닉네임 중복, 비밀번호 정책(대/소/특수문자 각 1개+), 이미지 형식(JPG/PNG/GIF), 파일 크기(최대 5MB)  
+**입력**: email(필수,유니크), password(필수,8-20자), nickname(필수,10자,유니크), profile_image(선택, File)
+**요청 형식**: multipart/form-data
+**출력**: Access Token(30분), Refresh Token(7일)
+**검증**: 이메일/닉네임 중복, 비밀번호 정책(대/소/특수문자 각 1개+), 이미지 형식(JPG/PNG/GIF), 파일 크기(최대 5MB)
 **에러**: 409(중복), 400(유효성), 413(파일 크기 초과), 400(유효하지 않은 파일 형식)
-
-**참조**: **@docs/be/API.md Section 2.1**, **@docs/be/LLD.md Section 6.4**
 
 ---
 
@@ -232,10 +230,9 @@
 **입력**: multipart/form-data (이미지 파일)
 **출력**: image_id, image_url
 **검증**: 파일 형식 (JPG/PNG/GIF), 파일 크기 (최대 5MB)
-**처리**: 서버 측 검증 후 S3 직접 저장  
+**처리**: S3 직접 저장 + TTL 1시간 (사용 시 expires_at NULL 전환)
 **에러**: 413 (파일 크기 초과), 400 (유효하지 않은 파일 형식)
-
-**참조**: **@docs/be/LLD.md Section 7.5** (이미지 업로드 흐름)
+**2가지 패턴**: **@docs/be/LLD.md Section 7.5** (Multipart 직접 vs 2단계 업로드)
 
 ---
 
@@ -255,8 +252,7 @@
 **NFR-SEC-002: 비밀번호 보안**
 - BCrypt 암호화
 - 정책: 8-20자, 대/소/특수문자 각 1개+
-
-**구현**: @docs/be/LLD.md Section 6.4
+- **구현**: **@docs/be/LLD.md Section 6.4** (정규식 포함)
 
 **NFR-SEC-003: API 보안**
 - HTTPS(배포 시), CORS 설정
@@ -264,34 +260,10 @@
 - XSS 방지(입력 검증)
 
 **NFR-SEC-004: Rate Limiting (3-Tier 전략)**
-- 키 구성: FQCN.methodName + IP 주소 + 사용자 ID (인증 시)
 - 알고리즘: Token Bucket (Bucket4j)
 - 저장소: 인메모리 (Caffeine Cache), 추후 Redis
-- 응답: 429 Too Many Requests
-
-**적용 대상 (3-Tier 전략):**
-
-**Tier 1 - 강한 제한 (민감 보안 구간):**
-- 로그인: 5회/분 (brute-force 방지)
-- 비밀번호 변경: 5회/분 (enumeration 방지)
-
-**Tier 2 - 중간 제한 (비정상 호출 감지):**
-- 회원가입: 10회/분 (spam bot, 정상 사용자 재시도 고려)
-- 토큰 재발급: 30회/분 (비정상 토큰 갱신 감지)
-- 프로필 수정: 30회/분
-- 계정 비활성화: 10회/분
-- 게시글 작성: 30회/분
-- 댓글 작성: 50회/분 (게시글보다 빈번)
-- 이미지 업로드: 10회/분 (파일 업로드 부하)
-
-**Tier 3 - 약한 제한/해제 (조회성 API):**
-- 모든 GET 조회 API: 제한 없음 (페이지네이션으로 제어)
-- 로그아웃: 제한 없음 (공격 동인 없음)
-- 좋아요/취소: 200회/분 (빈번한 액션, 원자적 UPDATE로 안전)
-- 게시글/댓글 수정: 50회/분 (본인 권한 검증)
-- 게시글/댓글 삭제: 30회/분 (Soft Delete)
-
-**구현**: **@docs/be/LLD.md Section 6.5**
+- 엔드포인트별 제한: 5~200회/분 (Tier별 차등 적용)
+- **3-Tier 전략 및 구현**: **@docs/be/LLD.md Section 6.5** 참조
 
 ---
 
@@ -310,14 +282,8 @@
 **구현**: @docs/be/LLD.md Section 12
 
 **NFR-PERF-003: 페이지네이션**
-- **웹**: Offset/Limit (limit 기본 10)
-  - 장점: 페이지 번호 네비게이션
-  - 단점: Offset 클수록 성능 저하
-- **모바일**: Cursor 기반 (limit 기본 20)
-  - 장점: 무한 스크롤 최적화, 실시간 안정성
-  - 단점: 특정 페이지 직접 이동 불가
-
-**구현**: **@docs/be/LLD.md Section 7.3**
+- 하이브리드 전략: latest (Cursor), likes (Offset)
+- **구현 및 장단점**: **@docs/be/LLD.md Section 7.3** 참조
 
 ---
 
@@ -347,9 +313,8 @@
 **NFR-REL-003: 데이터 무결성**
 - Foreign Key 제약조건
 - 트랜잭션 관리
-- 동시성 제어 (원자적 UPDATE)
-
-**구현**: **@docs/be/LLD.md Section 7.2, 12.3**
+- 동시성 제어: PostStats (좋아요/댓글/조회수) 원자적 UPDATE
+- **구현 상세**: **@docs/be/LLD.md Section 7.2, 12.3** (JPQL 코드 포함)
 
 ---
 
@@ -397,10 +362,7 @@
 ## 5. 제약사항 및 가정
 
 ### 5.1 기술적 제약사항
-- **Java**: 24
-- **Spring Boot**: 3.5.6
-- **데이터베이스**: MySQL 8.0+
-- **토큰 저장소**: RDB (추후 Redis 전환 고려)
+**기술 스택**: **@docs/be/LLD.md Section 1** 참조
 
 ### 5.2 비즈니스 제약사항
 - **현재 범위**: 백엔드 API만 (프론트엔드 별도)
@@ -421,3 +383,4 @@
 | 2025-09-30 | 1.0 | 초기 PRD 작성 |
 | 2025-10-04 | 1.1 | 최적화 버전 (참조 기반, LLD 섹션 참조 수정, API 스펙 일치) |
 | 2025-10-10 | 1.2 | Phase 3 대비 문서 정합성 개선 (이미지 업로드, Rate Limiting 키 방식 반영) |
+| 2025-10-22 | 1.3 | 중복 제거 및 참조 최적화 (기술 스택, 비밀번호, Rate Limiting, 페이지네이션, 동시성, 이미지 업로드) |

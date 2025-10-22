@@ -2,9 +2,8 @@
 
 ## 프로젝트 개요
 
-**프로젝트명**: KTB Community Platform  
-**기술 스택**: Spring Boot 3.5.6, Java 24, MySQL 8.0+, JPA/Hibernate  
-**아키텍처**: 3-Layer (Controller-Service-Repository)
+**프로젝트명**: KTB Community Platform
+**기술 스택 및 아키텍처**: **@docs/be/LLD.md Section 1-2** 참조
 
 ---
 
@@ -79,16 +78,14 @@
 - 상세 스펙: **@docs/be/API.md Section 1-2**
 
 **비즈니스 로직:**
-- [x] 비밀번호 정책 검증 (8-20자, 대/소/특수문자)
+- [x] 비밀번호 정책 검증: **@docs/be/LLD.md Section 6.4** (정규식 포함)
 - [x] 이메일/닉네임 중복 확인
-- [x] Rate Limiting (분당 100회, Bucket4j 기반)
+- [x] Rate Limiting: **@docs/be/LLD.md Section 6.5** (3-Tier 전략, Bucket4j)
 
 **동시성 제어:**
 - [x] PostStatsRepository 원자적 UPDATE 메서드
-  - incrementViewCount(), incrementLikeCount(), decrementLikeCount()
-  - incrementCommentCount(), decrementCommentCount()
-- [ ] Service 계층 통합 (Phase 3에서 PostService, CommentService, LikeService 구현 시)
-- 상세: **@docs/be/LLD.md Section 7.2, 12.3**
+- [x] Service 계층 통합 (PostService, CommentService, LikeService)
+- **구현 상세**: **@docs/be/LLD.md Section 7.2, 12.3** (JPQL 코드 포함)
 
 **테스트:**
 - [x] 단위 테스트 작성 (AuthService, UserService, JwtTokenProvider, RateLimitAspect)
@@ -106,7 +103,7 @@
 - [x] 비밀번호 정책 검증 통과
 - [x] 모든 단위 테스트 통과 (Service Layer 15/15, Security Layer 9/9, Config Layer 10/10)
 
-**참조**: **@docs/be/LLD.md Section 6 (인증)**, **Section 7.2 (좋아요 동시성), Section 12.3 (동시성 제어)**
+**참조**: **@docs/be/LLD.md Section 6 (인증 및 보안), Section 7.2/12.3 (동시성 제어)**
 
 ---
 
@@ -356,19 +353,11 @@
 
 ## 제약사항 (설계 배경)
 
-**기술 제약:**
-- 토큰: RDB 저장 (user_tokens) → 추후 Redis 전환
-- 이미지: S3 직접 저장 (Phase 3.5부터)
+**기술 제약**: 토큰 RDB 저장 → Redis 전환, S3 직접 저장
+**성능 가정**: 초기 트래픽 낮음, 단일 서버, 원자적 UPDATE
+**데이터 정책**: Soft Delete (User/Post/Comment), Hard Delete (UserToken/Image)
 
-**성능 가정:**
-- 초기 트래픽 낮음 → 단일 서버 충분
-- 동시성 제어: 원자적 UPDATE (PostStats)
-
-**데이터 정책:**
-- Soft Delete: User, Post, Comment (status 변경)
-- Hard Delete: UserToken (배치 작업), 만료된 Image (Phase 4)
-
-상세: @docs/be/PRD.md Section 5, @docs/be/LLD.md Section 7.5
+**상세**: **@docs/be/PRD.md Section 5**, **@docs/be/LLD.md Section 7.5, 12.3**
 
 ---
 
