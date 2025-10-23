@@ -1,0 +1,18 @@
+/* Board Detail Page Styles */
+.header { position: sticky; top: 0; z-index: 100; }
+.post-detail { background-color: var(--color-bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-8); margin-bottom: var(--spacing-6); }
+.post-detail__title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary); margin-bottom: var(--spacing-4); }
+.post-detail__meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--spacing-4); }
+.post-detail__author { display: flex; align-items: center; gap: var(--spacing-2); }
+.post-detail__author-image { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.post-detail__author-name { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.post-detail__date { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
+.post-detail__actions { display: flex; gap: var(--spacing-2); margin-bottom: var(--spacing-4); }
+.post-detail__image { width: 100%; border-radius: var(--radius-base); margin-bottom: var(--spacing-6); }
+.post-detail__body { font-size: var(--font-size-base); color: var(--color-text-primary); line-height: 1.6; white-space: pre-wrap; }
+.post-detail__stats { display: flex; gap: var(--spacing-6); padding-top: var(--spacing-6); border-top: 1px solid var(--color-border-default); margin-top: var(--spacing-6); }
+.post-detail__stat { display: flex; align-items: center; gap: var(--spacing-2); font-size: var(--font-size-sm); color: var(--color-text-secondary); background: none; border: none; cursor: pointer; }
+.comments-section { background-color: var(--color-bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-8); }
+.comments-section__title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); margin-bottom: var(--spacing-6); }
+.comment-form { display: flex; flex-direction: column; gap: var(--spacing-4); margin-bottom: var(--spacing-8); }
+.comment-form__textarea { width: 100%; padding: var(--spacing-4); background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-default); border-radius: var(--radius-base); color: var(--color-text-primary); font-size: var(--font-size-base); resize: none; min-height: 80px; }

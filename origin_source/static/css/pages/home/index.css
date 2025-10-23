@@ -1,0 +1,329 @@
+/**
+ * Home Page Styles
+ * 랜딩 페이지 - 미니멀 다크 테마
+ */
+
+/* ===================================
+   Hero Section
+   =================================== */
+
+.hero {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  background: var(--color-bg-primary);
+  position: relative;
+}
+
+.hero__container {
+  max-width: 800px;
+  text-align: center;
+}
+
+/* Badge */
+.hero__badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--color-primary);
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+
+.hero__badge:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Title */
+.hero__title {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  color: var(--color-text-primary);
+}
+
+.hero__highlight {
+  color: var(--color-primary);
+}
+
+/* Subtitle */
+.hero__subtitle {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+/* Actions */
+.hero__actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 60px;
+  flex-wrap: wrap;
+}
+
+/* Stats */
+.hero__stats {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  padding: 40px;
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.hero__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero__stat-number {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.hero__stat-label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* ===================================
+   Features Section
+   =================================== */
+
+.features {
+  padding: 80px 20px;
+  background: var(--color-bg-secondary);
+}
+
+.features__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.features__header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.features__title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--color-text-primary);
+}
+
+.features__description {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+}
+
+.features__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* Feature Card */
+.feature-card {
+  padding: 32px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-4px);
+}
+
+.feature-card__icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.feature-card__title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text-primary);
+}
+
+.feature-card__description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* ===================================
+   Benefits/Tech Stack Section
+   =================================== */
+
+.benefits {
+  padding: 80px 20px;
+  background: var(--color-bg-primary);
+}
+
+.benefits__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.benefits__title {
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--color-text-primary);
+}
+
+.benefits__subtitle {
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 60px;
+  color: var(--color-text-secondary);
+}
+
+.benefits__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* Benefit Item */
+.benefit-item {
+  padding: 32px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-4px);
+}
+
+.benefit-item__emoji {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.benefit-item__title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text-primary);
+}
+
+.benefit-item__description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* ===================================
+   CTA Section
+   =================================== */
+
+.cta {
+  padding: 80px 20px;
+  background: var(--color-bg-secondary);
+}
+
+.cta__container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 60px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.cta__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cta__title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--color-text-primary);
+}
+
+.cta__subtitle {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+}
+
+.cta__actions {
+  margin-bottom: 24px;
+}
+
+.cta__note {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.cta__link {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.cta__link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ===================================
+   Responsive
+   =================================== */
+
+@media (max-width: 768px) {
+  .hero__title {
+    font-size: 40px;
+  }
+
+  .hero__stats {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .features__title,
+  .benefits__title,
+  .cta__title {
+    font-size: 28px;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero__actions .btn {
+    width: 100%;
+  }
+
+  .cta__container {
+    padding: 40px 24px;
+  }
+}

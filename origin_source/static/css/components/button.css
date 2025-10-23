@@ -1,0 +1,125 @@
+/**
+ * Button Component
+ * 버튼 컴포넌트 스타일
+ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--btn-height);
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  border-radius: var(--btn-radius);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-colors);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary Button */
+.btn--primary {
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-primary);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--color-brand-primary-hover);
+}
+
+.btn--primary:active:not(:disabled) {
+  background-color: var(--color-brand-primary-active);
+}
+
+/* Secondary Button */
+.btn--secondary {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-text-secondary);
+}
+
+/* Danger Button */
+.btn--danger {
+  background-color: var(--color-error);
+  color: var(--color-text-primary);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background-color: #DC2626;
+}
+
+/* Full Width */
+.btn--full {
+  width: 100%;
+}
+
+/* Loading State */
+.btn--loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.btn--loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Inline Loading Spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spinner-rotate 0.6s linear infinite;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Size Variants */
+.btn--sm {
+  height: 40px;
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+}
+
+.btn--lg {
+  height: 56px;
+  padding: 16px 32px;
+  font-size: var(--font-size-lg);
+}

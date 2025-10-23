@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+  Footer Fragment
+
+  이 파일은 각 페이지에서 복사하여 사용하는 푸터 템플릿입니다.
+  직접 동적으로 로드되지 않으며, 참고용 템플릿으로 사용됩니다.
+
+  사용 방법:
+  1. 아래 <footer> 태그 전체를 복사
+  2. 각 페이지의 </main> 이후, </body> 이전에 붙여넣기
+  3. <head>에 <link rel="stylesheet" href="/css/components/footer.css"> 추가
+
+  백엔드 연동:
+  - 이용약관: http://localhost:8080/terms (Spring Boot Thymeleaf)
+  - 개인정보처리방침: http://localhost:8080/privacy (Spring Boot Thymeleaf)
+-->
+
+<!-- ========================================
+     Footer Template
+     ======================================== -->
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer__container">
+    <!-- Footer Links -->
+    <div class="footer__links">
+      <a href="http://localhost:8080/terms" class="footer__link">이용약관</a>
+      <span class="footer__divider">|</span>
+      <a href="http://localhost:8080/privacy" class="footer__link">개인정보처리방침</a>
+    </div>
+
+    <!-- Copyright -->
+    <p class="footer__copyright">
+      Copyright © 2025 아무 말 대잔치. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<!--
+  적용 대상 페이지:
+  - home/index.html
+  - board/detail.html
+  - board/write.html
+  - board/edit.html
+  - user/login.html
+  - user/register.html
+  - user/profile-edit.html
+  - user/password-change.html
+
+  적용 제외:
+  - board/list.html (무한 스크롤)
+-->

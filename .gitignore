@@ -1,0 +1,77 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data / PIDs
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage & test
+coverage
+.nyc_output
+.closure-cache
+# Playwright/Cypress (있다면)
+playwright-report
+test-results
+cypress/videos
+cypress/screenshots
+
+# Dependency directories
+node_modules/
+bower_components/
+
+# Build output
+dist/
+build/
+tmp/
+temp/
+.cache/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Env files (샘플은 커밋)
+.env
+.env.local
+.env.*.local
+.env.test
+!.env.example
+!.env.sample
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.sample.json
+
+# Debug
+npm-debug.log*
+yarn-error.log*
+*.orig
+
+# Optional: PM2 ecosystem files (민감 내용 있으면 무시)
+ecosystem.config.js
+ecosystem.config.cjs
+
+# Optional: Docker local stuff
+docker-data/
+
+# AI AGENT files
+.claude/
+CLAUDE.md
+AGENTS.md
+.mcp.jsonlogin_sample_images/
+*.png
+test_image/
+.mcp.json
+.amazonq
