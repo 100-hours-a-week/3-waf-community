@@ -57,15 +57,14 @@
 
     /**
      * 세션 유효성 검증 (쿠키 확인)
+     * fetchWithAuth 사용으로 자동 토큰 갱신 지원
      * @returns {Promise<boolean>}
      */
     async function verifySession() {
         try {
-            // 간단한 인증 API 호출로 쿠키 유효성 확인
-            const response = await fetch(`${CONFIG.API_BASE_URL}/posts?limit=1`, {
-                credentials: 'include'
-            });
-            return response.ok;
+            // fetchWithAuth 사용 → 401 시 자동 토큰 갱신 및 재시도
+            await fetchWithAuth('/posts?limit=1');
+            return true;
         } catch (error) {
             return false;
         }
