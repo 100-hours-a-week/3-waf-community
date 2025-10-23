@@ -1,0 +1,120 @@
+/**
+ * Footer Component
+ *
+ * 애플리케이션 푸터 컴포넌트
+ * Outstanding Design System 기반
+ *
+ * 구성:
+ * - 이용약관 / 개인정보처리방침 링크
+ * - 저작권 정보
+ */
+
+/* ========================================
+   Base Footer
+   ======================================== */
+
+.footer {
+  background-color: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border-default);
+  padding: var(--spacing-8) var(--spacing-4);
+  margin-top: auto; /* Push footer to bottom */
+}
+
+/* ========================================
+   Footer Container
+   ======================================== */
+
+.footer__container {
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* ========================================
+   Footer Links
+   ======================================== */
+
+.footer__links {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer__link {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  transition: var(--transition-colors);
+  white-space: nowrap;
+}
+
+.footer__link:hover {
+  color: var(--color-text-primary);
+}
+
+.footer__link:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.footer__divider {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  user-select: none;
+}
+
+/* ========================================
+   Copyright
+   ======================================== */
+
+.footer__copyright {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  margin: 0;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+/* Mobile (< 640px) */
+@media (max-width: 640px) {
+  .footer {
+    padding: var(--spacing-6) var(--spacing-3);
+  }
+
+  .footer__container {
+    gap: var(--spacing-3);
+  }
+
+  .footer__links {
+    gap: var(--spacing-2);
+  }
+
+  .footer__link {
+    font-size: var(--font-size-xs);
+  }
+
+  .footer__copyright {
+    font-size: 11px;
+  }
+}
+
+/* Tablet & Desktop (>= 768px) */
+@media (min-width: 768px) {
+  .footer__container {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .footer__copyright {
+    text-align: right;
+  }
+}

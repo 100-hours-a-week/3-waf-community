@@ -1,0 +1,337 @@
+/**
+ * Input Component
+ * 입력 필드 컴포넌트 스타일
+ */
+
+/* Input Field Container */
+.input-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.input-field__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.input-field__label--required::after {
+  content: '*';
+  color: var(--color-error);
+  margin-left: 2px;
+}
+
+/* Input Element */
+.input-field__input {
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--input-font-size);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  border: var(--input-border-width) solid var(--color-border-default);
+  border-radius: var(--input-radius);
+  transition: var(--transition-colors);
+}
+
+.input-field__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input-field__input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+.input-field__input:disabled,
+.input-field__input[readonly] {
+  background-color: rgba(26, 26, 26, 0.5);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+/* Helper Text */
+.input-field__helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  min-height: 1.2em;  /* 항상 공간 확보 */
+  display: block;     /* 항상 블록 요소로 표시 */
+}
+
+/* Error State */
+.input-field--error .input-field__input {
+  border-color: var(--color-border-error);
+}
+
+.input-field__error {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  min-height: 1.2em;  /* 항상 공간 확보 */
+  display: block;     /* 항상 블록 요소로 표시 */
+  visibility: hidden; /* 기본적으로 보이지 않게 */
+}
+
+.input-field__error:not(:empty) {
+  visibility: visible; /* 텍스트가 있을 때만 보이게 */
+}
+
+/* Success State */
+.input-field--success .input-field__input {
+  border-color: var(--color-success);
+}
+
+.input-field__success {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+}
+
+/* Input with Counter */
+.input-field__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.input-field__counter {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Textarea Field */
+.textarea-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.textarea-field__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.textarea-field__textarea {
+  min-height: 120px;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--input-font-size);
+  font-family: var(--font-family-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+  border: var(--input-border-width) solid var(--color-border-default);
+  border-radius: var(--input-radius);
+  resize: none;  /* 크기 조절 비활성화 */
+  transition: var(--transition-colors);
+  line-height: var(--line-height-relaxed);
+}
+
+.textarea-field__textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.textarea-field__textarea:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+/* File Upload */
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.file-upload__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.file-upload__input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.file-upload__input {
+  display: none;
+}
+
+.file-upload__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.file-upload__button:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.file-upload__filename {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Profile Upload (Circle) */
+.profile-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.profile-upload__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.profile-upload__circle {
+  position: relative;
+  width: var(--avatar-xl);
+  height: var(--avatar-xl);
+}
+
+.profile-upload__input {
+  display: none;
+}
+
+.profile-upload__label-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-colors);
+  overflow: hidden;
+}
+
+.profile-upload__label-circle:hover {
+  background-color: var(--color-profile-upload-hover);
+}
+
+.profile-upload__icon {
+  font-size: 40px;
+  color: var(--color-text-secondary);
+}
+
+.profile-upload__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-upload__helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Password Input with Toggle */
+.input-field__wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-field__wrapper .input-field__input {
+  flex: 1;
+  padding-right: 48px; /* Space for toggle button */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.password-toggle:hover {
+  color: var(--color-text-secondary);
+}
+
+.password-toggle:active {
+  color: var(--color-text-primary);
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+}
+
+.password-strength__bar {
+  height: 4px;
+  width: 0;
+  background-color: var(--color-bg-elevated);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.password-strength__bar--weak {
+  background-color: #ef4444;
+  width: 33%;
+}
+
+.password-strength__bar--medium {
+  background-color: #f59e0b;
+  width: 66%;
+}
+
+.password-strength__bar--strong {
+  background-color: #10b981;
+  width: 100%;
+}
+
+.password-strength__text {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-colors);
+}
+
+.password-strength__text--weak {
+  color: #ef4444;
+}
+
+.password-strength__text--medium {
+  color: #f59e0b;
+}
+
+.password-strength__text--strong {
+  color: #10b981;
+}
+
+/* Error state for input with toggle */
+.input-field__input--error {
+  border-color: var(--color-border-error);
+}

@@ -1,0 +1,20 @@
+/* Board Write Page */
+.write-form { background-color: var(--color-bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-8); display: flex; flex-direction: column; gap: var(--spacing-6); }
+.write-form__actions { display: flex; gap: var(--spacing-4); margin-top: var(--spacing-4); }
+.write-form__actions .btn { flex: 1; }
+
+/* Text color override for write page */
+.write-form .input-field__input,
+.write-form .input-field__textarea {
+  color: #000000;
+  background-color: #FFFFFF;
+}
+
+.write-form .input-field__textarea {
+  resize: none;  /* 크기 조절 비활성화 */
+}
+
+.write-form .input-field__input::placeholder,
+.write-form .input-field__textarea::placeholder {
+  color: #666666;
+}
