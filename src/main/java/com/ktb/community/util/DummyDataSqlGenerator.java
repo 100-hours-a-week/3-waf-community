@@ -219,14 +219,8 @@ public class DummyDataSqlGenerator {
         Set<String> usedNicknames = new HashSet<>();
 
         for (int i = 1; i <= USER_COUNT; i++) {
-            // 이메일 생성 (중복 방지)
-            String email;
-            do {
-                String lastName = KOREAN_LAST_NAMES[random.nextInt(KOREAN_LAST_NAMES.length)];
-                String firstName = KOREAN_FIRST_NAMES[random.nextInt(KOREAN_FIRST_NAMES.length)];
-                int number = random.nextInt(1000);
-                email = lastName.toLowerCase() + firstName.toLowerCase() + number + "@test.com";
-            } while (usedEmails.contains(email));
+            // 이메일 생성 (영문 패턴: user{숫자}@test.com)
+            String email = "user" + i + "@test.com";
             usedEmails.add(email);
 
             // 닉네임 생성 (중복 방지, 10자 제한)

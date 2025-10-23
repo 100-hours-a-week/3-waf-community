@@ -147,17 +147,18 @@ CREATE DATABASE community;
 생성된 모든 유저는 동일한 비밀번호를 사용합니다:
 
 - **비밀번호**: `Test1234!`
-- **이메일 형식**: `{성}{이름}{숫자}@test.com` (예: `김민준123@test.com`)
-- **닉네임 형식**: `{성}{이름}` (예: `김민준`, 중복 시 숫자 추가)
+- **이메일 형식**: `user{숫자}@test.com` (예: `user1@test.com`, `user100@test.com`, `user1200@test.com`)
+- **닉네임 형식**: `{성}{이름}` (한글, 예: `김민준`, 중복 시 숫자 추가)
 
 **샘플 로그인 예시:**
 
 ```bash
-# 임의의 유저 이메일 조회
-mysql -u root -p -e "SELECT email FROM community.users LIMIT 10;"
+# 로그인 테스트
+# 이메일: user1@test.com
+# 비밀번호: Test1234!
 
-# 조회된 이메일로 로그인
-# 이메일: (위에서 조회한 이메일)
+# 또는
+# 이메일: user500@test.com
 # 비밀번호: Test1234!
 ```
 
