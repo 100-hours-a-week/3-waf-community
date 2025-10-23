@@ -23,9 +23,11 @@
     postId: null,
     post: null,
     comments: [],
+    commentTotal: 0,              // 전체 댓글 수 (pagination.total_count)
     isLiked: false,
     currentUserId: null,
-    editingCommentId: null
+    editingCommentId: null,
+    isSubmittingComment: false    // 댓글 제출 중 플래그 (중복 방지)
   };
 
   // ============================================
@@ -141,6 +143,12 @@
     // Comment form
     if (elements.commentForm) {
       elements.commentForm.addEventListener('submit', handleCommentSubmit);
+
+      // Comment cancel button
+      const cancelButton = elements.commentForm.querySelector('[data-action="cancel-comment"]');
+      if (cancelButton) {
+        cancelButton.addEventListener('click', handleCancelEdit);
+      }
     }
 
     // Comment actions (event delegation)
@@ -210,16 +218,25 @@
       return;
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 문제 4: 좋아요 숫자 파싱 오류 수정
+    // DOM에서 파싱하지 않고 state.post.stats.likeCount 사용
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     // 현재 값 백업 (에러 시 롤백용)
-    const originalCount = parseInt(elements.postLikes.textContent.replace(/[^0-9]/g, '')) || 0;
+    const originalCount = state.post?.stats?.likeCount || 0;
     const originalLiked = state.isLiked;
 
     try {
       if (state.isLiked) {
         // Optimistic Update: UI 즉시 업데이트
         state.isLiked = false;
+        const newCount = originalCount - 1;
+        if (state.post && state.post.stats) {
+          state.post.stats.likeCount = newCount;
+        }
         updateLikeButton(false);
-        updateLikeCount(originalCount - 1);
+        updateLikeCount(newCount);
 
         // 좋아요 취소 API 호출
         await fetchWithAuth(`/posts/${state.postId}/like`, {
@@ -228,8 +245,12 @@
       } else {
         // Optimistic Update: UI 즉시 업데이트
         state.isLiked = true;
+        const newCount = originalCount + 1;
+        if (state.post && state.post.stats) {
+          state.post.stats.likeCount = newCount;
+        }
         updateLikeButton(true);
-        updateLikeCount(originalCount + 1);
+        updateLikeCount(newCount);
 
         // 좋아요 추가 API 호출
         await fetchWithAuth(`/posts/${state.postId}/like`, {
@@ -240,6 +261,9 @@
       console.error('Failed to toggle like:', error);
       // Rollback: 원래 상태로 복원
       state.isLiked = originalLiked;
+      if (state.post && state.post.stats) {
+        state.post.stats.likeCount = originalCount;
+      }
       updateLikeButton(originalLiked);
       updateLikeCount(originalCount);
       const translatedMessage = translateErrorCode(error.message);
@@ -259,6 +283,13 @@
 
   async function handleCommentSubmit(e) {
     e.preventDefault();
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 문제 2: 댓글 폼 다중 제출 방지
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (state.isSubmittingComment) {
+      return;  // 이미 제출 중이면 무시
+    }
 
     // 로그인 확인
     if (!isAuthenticated()) {
@@ -281,6 +312,13 @@
       return;
     }
 
+    // 제출 시작: 버튼 비활성화
+    state.isSubmittingComment = true;
+    const submitButton = elements.commentForm.querySelector('[data-action="submit-comment"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+
     try {
       if (state.editingCommentId) {
         // 댓글 수정
@@ -291,7 +329,7 @@
 
         // UI 업데이트
         updateCommentInList(updatedComment);
-        state.editingCommentId = null;
+        resetCommentForm();
       } else {
         // 댓글 작성
         const newComment = await fetchWithAuth(`/posts/${state.postId}/comments`, {
@@ -301,17 +339,41 @@
 
         // UI 업데이트
         prependComment(newComment);
-        updateCommentCount(state.comments.length);
+        updateCommentCount(state.commentTotal);
       }
 
-      // 폼 초기화
-      elements.commentTextarea.value = '';
-      elements.commentForm.querySelector('[data-action="submit-comment"]').textContent = '댓글 등록';
+      // 폼 초기화 (작성 모드만)
+      if (!state.editingCommentId) {
+        elements.commentTextarea.value = '';
+      }
 
     } catch (error) {
       console.error('Failed to submit comment:', error);
-      const translatedMessage = translateErrorCode(error.message);
-      showError(translatedMessage || '댓글 작성에 실패했습니다.');
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 문제 1: 댓글 수정 중 404/COMMENT-001/COMMENT-003 에러 처리
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const errorCode = error.message.match(/([A-Z]+-\d+)/)?.[1];
+
+      if (errorCode === 'COMMENT-001' || errorCode === 'COMMENT-003') {
+        // 댓글이 이미 삭제된 경우
+        Toast.error('이미 삭제된 댓글입니다.', '오류');
+        if (state.editingCommentId) {
+          removeCommentFromList(state.editingCommentId);
+        }
+        resetCommentForm();
+      } else {
+        // 일반 에러
+        const translatedMessage = translateErrorCode(error.message);
+        showError(translatedMessage || '댓글 작성에 실패했습니다.');
+        resetCommentForm();
+      }
+    } finally {
+      // 제출 완료: 버튼 활성화
+      state.isSubmittingComment = false;
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
     }
   }
 
@@ -343,7 +405,19 @@
 
     // 수정 모드 활성화
     state.editingCommentId = comment.commentId;
-    elements.commentForm.querySelector('[data-action="submit-comment"]').textContent = '댓글 수정';
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 문제 3: 댓글 수정 취소 버튼 표시
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const submitButton = elements.commentForm.querySelector('[data-action="submit-comment"]');
+    if (submitButton) {
+      submitButton.textContent = '댓글 수정';
+    }
+
+    const cancelButton = elements.commentForm.querySelector('[data-action="cancel-comment"]');
+    if (cancelButton) {
+      cancelButton.style.display = 'inline-block';
+    }
   }
 
   async function handleDeleteComment(e, button) {
@@ -362,18 +436,37 @@
     const commentId = commentItem.dataset.commentId;
 
     try {
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 문제 1: 댓글 삭제 전 수정 모드 리셋
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      if (state.editingCommentId === parseInt(commentId)) {
+        resetCommentForm();
+      }
+
       await fetchWithAuth(`/posts/${state.postId}/comments/${commentId}`, {
         method: 'DELETE'
       });
 
       // UI 업데이트
       removeCommentFromList(commentId);
-      updateCommentCount(state.comments.length);
+      updateCommentCount(state.commentTotal);
 
     } catch (error) {
       console.error('Failed to delete comment:', error);
-      const translatedMessage = translateErrorCode(error.message);
-      showError(translatedMessage || '댓글 삭제에 실패했습니다.');
+
+      // 404/COMMENT-001/COMMENT-003 에러 처리
+      const errorCode = error.message.match(/([A-Z]+-\d+)/)?.[1];
+
+      if (errorCode === 'COMMENT-001' || errorCode === 'COMMENT-003') {
+        Toast.error('이미 삭제된 댓글입니다.', '오류');
+        removeCommentFromList(commentId);
+        if (state.editingCommentId === parseInt(commentId)) {
+          resetCommentForm();
+        }
+      } else {
+        const translatedMessage = translateErrorCode(error.message);
+        showError(translatedMessage || '댓글 삭제에 실패했습니다.');
+      }
     }
   }
 
@@ -403,6 +496,39 @@
     } finally {
       window.location.replace(CONFIG.LOGIN_URL);
     }
+  }
+
+  /**
+   * 댓글 폼 리셋
+   * - 수정 모드 해제
+   * - textarea 초기화
+   * - 버튼 텍스트 "댓글 등록"으로 변경
+   * - 취소 버튼 숨김
+   */
+  function resetCommentForm() {
+    state.editingCommentId = null;
+
+    if (elements.commentTextarea) {
+      elements.commentTextarea.value = '';
+    }
+
+    const submitButton = elements.commentForm?.querySelector('[data-action="submit-comment"]');
+    if (submitButton) {
+      submitButton.textContent = '댓글 등록';
+    }
+
+    const cancelButton = elements.commentForm?.querySelector('[data-action="cancel-comment"]');
+    if (cancelButton) {
+      cancelButton.style.display = 'none';
+    }
+  }
+
+  /**
+   * 댓글 수정 취소
+   */
+  function handleCancelEdit(e) {
+    if (e) e.preventDefault();
+    resetCommentForm();
   }
 
   // ============================================
@@ -449,6 +575,11 @@
       const result = await fetchWithAuth(`/posts/${state.postId}/comments?${params}`);
 
       state.comments = result.comments || [];
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 문제 5: 댓글 개수 동기화 (pagination.total_count 사용)
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      state.commentTotal = result.pagination?.total_count || 0;
 
       // 샘플 댓글 제거
       if (elements.commentsList) {
@@ -573,9 +704,32 @@
 
     updateCommentCount(stats.commentCount);
 
-    // 좋아요 상태 (추후 API로 확인 필요, 현재는 false)
-    // TODO: GET /posts/users/me/likes로 확인
-    state.isLiked = false;
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 문제 6: 초기 좋아요 상태 로드 누락
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //
+    // [백엔드 수정 가이드]
+    // 1. PostResponse.java에 필드 추가:
+    //    private Boolean isLikedByCurrentUser;
+    //
+    // 2. PostService.getPostDetail() 수정:
+    //    - SecurityContextHolder에서 현재 userId 추출
+    //    - postLikeRepository.existsByPostIdAndUserId(postId, userId) 조회
+    //    - PostResponse 생성 시:
+    //      .isLikedByCurrentUser(isLiked)
+    //
+    // 3. API 명세 업데이트:
+    //    - docs/be/API.md Section 3.2 응답 예시에 isLikedByCurrentUser 추가
+    //
+    // [프론트엔드 최종 구현 (백엔드 수정 후)]
+    // state.isLiked = post.isLikedByCurrentUser || false;
+    // updateLikeButton(state.isLiked);
+    //
+    // [현재 임시 코드 (백엔드 수정 전)]
+    // - 무조건 false로 초기화
+    // - 사용자가 좋아요 버튼 클릭 시 에러 코드(LIKE-001)로 상태 추론
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    state.isLiked = false;  // 백엔드 수정 후: post.isLikedByCurrentUser || false
     updateLikeButton(false);
   }
 
@@ -664,6 +818,11 @@
   function prependComment(comment) {
     state.comments.unshift(comment);
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 문제 5: 댓글 작성 시 총 댓글 수 증가
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    state.commentTotal++;
+
     const commentItem = createCommentElement(comment);
     if (elements.commentsList) {
       elements.commentsList.insertBefore(commentItem, elements.commentsList.firstChild);
@@ -696,6 +855,11 @@
     if (index !== -1) {
       state.comments.splice(index, 1);
     }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 문제 5: 댓글 삭제 시 총 댓글 수 감소
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    state.commentTotal = Math.max(0, state.commentTotal - 1);
 
     // DOM 업데이트
     const commentItem = document.querySelector(`[data-comment-id="${commentId}"]`);

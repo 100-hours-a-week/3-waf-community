@@ -138,9 +138,14 @@
             data-field="comment"
             required
           ></textarea>
-          <button type="submit" class="btn btn--primary" data-action="submit-comment">
-            댓글 등록
-          </button>
+          <div class="comment-form__actions">
+            <button type="submit" class="btn btn--primary" data-action="submit-comment">
+              댓글 등록
+            </button>
+            <button type="button" class="btn btn--secondary" data-action="cancel-comment" style="display: none;">
+              취소
+            </button>
+          </div>
         </form>
 
         <!-- Comments List -->
