@@ -24,6 +24,13 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     boolean existsByUserUserIdAndPostPostId(Long userId, Long postId);
 
     /**
+     * 좋아요 여부 확인 (간단한 메서드명)
+     */
+    @Query("SELECT CASE WHEN COUNT(pl) > 0 THEN true ELSE false END " +
+           "FROM PostLike pl WHERE pl.post.postId = :postId AND pl.user.userId = :userId")
+    boolean existsByPostIdAndUserId(@Param("postId") Long postId, @Param("userId") Long userId);
+
+    /**
      * 좋아요 조회 (취소용)
      */
     Optional<PostLike> findByUserUserIdAndPostPostId(Long userId, Long postId);

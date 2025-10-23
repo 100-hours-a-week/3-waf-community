@@ -15,6 +15,7 @@ import com.ktb.community.entity.PostImage;
 import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.PostImageRepository;
 import com.ktb.community.repository.PostRepository;
+import com.ktb.community.repository.PostLikeRepository;
 import com.ktb.community.repository.PostStatsRepository;
 import com.ktb.community.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +50,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PostImageRepository postImageRepository;
+    private final PostLikeRepository postLikeRepository;
     // EntityManager: Phase 5에서 제거됨 (detached entity 이슈 해결)
     // - 기존: entityManager.refresh(post.getStats()) 사용
     // - 문제: clearAutomatically=true 설정 시 detached entity 예외 발생
@@ -191,6 +195,7 @@ public class PostService {
      * - ACTIVE 상태만 조회
      * - Fetch Join (N+1 방지)
      * - 조회수 자동 증가 (동시성 제어)
+     * - 현재 사용자의 좋아요 여부 포함 (비로그인 시 null)
      */
     @Transactional
     public PostResponse getPostDetail(Long postId) {
@@ -201,8 +206,15 @@ public class PostService {
         // 조회수 증가 (동시성 제어)
         postStatsRepository.incrementViewCount(postId);
 
-        // Optimistic Update: 클라이언트가 UI에서 +1 처리 (detail.js)
-        return PostResponse.from(post);
+        // 현재 사용자의 좋아요 여부 확인
+        Long currentUserId = getCurrentUserIdOrNull();
+        Boolean isLiked = null;
+        if (currentUserId != null) {
+            isLiked = postLikeRepository.existsByPostIdAndUserId(postId, currentUserId);
+        }
+
+        // Optimistic Update: 클라이언트가 UI에서 조회수 +1 처리 (detail.js)
+        return PostResponse.from(post, isLiked);
     }
 
     /**
@@ -335,5 +347,22 @@ public class PostService {
         }
         // 기본: latest
         return Sort.by(Sort.Order.desc("createdAt"));
+    }
+
+    /**
+     * 현재 사용자 ID 추출 (인증 실패 시 null 반환)
+     */
+    private Long getCurrentUserIdOrNull() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+                return null;
+            }
+            return Long.parseLong(authentication.getName());
+        } catch (Exception e) {
+            log.debug("[Post] 현재 사용자 ID 추출 실패: {}", e.getMessage());
+            return null;
+        }
     }
 }

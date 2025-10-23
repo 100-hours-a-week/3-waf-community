@@ -319,6 +319,7 @@ async function refreshAccessToken() {
       "likeCount": 42,
       "commentCount": 15
     },
+    "isLikedByCurrentUser": true,  // 현재 사용자의 좋아요 여부 (비로그인 시 null)
     "createdAt": "2025-10-18T10:00:00",
     "updatedAt": "2025-10-18T10:00:00"
   },
