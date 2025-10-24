@@ -50,3 +50,6 @@ docs/backup/
 docs/legacy/
 # Environment variables
 .env
+
+# Temporary scripts
+scripts/check_password.sql
