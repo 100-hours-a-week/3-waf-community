@@ -17,40 +17,40 @@ public interface PostStatsRepository extends JpaRepository<PostStats, Long> {
     /**
      * 조회수 원자적 증가
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = false)
     @Query("UPDATE PostStats ps SET ps.viewCount = ps.viewCount + 1, " +
            "ps.lastUpdated = CURRENT_TIMESTAMP WHERE ps.postId = :postId")
     int incrementViewCount(@Param("postId") Long postId);
-    
+
     /**
      * 좋아요 수 원자적 증가
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = false)
     @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount + 1, " +
            "ps.lastUpdated = CURRENT_TIMESTAMP WHERE ps.postId = :postId")
     int incrementLikeCount(@Param("postId") Long postId);
-    
+
     /**
      * 좋아요 수 원자적 감소
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = false)
     @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount - 1, " +
            "ps.lastUpdated = CURRENT_TIMESTAMP " +
            "WHERE ps.postId = :postId AND ps.likeCount > 0")
     int decrementLikeCount(@Param("postId") Long postId);
-    
+
     /**
      * 댓글 수 원자적 증가
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = false)
     @Query("UPDATE PostStats ps SET ps.commentCount = ps.commentCount + 1, " +
            "ps.lastUpdated = CURRENT_TIMESTAMP WHERE ps.postId = :postId")
     int incrementCommentCount(@Param("postId") Long postId);
-    
+
     /**
      * 댓글 수 원자적 감소
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = false)
     @Query("UPDATE PostStats ps SET ps.commentCount = ps.commentCount - 1, " +
            "ps.lastUpdated = CURRENT_TIMESTAMP " +
            "WHERE ps.postId = :postId AND ps.commentCount > 0")

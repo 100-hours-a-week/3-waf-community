@@ -46,5 +46,6 @@ out/
 CLAUDE.md
 AGENTS.md
 .mcp.json
+docs/backup/
 # Environment variables
 .env

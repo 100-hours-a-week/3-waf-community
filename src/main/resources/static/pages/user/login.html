@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 - 아무 말 대잔치</title>
+
+  <!-- Common Styles -->
+  <link rel="stylesheet" href="/css/common/reset.css">
+  <link rel="stylesheet" href="/css/common/variables.css">
+  <link rel="stylesheet" href="/css/common/typography.css">
+  <link rel="stylesheet" href="/css/common/layout.css">
+
+  <!-- Component Styles -->
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/input.css">
+  <link rel="stylesheet" href="/css/components/header.css">
+  <link rel="stylesheet" href="/css/components/form-footer.css">
+
+  <!-- Page Styles -->
+  <link rel="stylesheet" href="/css/pages/user/login.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header__container">
+      <h1 class="header__title">아무 말 대잔치</h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main main--centered">
+    <div class="login-container">
+      <div class="login-card">
+        <h2 class="login-card__title">로그인</h2>
+
+        <form class="login-form" data-form="login">
+          <!-- Email Field -->
+          <div class="input-field">
+            <label for="email" class="input-field__label">이메일*</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="input-field__input"
+              placeholder="이메일을 입력해주세요"
+              data-field="email"
+              required
+            >
+            <span class="input-field__helper" data-helper="email">* 이메일을 입력해주세요</span>
+            <span class="input-field__error" data-error="email"></span>
+          </div>
+
+          <!-- Password Field -->
+          <div class="input-field">
+            <label for="password" class="input-field__label">비밀번호*</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="input-field__input"
+              placeholder="비밀번호를 입력해주세요"
+              data-field="password"
+              required
+            >
+            <span class="input-field__helper" data-helper="password">* 비밀번호를 입력해주세요</span>
+            <span class="input-field__error" data-error="password"></span>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="btn btn--primary btn--full"
+            data-action="login"
+          >
+            로그인
+          </button>
+
+          <!-- Register Link -->
+          <div class="form-footer">
+            <span class="form-footer__text">계정이 없으신가요?</span>
+            <a href="./register.html" class="form-footer__link">회원가입</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Common Scripts -->
+  <script src="/js/common/api.js"></script>
+  <script src="/js/common/validation.js"></script>
+  <script src="/js/common/utils.js"></script>
+
+  <!-- Page Script -->
+  <script src="/js/pages/user/login.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.ktb.community.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ktb.community.entity.Post;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.PostStatus;
@@ -31,6 +32,7 @@ public class PostCreateRequest {
      * 선택: 게시글 이미지 ID
      * POST /images로 먼저 업로드 필요 (Phase 3.5+)
      */
+    @JsonProperty("imageId")
     private Long imageId;
 
     /**
