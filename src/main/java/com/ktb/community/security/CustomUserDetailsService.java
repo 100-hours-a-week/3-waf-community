@@ -13,6 +13,18 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 
 /**
+ * [세션 전환]
+ * 현재는 세션 기반 인증(SessionAuthenticationFilter)을 사용하므로 이 서비스는 실행되지 않습니다.
+ * (JwtAuthenticationFilter에서만 사용되며, 해당 필터는 비활성화됨)
+ * JWT 인프라는 향후 토큰 기반 인증으로 전환 시 재사용을 위해 보존되었습니다.
+ * 
+ * 관련 파일:
+ * - SessionAuthenticationFilter: 세션 쿠키 검증 및 인증 처리
+ * - SessionManager: 세션 생성/조회/삭제
+ * - InMemorySessionStore: 세션 저장소 (ConcurrentHashMap)
+ */
+
+/**
  * Spring Security UserDetailsService 구현
  * 이메일로 사용자 인증 정보를 로드
  */
