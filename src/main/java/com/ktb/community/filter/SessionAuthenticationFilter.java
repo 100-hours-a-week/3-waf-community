@@ -1,7 +1,7 @@
 package com.ktb.community.filter;
 
 import com.ktb.community.dto.ApiResponse;
-import com.ktb.community.dto.response.ErrorDetails;
+import com.ktb.community.dto.ErrorDetails;
 import com.ktb.community.session.Session;
 import com.ktb.community.session.SessionManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +40,7 @@ public class SessionAuthenticationFilter implements Filter {
             "/auth/login",
             "/auth/logout",
             "/users/signup",
+            "/users",          // 회원가입 alias
             "/terms",
             "/privacy"
     );

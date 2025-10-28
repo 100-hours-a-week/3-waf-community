@@ -3,9 +3,9 @@ package com.ktb.community.controller;
 import com.ktb.community.config.RateLimit;
 import com.ktb.community.dto.ApiResponse;
 import com.ktb.community.dto.request.LoginRequest;
-import com.ktb.community.dto.request.SignupRequest;
 // [세션 전환] JWT 방식 (미사용)
 // import com.ktb.community.dto.request.RefreshTokenRequest;
+// import com.ktb.community.dto.request.SignupRequest;  // 회원가입은 UserController에서 처리
 import com.ktb.community.dto.response.AuthResponse;
 import com.ktb.community.service.AuthService;
 import jakarta.servlet.http.Cookie;
@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+// import org.springframework.http.HttpStatus;  // 미사용
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
