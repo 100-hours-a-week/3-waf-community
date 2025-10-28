@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 인메모리 세션 저장소
- * - ConcurrentHashMap 사용 (Thread-Safe)
+ * - ConcurrentHashMap 사용 (Thread-Safe) - 세분화된 잠금 (Fine-Grained Locking)
  * - 만료된 세션 자동 정리 (조회 시)
  */
 @Slf4j
@@ -23,7 +23,7 @@ public class InMemorySessionStore {
      */
     public void save(Session session) {
         sessions.put(session.getSessionId(), session);
-        log.debug("세션 저장: sessionId={}, userId={}", session.getSessionId(), session.getUserId());
+        log.debug("[SessionStore] 세션 저장 완료");
     }
 
     /**
@@ -39,7 +39,7 @@ public class InMemorySessionStore {
         // 만료 확인
         if (session.isExpired()) {
             sessions.remove(sessionId);
-            log.debug("만료된 세션 자동 삭제: sessionId={}", sessionId);
+            log.debug("[SessionStore] 만료된 세션 자동 삭제");
             return Optional.empty();
         }
 
@@ -52,7 +52,7 @@ public class InMemorySessionStore {
     public void deleteById(String sessionId) {
         Session removed = sessions.remove(sessionId);
         if (removed != null) {
-            log.debug("세션 삭제: sessionId={}, userId={}", sessionId, removed.getUserId());
+            log.debug("[SessionStore] 세션 삭제 완료");
         }
     }
 

@@ -40,7 +40,7 @@ public class SessionManager {
                 .build();
 
         sessionStore.save(session);
-        log.info("세션 생성: userId={}, sessionId={}", userId, sessionId);
+        log.info("[SessionManager] 세션 생성 완료");
 
         return sessionId;
     }
@@ -60,6 +60,6 @@ public class SessionManager {
      */
     public void deleteSession(String sessionId) {
         sessionStore.deleteById(sessionId);
-        log.info("세션 삭제: sessionId={}", sessionId);
+        log.info("[SessionManager] 세션 삭제 완료");
     }
 }

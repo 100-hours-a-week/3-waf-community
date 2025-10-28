@@ -92,7 +92,7 @@ public class SessionAuthenticationFilter implements Filter {
 
         // Request Attribute에 userId 저장
         req.setAttribute("userId", session.getUserId());
-        log.debug("[SessionFilter] 인증 성공: userId={}", session.getUserId());
+        log.debug("[SessionFilter] 인증 성공");
 
         chain.doFilter(request, response);
     }

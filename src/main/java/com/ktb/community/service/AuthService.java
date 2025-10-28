@@ -133,7 +133,7 @@ public class AuthService {
      */
     public void logout(String sessionId) {
         sessionManager.deleteSession(sessionId);
-        log.info("[Auth] 로그아웃 완료: sessionId={}", sessionId);
+        log.info("[Auth] 로그아웃 완료");
     }
     
     // [세션 전환] JWT refresh 메서드 (미사용)
