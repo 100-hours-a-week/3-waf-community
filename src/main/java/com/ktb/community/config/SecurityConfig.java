@@ -1,6 +1,7 @@
 package com.ktb.community.config;
 
-import com.ktb.community.security.JwtAuthenticationFilter;
+// [세션 전환] JWT 필터 (미사용)
+// import com.ktb.community.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -32,7 +33,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    // [세션 전환] JWT 필터 (미사용)
+    // private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Value("${frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -73,69 +75,23 @@ public class SecurityConfig {
     }
     
     /**
-     * Security Filter Chain 설정
-     * - JWT 기반 Stateless 인증
-     * - CSRF 보호 활성화 (Cookie 기반, httpOnly=false for JavaScript access)
-     * - 공개 엔드포인트와 인증 필요 엔드포인트 구분
+     * Security Filter Chain 설정 (세션 기반 인증으로 비활성화)
+     * - SessionAuthenticationFilter가 인증 처리
+     * - Spring Security는 permitAll()로 모든 요청 허용
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers(
-                                "/auth/**",           // 인증 관련
-                                "/users/**",          // 사용자 관련 (회원가입, 프로필 수정 등)
-                                "/posts/**",          // 게시글 관련 모든 API
-                                "/images/**"          // 이미지 업로드
-                        )
-                )
+                .csrf(csrf -> csrf.disable())  // CSRF 비활성화
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ========== 순서 중요: 구체적인 패턴 먼저! ==========
-
-// 1. 특수 케이스 - GET이지만 인증 필요
-                        .requestMatchers(HttpMethod.GET, "/posts/users/me/likes").authenticated()
-                        
-                        // 2. Public GET 엔드포인트
-                        .requestMatchers(HttpMethod.GET, 
-                                "/posts",                // 게시글 목록
-                                "/posts/*",              // 게시글 상세
-                                "/posts/*/comments",     // 댓글 목록
-                                "/users/*"               // 사용자 프로필 (공개)
-                        ).permitAll()
-                        
-                        // 3. 인증 필요 - Posts
-                        .requestMatchers(HttpMethod.POST, "/posts").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/posts/*").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/posts/*").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/posts/*/like").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/posts/*/like").authenticated()
-                        
-                        // 4. 인증 필요 - Comments
-                        .requestMatchers(HttpMethod.POST, "/posts/*/comments").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/posts/*/comments/*").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/posts/*/comments/*").authenticated()
-                        
-                        // 5. 인증 필요 - Users
-                        .requestMatchers(HttpMethod.PATCH, "/users/*").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/users/*/password").authenticated()
-                        
-                        // 6. 인증 필요 - Images
-                        .requestMatchers(HttpMethod.POST, "/images").authenticated()
-                        
-                        // 7. Public - Auth
-                        .requestMatchers("/auth/login", "/auth/refresh_token", "/users/signup").permitAll()
-
-                        // 8. Public - Legal & Static Resources
-                        .requestMatchers("/terms", "/privacy", "/css/**").permitAll()
-
-                        // 9. 나머지는 인증 필요
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        .anyRequest().permitAll()  // 모든 요청 허용 (SessionAuthenticationFilter가 처리)
+                );
+        
+        // [세션 전환] JWT 필터 제거
+        // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }
