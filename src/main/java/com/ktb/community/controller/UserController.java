@@ -13,14 +13,16 @@ import com.ktb.community.service.AuthService;
 import com.ktb.community.service.UserService;
 import com.ktb.community.util.PasswordValidator;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+// [세션 전환] JWT 방식 (미사용)
+// import org.springframework.security.core.Authentication;
+// import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -58,9 +60,8 @@ public class UserController {
 
         AuthService.AuthResult result = authService.signup(request);
 
-        // 토큰 → httpOnly Cookie 설정
-        setCookie(response, "access_token", result.tokens().getAccessToken(), 30 * 60, "/");
-        setCookie(response, "refresh_token", result.tokens().getRefreshToken(), 7 * 24 * 60 * 60, "/auth/refresh_token");
+        // 세션 ID → httpOnly Cookie 설정 (1시간)
+        setCookie(response, "SESSIONID", result.sessionId(), 3600, "/");
 
         // 사용자 정보 → 응답 body
         AuthResponse authResponse = AuthResponse.from(result.user());
@@ -90,9 +91,9 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @PathVariable Long userId,
             @Valid @ModelAttribute UpdateProfileRequest request,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
         
-        Long authenticatedUserId = extractUserIdFromAuthentication(authentication);
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
         UserResponse response = userService.updateProfile(userId, authenticatedUserId, request);
         
         return ResponseEntity.ok(ApiResponse.success("update_profile_success", response));
@@ -108,7 +109,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @PathVariable Long userId,
             @Valid @RequestBody ChangePasswordRequest request,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
         
         // 1. 비밀번호 일치 검증
         if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
@@ -122,7 +123,7 @@ public class UserController {
                     PasswordValidator.getPolicyDescription());
         }
         
-        Long authenticatedUserId = extractUserIdFromAuthentication(authentication);
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
         userService.changePassword(userId, authenticatedUserId, request);
         
         return ResponseEntity.ok(ApiResponse.success("update_password_success"));
@@ -137,9 +138,9 @@ public class UserController {
     @RateLimit(requestsPerMinute = 10)
     public ResponseEntity<ApiResponse<Void>> deactivateAccount(
             @PathVariable Long userId,
-            Authentication authentication) {
+            HttpServletRequest httpRequest) {
         
-        Long authenticatedUserId = extractUserIdFromAuthentication(authentication);
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
         userService.deactivateAccount(userId, authenticatedUserId);
         
         return ResponseEntity.ok(ApiResponse.success("account_deactivated_success"));
@@ -162,22 +163,11 @@ public class UserController {
         response.addCookie(cookie);
     }
 
-    /**
-     * Authentication에서 사용자 ID 추출
-     * JWT 인증: username = userId (숫자)
-     * 기타 인증: username = email (fallback to DB lookup)
-     */
-    private Long extractUserIdFromAuthentication(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername();
-
-        // JWT 인증 경로: username이 userId인 경우 (빠른 경로)
-        try {
-            return Long.parseLong(username);
-        } catch (NumberFormatException e) {
-            // 테스트 환경 등: username이 email인 경우 (fallback)
-            log.debug("Username is not numeric (likely email), falling back to DB lookup: {}", username);
-            return userService.findUserIdByEmail(username);
-        }
-    }
+    // [세션 전환] JWT 방식 extractUserIdFromAuthentication (미사용)
+    // /**
+    //  * Authentication에서 사용자 ID 추출
+    //  * JWT 인증: username = userId (숫자)
+    //  * 기타 인증: username = email (fallback to DB lookup)
+    //  */
+    // private Long extractUserIdFromAuthentication(Authentication authentication) { ... }
 }
