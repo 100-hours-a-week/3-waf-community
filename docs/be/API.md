@@ -22,9 +22,9 @@
 
 **응답:**
 - 200: `login_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
-  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-  - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
-  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
+    - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+    - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+    - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
@@ -75,8 +75,8 @@
 
 **응답:**
 - 200: `token_refreshed` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
-  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
+    - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+    - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
@@ -134,9 +134,9 @@ async function refreshAccessToken() {
 
 **응답:**
 - 201: `register_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body** (자동 로그인)
-  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-  - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
-  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
+    - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+    - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+    - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
 - 413: IMAGE-002 (File too large)
@@ -319,7 +319,7 @@ async function refreshAccessToken() {
       "likeCount": 42,
       "commentCount": 15
     },
-    "isLikedByCurrentUser": true,  // 현재 사용자의 좋아요 여부 (비로그인 시 null)
+    "isLikedByCurrentUser": true,  // 현재 사용자의 좋아요 여부 (로그인: true/false, 비로그인: null)
     "createdAt": "2025-10-18T10:00:00",
     "updatedAt": "2025-10-18T10:00:00"
   },
@@ -465,6 +465,8 @@ return PostResponse.from(post);
 **Endpoint:** `GET /posts/{postId}/comments?offset=0&limit=10`
 
 **쿼리:** offset(Number), limit(Number)
+
+**정렬:** 작성일시 내림차순 (최신 댓글 먼저)
 
 **응답:**
 - 200: `get_comments_success` → comments[], pagination.total_count
@@ -717,7 +719,7 @@ offset: 시작 위치 (0부터), limit: 한 번에 가져올 개수
 - COMMON-004: Too many requests (요청 횟수 초과)
 - COMMON-999: Server error (서버 내부 오류)
 
-**전체 에러 코드:** `src/main/java/com/ktb/community/enums/ErrorCode.java` 참조 (28개)
+**전체 에러 코드:** `Users/jsh/ideaProject/community/src/main/java/com/ktb/community/enums/ErrorCode.java` 참조 (28개)
 
 ### 응답 예시
 
