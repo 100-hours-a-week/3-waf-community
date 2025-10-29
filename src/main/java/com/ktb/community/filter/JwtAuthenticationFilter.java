@@ -2,8 +2,7 @@ package com.ktb.community.filter;
 
 import com.ktb.community.dto.ApiResponse;
 import com.ktb.community.dto.ErrorDetails;
-import com.ktb.community.session.Session;
-import com.ktb.community.session.SessionManager;
+import com.ktb.community.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.*;
 import jakarta.servlet.http.Cookie;
@@ -17,36 +16,28 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Set;
 
 /**
- * [JWT 전환] 세션 인증 필터 (비활성화)
- *
- * JWT 마이그레이션으로 인해 비활성화됨
- * → filter/JwtAuthenticationFilter.java 사용
- *
- * 비활성화 방법:
- * - @Component 주석처리 → Spring Bean 등록 해제
- * - @Order(1) 주석처리
- *
- * 보존 이유:
- * - 향후 세션 방식 복귀 시 참고용
- * - 인증 필터 패턴 학습 자료
+ * JWT 인증 필터 (순수 Servlet Filter)
+ * - 순서: 1 (가장 먼저 실행)
+ * - 공개 엔드포인트는 통과
+ * - JWT 검증 후 Request Attribute에 userId 저장
+ * - SessionAuthenticationFilter 패턴 재사용
  */
 @Slf4j
-// @Component  // [JWT 전환] 비활성화
-// @Order(1)   // [JWT 전환] 비활성화
+@Component
+@Order(1)
 @RequiredArgsConstructor
-public class SessionAuthenticationFilter implements Filter {
+public class JwtAuthenticationFilter implements Filter {
 
-    private final SessionManager sessionManager;
+    private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
 
-    // SecurityConfig의 공개 엔드포인트 참조
+    // 공개 엔드포인트 (인증 불필요)
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/auth/login",
-            "/auth/logout",
+            "/auth/refresh_token",
             "/users/signup",
             "/users",          // 회원가입 alias
             "/terms",
@@ -63,7 +54,7 @@ public class SessionAuthenticationFilter implements Filter {
         String uri = req.getRequestURI();
         String method = req.getMethod();
 
-        log.debug("[SessionFilter] {} {}", method, uri);
+        log.debug("[JwtFilter] {} {}", method, uri);
 
         // OPTIONS 요청은 통과 (CORS Preflight)
         if (HttpMethod.OPTIONS.matches(method)) {
@@ -73,40 +64,40 @@ public class SessionAuthenticationFilter implements Filter {
 
         // 공개 엔드포인트는 통과
         if (isPublicEndpoint(uri, method)) {
-            log.debug("[SessionFilter] 공개 엔드포인트 통과: {}", uri);
+            log.debug("[JwtFilter] 공개 엔드포인트 통과: {}", uri);
             chain.doFilter(request, response);
             return;
         }
 
-        // 세션 ID 추출
-        String sessionId = extractSessionId(req);
-        if (sessionId == null) {
-            sendUnauthorized(res, "No session cookie");
+        // JWT 추출 (Cookie → Authorization header)
+        String jwt = extractJwt(req);
+        if (jwt == null) {
+            sendUnauthorized(res, "No access token");
             return;
         }
 
-        // 세션 검증
-        Optional<Session> sessionOpt = sessionManager.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
-            sendUnauthorized(res, "Invalid or expired session");
+        // JWT 검증
+        if (!jwtTokenProvider.validateToken(jwt)) {
+            sendUnauthorized(res, "Invalid or expired token");
             return;
         }
 
-        Session session = sessionOpt.get();
-        if (session.isExpired()) {
-            sendUnauthorized(res, "Session expired");
+        // JWT payload에서 userId 추출
+        Long userId = jwtTokenProvider.getUserIdFromToken(jwt);
+        if (userId == null) {
+            sendUnauthorized(res, "Invalid token payload");
             return;
         }
 
         // Request Attribute에 userId 저장
-        req.setAttribute("userId", session.getUserId());
-        log.debug("[SessionFilter] 인증 성공");
+        req.setAttribute("userId", userId);
+        log.debug("[JwtFilter] 인증 성공");
 
         chain.doFilter(request, response);
     }
 
     /**
-     * 공개 엔드포인트 판단 (SecurityConfig 규칙 참조)
+     * 공개 엔드포인트 판단
      */
     private boolean isPublicEndpoint(String uri, String method) {
         // 1. 완전 공개 경로
@@ -130,16 +121,16 @@ public class SessionAuthenticationFilter implements Filter {
     }
 
     /**
-     * 세션 ID 추출 (Cookie)
+     * JWT 추출 (Authorization header)
+     * - AT는 클라이언트 JS 변수로 관리 (응답 body의 accessToken 필드)
+     * - 클라이언트가 Authorization: Bearer {token} 헤더로 전송
      */
-    private String extractSessionId(HttpServletRequest request) {
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("SESSIONID".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
+    private String extractJwt(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
         }
+
         return null;
     }
 
@@ -159,6 +150,6 @@ public class SessionAuthenticationFilter implements Filter {
         );
 
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
-        log.warn("[SessionFilter] 인증 실패: {}", message);
+        log.warn("[JwtFilter] 인증 실패: {}", message);
     }
 }

@@ -60,11 +60,15 @@ public class UserController {
 
         AuthService.AuthResult result = authService.signup(request);
 
-        // 세션 ID → httpOnly Cookie 설정 (1시간)
-        setCookie(response, "SESSIONID", result.sessionId(), 3600, "/");
+        // [세션 방식] (보존)
+        // setCookie(response, "SESSIONID", result.sessionId(), 3600, "/");
 
-        // 사용자 정보 → 응답 body
-        AuthResponse authResponse = AuthResponse.from(result.user());
+        // [JWT 방식] RT → httpOnly Cookie (7일, Path 제한)
+        setCookie(response, "refresh_token", result.refreshToken(),
+                  7 * 24 * 3600, "/auth/refresh_token");
+
+        // AT + 사용자 정보 → 응답 body
+        AuthResponse authResponse = AuthResponse.from(result.user(), result.accessToken());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("register_success", authResponse));
     }

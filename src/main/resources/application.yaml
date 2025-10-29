@@ -45,7 +45,7 @@ logging:
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity: 1800000  # 30분 (밀리초)
+  access-token-validity: 900000  # 15분 (밀리초) - XSS 보안 강화
   refresh-token-validity: 604800000  # 7일 (밀리초)
 
 # AWS S3 설정 (Phase 3.5+)
