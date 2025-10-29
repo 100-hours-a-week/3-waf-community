@@ -24,7 +24,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("SELECT c FROM Comment c " +
            "JOIN FETCH c.user " +
            "WHERE c.post.postId = :postId AND c.commentStatus = :status " +
-           "ORDER BY c.createdAt ASC")
+           "ORDER BY c.createdAt DESC")
     Page<Comment> findByPostIdAndStatusWithUser(
             @Param("postId") Long postId,
             @Param("status") CommentStatus status,
