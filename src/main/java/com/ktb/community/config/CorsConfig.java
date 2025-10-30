@@ -21,7 +21,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(frontendUrl)
-                .allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS")
+                .allowedMethods("GET", "POST", "PATCH", "DELETE","PUT","OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)  // httpOnly Cookie 전송 허용
                 .maxAge(3600);  // Preflight 캐싱 1시간
