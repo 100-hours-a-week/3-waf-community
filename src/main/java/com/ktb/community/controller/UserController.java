@@ -63,9 +63,9 @@ public class UserController {
         // [세션 방식] (보존)
         // setCookie(response, "SESSIONID", result.sessionId(), 3600, "/");
 
-        // [JWT 방식] RT → httpOnly Cookie (7일, Path 제한)
+        // [JWT 방식] RT → httpOnly Cookie (7일, Path=/auth)
         setCookie(response, "refresh_token", result.refreshToken(),
-                  7 * 24 * 3600, "/auth/refresh_token");
+                  7 * 24 * 3600, "/auth");
 
         // AT + 사용자 정보 → 응답 body
         AuthResponse authResponse = AuthResponse.from(result.user(), result.accessToken());
