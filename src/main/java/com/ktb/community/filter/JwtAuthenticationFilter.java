@@ -42,7 +42,8 @@ public class JwtAuthenticationFilter implements Filter {
             "/users/signup",
             "/users",          // 회원가입 alias
             "/terms",
-            "/privacy"
+            "/privacy",
+            "/stats"           // 통계 API
     );
 
     @Override

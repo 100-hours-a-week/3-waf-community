@@ -1,20 +1,16 @@
 /*
- * [Spring Security 제거] 기존 구현 (보존)
+ * [JWT 마이그레이션] Spring Security 최소 설정
  *
- * Spring Security 기반 보안 설정
- * → config/CorsConfig.java (WebMvcConfigurer)로 대체됨
+ * 목적:
+ * - 기본 formLogin/httpBasic 비활성화 (JwtAuthenticationFilter가 인증 처리)
+ * - CORS 설정 유지 (Cross-Origin 지원)
+ * - PasswordEncoder는 PasswordEncoderConfig에서 제공
  *
- * 주석처리 이유:
- * - Spring Security 의존성 제거
- * - CORS 설정은 CorsConfig로 이동
- * - PasswordEncoder는 여전히 Bean 등록 필요 (AuthService에서 사용)
- *
- * 보존 이유:
- * - 향후 Spring Security 전환 시 참고용
- * - SecurityFilterChain 설정 패턴 학습 자료
+ * 인증 처리:
+ * - JwtAuthenticationFilter가 모든 인증 처리
+ * - Spring Security는 CORS/CSRF만 관리
  */
 
-/*
 package com.ktb.community.config;
 
 import lombok.RequiredArgsConstructor;
@@ -26,12 +22,8 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -45,11 +37,6 @@ public class SecurityConfig {
 
     @Value("${frontend.url:http://localhost:3000}")
     private String frontendUrl;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -74,14 +61,15 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)  // 기본 로그인 폼 비활성화
+                .httpBasic(AbstractHttpConfigurer::disable)  // HTTP Basic 인증 비활성화
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .anyRequest().permitAll()  // JwtAuthenticationFilter가 인증 처리
                 );
 
         return http.build();
     }
 }
-*/
