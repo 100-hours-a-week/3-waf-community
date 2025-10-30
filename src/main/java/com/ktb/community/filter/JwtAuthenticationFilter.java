@@ -37,6 +37,7 @@ public class JwtAuthenticationFilter implements Filter {
     // 공개 엔드포인트 (인증 불필요)
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/auth/login",
+            "/auth/logout",     // RT 쿠키만 사용 (AT 불필요)
             "/auth/refresh_token",
             "/users/signup",
             "/users",          // 회원가입 alias
