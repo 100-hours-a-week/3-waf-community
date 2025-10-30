@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * PostStats Repository
- * 동시성 제어 (원자적 UPDATE)
+ * 동시성 제어 (원자적 UPDATE) -> 현재 낙관적 락으로 변경.
  */
 @Repository
 public interface PostStatsRepository extends JpaRepository<PostStats, Long> {

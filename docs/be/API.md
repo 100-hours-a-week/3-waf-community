@@ -21,10 +21,9 @@
 **필수:** email(String), password(String)
 
 **응답:**
-- 200: `login_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
-    - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-    - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
-    - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
+- 200: `login_success` → **AT는 응답 body, RT는 httpOnly Cookie**
+    - Cookie: refresh_token (7일, HttpOnly, SameSite=Lax, Path=/auth)
+    - Body: `{ userId, email, nickname, profileImage, accessToken }` (AuthResponse)
 - 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
@@ -36,13 +35,18 @@
     "userId": 1,
     "email": "test@startupcode.kr",
     "nickname": "testuser",
-    "profileImage": "https://..."
+    "profileImage": "https://...",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   },
   "timestamp": "2025-10-21T10:00:00"
 }
 ```
 
-**⚠️ Breaking Change**: 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
+**토큰 사용:**
+- **AT**: 응답 body의 `accessToken` 필드 → 클라이언트 JS 메모리 저장 → `Authorization: Bearer {token}` 헤더로 전송
+- **RT**: httpOnly Cookie 자동 저장 → 브라우저가 `/auth/refresh_token` 요청 시 자동 전송
+- **AT 유효기간**: 15분
+- **RT 유효기간**: 7일
 
 ---
 
@@ -53,13 +57,13 @@
 
 **처리:**
 - Cookie에서 refresh_token 추출 → DB 삭제
-- 쿠키 삭제 (access_token, refresh_token MaxAge=0)
+- RT 쿠키 삭제 (MaxAge=0)
 
 **응답:**
 - 200: `logout_success`
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
-**⚠️ Breaking Change**: Authorization header 불필요, Request body 없음
+**참고:** AT는 클라이언트에서 메모리 변수를 null로 설정하여 삭제
 
 ---
 
@@ -70,13 +74,12 @@
 
 **처리:**
 - Cookie에서 refresh_token 추출 → 검증
-- 새 access_token 발급 → httpOnly Cookie로 전달
+- 새 access_token 발급 → 응답 body로 전달
 - 사용자 정보 반환 (localStorage 동기화용)
 
 **응답:**
-- 200: `token_refreshed` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
-    - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-    - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
+- 200: `token_refreshed` → **새 AT는 응답 body, RT는 재사용**
+    - Body: `{ userId, email, nickname, profileImage, accessToken }` (AuthResponse)
 - 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
 
@@ -88,13 +91,14 @@
     "userId": 1,
     "email": "test@startupcode.kr",
     "nickname": "testuser",
-    "profileImage": "https://..."
+    "profileImage": "https://...",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   },
   "timestamp": "2025-10-21T10:00:00"
 }
 ```
 
-**⚠️ Breaking Change**: Request body 없음, 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
+**참고:** RT는 재사용되며, 쿠키는 업데이트되지 않음 (7일 후 재로그인 필요)
 
 **프론트엔드 활용:**
 ```javascript
@@ -133,10 +137,9 @@ async function refreshAccessToken() {
 - `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
-- 201: `register_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body** (자동 로그인)
-    - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
-    - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
-    - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
+- 201: `register_success` → **AT는 응답 body, RT는 httpOnly Cookie** (자동 로그인)
+    - Cookie: refresh_token (7일, HttpOnly, SameSite=Lax, Path=/auth)
+    - Body: `{ userId, email, nickname, profileImage, accessToken }` (AuthResponse)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
 - 413: IMAGE-002 (File too large)
@@ -151,13 +154,14 @@ async function refreshAccessToken() {
     "userId": 1,
     "email": "test@startupcode.kr",
     "nickname": "testuser",
-    "profileImage": "https://..."
+    "profileImage": "https://...",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   },
   "timestamp": "2025-10-21T10:00:00"
 }
 ```
 
-**⚠️ Breaking Change**: 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
+**참고:** 로그인과 동일한 토큰 사용 방식 (AT 15분, RT 7일)
 
 ---
 
@@ -597,27 +601,55 @@ return PostResponse.from(post);
 
 ## 7. 공통 사양
 
-### 인증 방식 (httpOnly Cookie)
+### 인증 방식 (JWT + httpOnly Cookie)
 
-**자동 전송**: 브라우저가 모든 요청에 Cookie 자동 포함 (credentials: 'include' 필수)
+**토큰 전략:**
+- **AT (Access Token)**: 응답 body → 클라이언트 JS 메모리 → `Authorization: Bearer {token}` 헤더
+- **RT (Refresh Token)**: httpOnly Cookie → 브라우저 자동 관리 → `/auth/refresh_token` 전용
 
-**Express.js 프론트엔드 예시**:
+**프론트엔드 구현 예시:**
 ```javascript
+const API_BASE_URL = 'http://localhost:8080';
+let accessToken = null;  // AT는 메모리 저장
+
 // 로그인
-const response = await fetch('http://localhost:8080/auth/login', {
+const response = await fetch(`${API_BASE_URL}/auth/login`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',  // 필수
+  credentials: 'include',  // RT 쿠키 받기
   body: JSON.stringify({ email, password })
 });
 
-// API 요청 (토큰 자동 전송)
-const posts = await fetch('http://localhost:8080/posts', {
-  credentials: 'include'  // 필수
+if (response.ok) {
+  const data = await response.json();
+  accessToken = data.data.accessToken;  // AT 저장
+  localStorage.setItem('userId', data.data.userId);
+}
+
+// API 요청 (AT를 Authorization 헤더로 전송)
+const posts = await fetch(`${API_BASE_URL}/posts`, {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`  // AT 전송
+  },
+  credentials: 'include'  // RT 쿠키는 사용 안함 (갱신 시만 사용)
 });
+
+// AT 만료 시 자동 갱신
+if (response.status === 401) {
+  const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh_token`, {
+    method: 'POST',
+    credentials: 'include'  // RT 쿠키로 자동 전송
+  });
+  
+  if (refreshResponse.ok) {
+    const data = await refreshResponse.json();
+    accessToken = data.data.accessToken;  // 새 AT 저장
+    // 원래 요청 재시도
+  }
+}
 ```
 
-**CSRF 토큰 처리 (POST/PATCH/DELETE)**:
+**CSRF 토큰 처리 (POST/PATCH/DELETE):**
 ```javascript
 // CSRF 토큰 추출
 const csrfToken = document.cookie
@@ -630,18 +662,23 @@ const response = await fetch('http://localhost:8080/posts', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-XSRF-TOKEN': csrfToken  // 필수
+    'Authorization': `Bearer ${accessToken}`,  // AT
+    'X-XSRF-TOKEN': csrfToken  // CSRF 토큰
   },
   credentials: 'include',
   body: JSON.stringify(data)
 });
 ```
 
-**하위 호환성 (Authorization header)**:
-```
-Authorization: Bearer {access_token}
-```
-- Cookie 우선, Authorization header는 하위 호환성 지원
+**토큰 특성:**
+| 항목 | AT | RT |
+|------|----|----|
+| 전달 방식 | 응답 body | httpOnly Cookie |
+| 클라이언트 저장 | JS 메모리 변수 | 브라우저 쿠키 |
+| 서버 전송 | Authorization 헤더 | Cookie 헤더 (자동) |
+| 유효기간 | 15분 | 7일 |
+| XSS 취약성 | 🔴 취약 | 🟢 안전 |
+| Path 제한 | 없음 | /auth/refresh_token |
 
 ### 페이지네이션
 ```

@@ -45,16 +45,15 @@ logging:
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity: 1800000  # 30분 (밀리초)
+  access-token-validity: 900000  # 15분 (밀리초) - XSS 보안 강화
   refresh-token-validity: 604800000  # 7일 (밀리초)
 
 # AWS S3 설정 (Phase 3.5+)
-# DefaultCredentialsProvider: 표준 credential chain 사용
-# 1. 환경변수 (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-# 2. System Properties
-# 3. ~/.aws/credentials 파일 ([default] 프로파일)
-# 4. IAM Role (EC2, ECS, Lambda)
+# ProfileCredentialsProvider: ~/.aws/credentials 프로필 사용
+# - 로컬 개발: dev 프로필 (AWS_PROFILE 환경변수 또는 기본값)
+# - 배포 환경: 환경변수로 프로필 지정 가능
 aws:
+  profile: ${AWS_PROFILE:dev}
   s3:
     bucket: ${AWS_S3_BUCKET:ktb-3-community-images-dev}
     region: ${AWS_REGION:ap-northeast-2}

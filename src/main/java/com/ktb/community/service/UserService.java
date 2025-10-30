@@ -92,8 +92,7 @@ public class UserService {
             newImage.clearExpiresAt();
             user.updateProfileImage(newImage);
 
-            log.info("[User] 프로필 이미지 변경: userId={}, imageId={}",
-                     userId, newImage.getImageId());
+            log.info("[User] 프로필 이미지 변경: imageId={}", newImage.getImageId());
         }
 
         return UserResponse.from(user);

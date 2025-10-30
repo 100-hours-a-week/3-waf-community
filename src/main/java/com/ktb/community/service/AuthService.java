@@ -2,7 +2,6 @@ package com.ktb.community.service;
 
 import com.ktb.community.dto.request.LoginRequest;
 import com.ktb.community.dto.request.SignupRequest;
-import com.ktb.community.dto.response.TokenPair;
 import com.ktb.community.entity.User;
 import com.ktb.community.entity.UserToken;
 import com.ktb.community.enums.UserStatus;
@@ -12,6 +11,8 @@ import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.UserRepository;
 import com.ktb.community.repository.UserTokenRepository;
 import com.ktb.community.security.JwtTokenProvider;
+// [JWT 전환] 세션 방식 (보존)
+// import com.ktb.community.session.SessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,17 +31,25 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     /**
-     * 인증 결과 (토큰 + 사용자 정보)
+     * 인증 결과 (Access Token + Refresh Token + 사용자 정보)
      * Service → Controller 전달용
      */
-    public record AuthResult(TokenPair tokens, User user) {}
-    
+    public record AuthResult(String accessToken, String refreshToken, User user) {}
+
+    /**
+     * 토큰 쌍 (내부용)
+     */
+    private record TokenPair(String accessToken, String refreshToken) {}
+
     private final UserRepository userRepository;
-    private final UserTokenRepository userTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserTokenRepository userTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final ImageService imageService;
     private final ImageRepository imageRepository;
+
+    // [JWT 전환] 세션 방식 (보존)
+    // private final SessionManager sessionManager;
     
     /**
      * 회원가입 (FR-AUTH-001)
@@ -83,9 +92,17 @@ public class AuthService {
         }
         User savedUser = userRepository.save(user);
 
-        // 토큰 발급 및 결과 반환
+        // [세션 방식] (보존)
+        // String sessionId = sessionManager.createSession(
+        //         savedUser.getUserId(),
+        //         savedUser.getEmail(),
+        //         savedUser.getRole().name()
+        // );
+        // return new AuthResult(sessionId, savedUser);
+
+        // [JWT 방식]
         TokenPair tokens = generateTokens(savedUser);
-        return new AuthResult(tokens, savedUser);
+        return new AuthResult(tokens.accessToken(), tokens.refreshToken(), savedUser);
     }
     
     /**
@@ -108,17 +125,28 @@ public class AuthService {
             throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
         }
 
-        // 토큰 발급 및 결과 반환
+        // [세션 방식] (보존)
+        // String sessionId = sessionManager.createSession(
+        //         user.getUserId(),
+        //         user.getEmail(),
+        //         user.getRole().name()
+        // );
+        // return new AuthResult(sessionId, user);
+
+        // [JWT 방식]
         TokenPair tokens = generateTokens(user);
-        return new AuthResult(tokens, user);
+        return new AuthResult(tokens.accessToken(), tokens.refreshToken(), user);
     }
     
     /**
      * 로그아웃 (FR-AUTH-003)
-     * - Refresh Token DB에서 삭제
+     * - Refresh Token 삭제
      */
-    @Transactional
     public void logout(String refreshToken) {
+        // [세션 방식] (보존)
+        // sessionManager.deleteSession(sessionId);
+
+        // [JWT 방식] RT 삭제
         userTokenRepository.deleteByToken(refreshToken);
         log.info("[Auth] 로그아웃 완료");
     }
@@ -127,61 +155,60 @@ public class AuthService {
      * Access Token 재발급 (FR-AUTH-004)
      * - Refresh Token 유효성 검증
      * - 새 Access Token 발급
-     * - 사용자 정보 반환 (프론트엔드 localStorage 동기화용)
+     * - 사용자 정보 반환 (프론트엔드 동기화용)
      */
     @Transactional(readOnly = true)
     public AuthResult refreshAccessToken(String refreshToken) {
-        // Refresh Token 검증
+        // RT 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN,
+                    "Invalid or expired refresh token");
         }
 
-        // DB에서 토큰 확인 (User + ProfileImage Fetch Join)
-        UserToken userToken = userTokenRepository.findByTokenWithUser(refreshToken)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
-
-        // 만료 확인
-        if (userToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.TOKEN_EXPIRED);
-        }
+        // RT가 RDB에 존재하는지 확인
+        UserToken userToken = userTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN,
+                        "Refresh token not found in database"));
 
         // 사용자 조회
-        User user = userToken.getUser();
+        User user = userRepository.findByUserIdAndUserStatus(
+                        userToken.getUser().getUserId(), UserStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND,
+                        "User not found or inactive"));
 
-        // 새 Access Token 발급
-        String newAccessToken = jwtTokenProvider.createAccessToken(
-                user.getUserId(),
-                user.getEmail(),
-                user.getRole().name()
-        );
-
-        // TokenPair 생성 (refreshToken은 재사용)
-        TokenPair tokens = new TokenPair(newAccessToken, refreshToken);
-        return new AuthResult(tokens, user);
-    }
-    
-    /**
-     * 토큰 생성 및 저장 (내부 메서드)
-     * @return TokenPair (Controller에서 Cookie 설정용)
-     */
-    private TokenPair generateTokens(User user) {
+        // 새 AT 생성 (RT는 재사용)
         String accessToken = jwtTokenProvider.createAccessToken(
                 user.getUserId(),
                 user.getEmail(),
                 user.getRole().name()
         );
 
+        log.debug("[Auth] Access Token 재발급: userId={}", user.getUserId());
+        return new AuthResult(accessToken, refreshToken, user);
+    }
+
+    /**
+     * 토큰 생성 및 저장 (내부 메서드)
+     * @return TokenPair (Controller에서 Cookie 설정용)
+     */
+    private TokenPair generateTokens(User user) {
+        // AT/RT 생성
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getUserId());
 
-        // Refresh Token DB 저장
+        // Refresh Token RDB 저장
         UserToken userToken = UserToken.builder()
                 .token(refreshToken)
-                .expiresAt(LocalDateTime.now().plusDays(7))
                 .user(user)
+                .expiresAt(LocalDateTime.now().plusDays(7))
                 .build();
-
         userTokenRepository.save(userToken);
 
+        log.debug("[Auth] JWT 토큰 생성: userId={}", user.getUserId());
         return new TokenPair(accessToken, refreshToken);
     }
 }

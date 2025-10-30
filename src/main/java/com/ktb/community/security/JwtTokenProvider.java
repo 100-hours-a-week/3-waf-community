@@ -13,6 +13,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 /**
+ * [세션 전환]
+ * 현재는 세션 기반 인증(SessionAuthenticationFilter)을 사용하므로 이 클래스는 실행되지 않습니다.
+ * JWT 인프라는 향후 토큰 기반 인증으로 전환 시 재사용을 위해 보존되었습니다.
+ * 
+ * 관련 파일:
+ * - SessionAuthenticationFilter: 세션 쿠키 검증 및 인증 처리
+ * - SessionManager: 세션 생성/조회/삭제
+ * - InMemorySessionStore: 세션 저장소 (ConcurrentHashMap)
+ */
+
+/**
  * JWT 토큰 생성 및 검증을 담당하는 Provider
  * LLD.md Section 6.1-6.2 참조
  */

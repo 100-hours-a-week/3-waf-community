@@ -1,3 +1,19 @@
+/*
+ * [Spring Security 제거] 기존 구현 (보존)
+ *
+ * Spring Security UserDetailsService 구현
+ * → JWT 마이그레이션 후 사용하지 않음 (순수 Servlet Filter는 UserDetails 불필요)
+ *
+ * 주석처리 이유:
+ * - Spring Security 의존성 제거 (UserDetailsService, UserDetails)
+ * - JwtAuthenticationFilter (순수 Filter)는 Request Attribute만 사용
+ *
+ * 보존 이유:
+ * - 향후 Spring Security 전환 시 참고용
+ * - UserDetails 변환 패턴 학습 자료
+ */
+
+/*
 package com.ktb.community.security;
 
 import com.ktb.community.entity.User;
@@ -12,21 +28,17 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
-/**
- * Spring Security UserDetailsService 구현
- * 이메일로 사용자 인증 정보를 로드
- */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    
+
     private final UserRepository userRepository;
-    
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmailAndUserStatus(email.toLowerCase().trim(), UserStatus.ACTIVE)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-        
+
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
                 .password(user.getPasswordHash())
@@ -38,15 +50,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .disabled(user.getUserStatus() != UserStatus.ACTIVE)
                 .build();
     }
-    
-    /**
-     * User ID로 사용자 로드 (JWT 검증용)
-     */
+
     public UserDetails loadUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
-        
-        // username을 userId로 설정 (JWT subject와 일치)
+
         return org.springframework.security.core.userdetails.User.builder()
                 .username(String.valueOf(user.getUserId()))
                 .password(user.getPasswordHash())
@@ -59,3 +67,4 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .build();
     }
 }
+*/

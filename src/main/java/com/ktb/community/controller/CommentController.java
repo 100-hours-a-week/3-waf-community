@@ -7,12 +7,14 @@ import com.ktb.community.dto.request.CommentUpdateRequest;
 import com.ktb.community.dto.response.CommentResponse;
 import com.ktb.community.service.CommentService;
 import com.ktb.community.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+// [세션 전환] JWT 방식 (미사용)
+// import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -56,9 +58,9 @@ public class CommentController {
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @PathVariable Long postId,
             @Valid @RequestBody CommentCreateRequest request,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         CommentResponse comment = commentService.createComment(postId, request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("create_comment_success", comment));
@@ -76,9 +78,9 @@ public class CommentController {
             @PathVariable Long postId,
             @PathVariable Long commentId,
             @Valid @RequestBody CommentUpdateRequest request,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         CommentResponse comment = commentService.updateComment(commentId, request, userId);
         return ResponseEntity.ok(ApiResponse.success("update_comment_success", comment));
     }
@@ -95,27 +97,17 @@ public class CommentController {
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         commentService.deleteComment(commentId, userId);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * 인증된 사용자 ID 추출
-     * JWT subject에서 userId 직접 파싱 (성능 최적화)
-     */
-    private Long getUserId(Authentication authentication) {
-        String username = authentication.getName(); // JWT subject = userId (문자열)
-        
-        // 빠른 경로: userId 직접 변환 (DB 조회 없음)
-        try {
-            return Long.parseLong(username);
-        } catch (NumberFormatException e) {
-            // Fallback: 테스트 환경 등에서 email 사용 시
-            log.debug("Username is not numeric (likely email), falling back to DB lookup: {}", username);
-            return userService.findUserIdByEmail(username);
-        }
-    }
+    // [세션 전환] JWT 방식 getUserId (미사용)
+    // /**
+    //  * 인증된 사용자 ID 추출
+    //  * JWT subject에서 userId 직접 파싱 (성능 최적화)
+    //  */
+    // private Long getUserId(Authentication authentication) { ... }
 }

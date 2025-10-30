@@ -8,12 +8,14 @@ import com.ktb.community.dto.response.PostResponse;
 import com.ktb.community.service.LikeService;
 import com.ktb.community.service.PostService;
 import com.ktb.community.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+// [세션 전환] JWT 방식 (미사용)
+// import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -55,8 +57,12 @@ public class PostController {
      * Tier 3: 제한 없음 (조회 API)
      */
     @GetMapping("/{postId}")
-    public ResponseEntity<ApiResponse<PostResponse>> getPostDetail(@PathVariable Long postId) {
-        PostResponse post = postService.getPostDetail(postId);
+    public ResponseEntity<ApiResponse<PostResponse>> getPostDetail(
+            @PathVariable Long postId,
+            HttpServletRequest httpRequest
+    ) {
+        Long userId = (Long) httpRequest.getAttribute("userId");  // null for non-logged-in users
+        PostResponse post = postService.getPostDetail(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("get_post_detail_success", post));
     }
 
@@ -70,9 +76,9 @@ public class PostController {
     @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<ApiResponse<PostResponse>> createPost(
             @Valid @RequestBody PostCreateRequest request,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         PostResponse post = postService.createPost(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("create_post_success", post));
@@ -89,9 +95,9 @@ public class PostController {
     public ResponseEntity<ApiResponse<PostResponse>> updatePost(
             @PathVariable Long postId,
             @Valid @RequestBody PostUpdateRequest request,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         PostResponse post = postService.updatePost(postId, request, userId);
         return ResponseEntity.ok(ApiResponse.success("update_post_success", post));
     }
@@ -106,9 +112,9 @@ public class PostController {
     @RateLimit(requestsPerMinute = 30)
     public ResponseEntity<Void> deletePost(
             @PathVariable Long postId,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         postService.deletePost(postId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -123,9 +129,9 @@ public class PostController {
     @RateLimit(requestsPerMinute = 200)
     public ResponseEntity<ApiResponse<Map<String, String>>> addLike(
             @PathVariable Long postId,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         Map<String, String> result = likeService.addLike(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("like_success", result));
     }
@@ -140,9 +146,9 @@ public class PostController {
     @RateLimit(requestsPerMinute = 200)
     public ResponseEntity<ApiResponse<Map<String, String>>> removeLike(
             @PathVariable Long postId,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         Map<String, String> result = likeService.removeLike(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("unlike_success", result));
     }
@@ -157,27 +163,17 @@ public class PostController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getLikedPosts(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int limit,
-            Authentication authentication
+            HttpServletRequest httpRequest
     ) {
-        Long userId = getUserId(authentication);
+        Long userId = (Long) httpRequest.getAttribute("userId");
         Map<String, Object> result = likeService.getLikedPosts(userId, offset, limit);
         return ResponseEntity.ok(ApiResponse.success("get_liked_posts_success", result));
     }
 
-    /**
-     * 인증된 사용자 ID 추출
-     * JWT subject에서 userId 직접 파싱 (성능 최적화)
-     */
-    private Long getUserId(Authentication authentication) {
-        String username = authentication.getName(); // JWT subject = userId (문자열)
-        
-        // 빠른 경로: userId 직접 변환 (DB 조회 없음)
-        try {
-            return Long.parseLong(username);
-        } catch (NumberFormatException e) {
-            // Fallback: 테스트 환경 등에서 email 사용 시
-            log.debug("Username is not numeric (likely email), falling back to DB lookup: {}", username);
-            return userService.findUserIdByEmail(username);
-        }
-    }
+    // [세션 전환] JWT 방식 getUserId (미사용)
+    // /**
+    //  * 인증된 사용자 ID 추출
+    //  * JWT subject에서 userId 직접 파싱 (성능 최적화)
+    //  */
+    // private Long getUserId(Authentication authentication) { ... }
 }

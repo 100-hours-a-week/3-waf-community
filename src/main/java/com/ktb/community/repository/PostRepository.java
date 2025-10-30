@@ -68,4 +68,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * 상태별 존재 확인
      */
     boolean existsByPostIdAndPostStatus(Long postId, PostStatus status);
+
+    /**
+     * 상태별 게시글 수 조회
+     */
+    long countByPostStatus(PostStatus status);
 }

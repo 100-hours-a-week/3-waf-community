@@ -198,7 +198,7 @@ public class PostService {
      * - 현재 사용자의 좋아요 여부 포함 (비로그인 시 null)
      */
     @Transactional
-    public PostResponse getPostDetail(Long postId) {
+    public PostResponse getPostDetail(Long postId, Long userId) {
         Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
                         "Post not found with id: " + postId));
@@ -206,11 +206,10 @@ public class PostService {
         // 조회수 증가 (동시성 제어)
         postStatsRepository.incrementViewCount(postId);
 
-        // 현재 사용자의 좋아요 여부 확인
-        Long currentUserId = getCurrentUserIdOrNull();
+        // 현재 사용자의 좋아요 여부 확인 (비로그인 시 null)
         Boolean isLiked = null;
-        if (currentUserId != null) {
-            isLiked = postLikeRepository.existsByPostIdAndUserId(postId, currentUserId);
+        if (userId != null) {
+            isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
         }
 
         // Optimistic Update: 클라이언트가 UI에서 조회수 +1 처리 (detail.js)
