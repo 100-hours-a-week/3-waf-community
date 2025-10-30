@@ -160,10 +160,12 @@ public class UserController {
     private void setCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
+        cookie.setSecure(false);  // 개발: false (HTTP), 운영: true (HTTPS)
         cookie.setPath(path);
         cookie.setMaxAge(maxAge);
-        cookie.setAttribute("SameSite", "Strict");
+        // Cross-Origin 허용: Lax (개발 환경 localhost:3000 ↔ localhost:8080)
+        // 운영 환경: Strict (같은 도메인 api.example.com ↔ www.example.com)
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
 
