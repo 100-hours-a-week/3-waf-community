@@ -22,7 +22,7 @@
 
 **응답:**
 - 200: `login_success` → **AT는 응답 body, RT는 httpOnly Cookie**
-    - Cookie: refresh_token (7일, HttpOnly, SameSite=Lax, Path=/auth/refresh_token)
+    - Cookie: refresh_token (7일, HttpOnly, SameSite=Lax, Path=/auth)
     - Body: `{ userId, email, nickname, profileImage, accessToken }` (AuthResponse)
 - 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
@@ -138,7 +138,7 @@ async function refreshAccessToken() {
 
 **응답:**
 - 201: `register_success` → **AT는 응답 body, RT는 httpOnly Cookie** (자동 로그인)
-    - Cookie: refresh_token (7일, HttpOnly, SameSite=Lax, Path=/auth/refresh_token)
+    - Cookie: refresh_token (7일, HttpOnly, SameSite=Lax, Path=/auth)
     - Body: `{ userId, email, nickname, profileImage, accessToken }` (AuthResponse)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
