@@ -64,9 +64,21 @@ public class JwtAuthenticationFilter implements Filter {
             return;
         }
 
-        // 공개 엔드포인트는 통과
+        // 공개 엔드포인트는 선택적 인증 (JWT 있으면 검증, 없으면 통과)
         if (isPublicEndpoint(uri, method)) {
-            log.debug("[JwtFilter] 공개 엔드포인트 통과: {}", uri);
+            log.debug("[JwtFilter] 공개 엔드포인트 - 선택적 인증: {}", uri);
+
+            // JWT 추출 시도
+            String jwt = extractJwt(req);
+            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
+                Long userId = jwtTokenProvider.getUserIdFromToken(jwt);
+                if (userId != null) {
+                    req.setAttribute("userId", userId);
+                    log.debug("[JwtFilter] 로그인 상태로 공개 엔드포인트 접근: userId={}", userId);
+                }
+            }
+            // JWT 없거나 유효하지 않아도 통과
+
             chain.doFilter(request, response);
             return;
         }

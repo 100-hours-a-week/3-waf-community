@@ -66,6 +66,9 @@ class PostServiceTest {
     @Mock
     private com.ktb.community.repository.PostImageRepository postImageRepository;
 
+    @Mock
+    private com.ktb.community.repository.PostLikeRepository postLikeRepository;
+
     @InjectMocks
     private PostService postService;
 
@@ -233,6 +236,7 @@ class PostServiceTest {
     void getPostDetail_Success() {
         // Given
         Long postId = 1L;
+        Long userId = 100L;
 
         User user = User.builder()
                 .email("test@example.com")
@@ -258,9 +262,10 @@ class PostServiceTest {
         when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
                 .thenReturn(Optional.of(post));
         when(postStatsRepository.incrementViewCount(postId)).thenReturn(1);
+        when(postLikeRepository.existsByPostIdAndUserId(postId, userId)).thenReturn(true);
 
         // When
-        PostResponse response = postService.getPostDetail(postId);
+        PostResponse response = postService.getPostDetail(postId, userId);
 
         // Then
         assertThat(response).isNotNull();
@@ -277,7 +282,7 @@ class PostServiceTest {
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> postService.getPostDetail(postId))
+        assertThatThrownBy(() -> postService.getPostDetail(postId, null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Post not found");
 

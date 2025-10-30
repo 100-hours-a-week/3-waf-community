@@ -57,8 +57,12 @@ public class PostController {
      * Tier 3: 제한 없음 (조회 API)
      */
     @GetMapping("/{postId}")
-    public ResponseEntity<ApiResponse<PostResponse>> getPostDetail(@PathVariable Long postId) {
-        PostResponse post = postService.getPostDetail(postId);
+    public ResponseEntity<ApiResponse<PostResponse>> getPostDetail(
+            @PathVariable Long postId,
+            HttpServletRequest httpRequest
+    ) {
+        Long userId = (Long) httpRequest.getAttribute("userId");  // null for non-logged-in users
+        PostResponse post = postService.getPostDetail(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("get_post_detail_success", post));
     }
 
