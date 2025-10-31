@@ -104,7 +104,7 @@ public class PostController {
      */
     @DeleteMapping("/{postId}")
     @RateLimit(requestsPerMinute = 30)
-    public ResponseEntity<ApiResponse<Void>> deletePost(
+    public ResponseEntity<Void> deletePost(
             @PathVariable Long postId,
             Authentication authentication
     ) {

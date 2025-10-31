@@ -54,41 +54,52 @@ class AuthServiceTest {
     @Test
     @DisplayName("회원가입 성공 - 토큰 발급")
     void signup_Success() {
-        // Given
+        // Given: 요청 데이터 준비
         SignupRequest request = SignupRequest.builder()
                 .email("test@example.com")
                 .password("Test1234!")
                 .nickname("testuser")
-                .build();
+                .build(); // profileImage는 null (선택 필드)
 
+        // Given: Mock 동작 정의
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByNickname(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
 
+        // Given: 저장 후 반환될 User 객체 생성
         User savedUser = User.builder()
                 .email("test@example.com")
                 .passwordHash("encodedPassword")
                 .nickname("testuser")
                 .role(UserRole.USER)
                 .build();
-        org.springframework.test.util.ReflectionTestUtils.setField(savedUser, "userId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(savedUser, "userId", 1L); // ID 주입
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
+        // Given: 토큰 생성 Mock
         when(jwtTokenProvider.createAccessToken(anyLong(), anyString(), anyString()))
                 .thenReturn("access-token");
         when(jwtTokenProvider.createRefreshToken(anyLong()))
                 .thenReturn("refresh-token");
 
-        // When
-        AuthResponse response = authService.signup(request);
+        // When: 회원가입 실행
+        AuthService.AuthResult result = authService.signup(request);
 
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response.getAccessToken()).isEqualTo("access-token");
-        assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
+        // Then: 토큰 검증
+        assertThat(result).isNotNull();
+        assertThat(result.tokens()).isNotNull();
+        assertThat(result.tokens().getAccessToken()).isEqualTo("access-token");
+        assertThat(result.tokens().getRefreshToken()).isEqualTo("refresh-token");
 
-        verify(userRepository).save(any(User.class));
-        verify(userTokenRepository).save(any(UserToken.class));
+        // Then: 사용자 정보 검증
+        assertThat(result.user()).isNotNull();
+        assertThat(result.user().getUserId()).isEqualTo(1L);
+        assertThat(result.user().getEmail()).isEqualTo("test@example.com");
+        assertThat(result.user().getNickname()).isEqualTo("testuser");
+
+        // Then: 호출 검증
+        verify(userRepository).save(any(User.class)); // User 저장 확인
+        verify(userTokenRepository).save(any(UserToken.class));// RefreshToken 저장 확인
     }
 
     @Test
@@ -157,12 +168,18 @@ class AuthServiceTest {
                 .thenReturn("refresh-token");
 
         // When
-        AuthResponse response = authService.login(request);
+        AuthService.AuthResult result = authService.login(request);
 
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response.getAccessToken()).isEqualTo("access-token");
-        assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
+        // Then: 토큰 검증
+        assertThat(result).isNotNull();
+        assertThat(result.tokens()).isNotNull();
+        assertThat(result.tokens().getAccessToken()).isEqualTo("access-token");
+        assertThat(result.tokens().getRefreshToken()).isEqualTo("refresh-token");
+
+        // Then: 사용자 정보 검증
+        assertThat(result.user()).isNotNull();
+        assertThat(result.user().getUserId()).isEqualTo(1L);
+        assertThat(result.user().getEmail()).isEqualTo("test@example.com");
 
         verify(userTokenRepository).save(any(UserToken.class));
     }
@@ -261,12 +278,18 @@ class AuthServiceTest {
                 .thenReturn("new-access-token");
 
         // When
-        AuthResponse response = authService.refreshAccessToken(refreshToken);
+        AuthService.AuthResult result = authService.refreshAccessToken(refreshToken);
 
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response.getAccessToken()).isEqualTo("new-access-token");
-        assertThat(response.getRefreshToken()).isNull(); // Access Token만 반환
+        // Then: 토큰 검증
+        assertThat(result).isNotNull();
+        assertThat(result.tokens()).isNotNull();
+        assertThat(result.tokens().getAccessToken()).isEqualTo("new-access-token");
+        assertThat(result.tokens().getRefreshToken()).isEqualTo("valid-refresh-token");
+
+        // Then: 사용자 정보 검증
+        assertThat(result.user()).isNotNull();
+        assertThat(result.user().getUserId()).isEqualTo(1L);
+        assertThat(result.user().getEmail()).isEqualTo("test@example.com");
 
         verify(jwtTokenProvider).createAccessToken(1L, "test@example.com", "USER");
     }

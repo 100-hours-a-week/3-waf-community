@@ -29,7 +29,7 @@ public class UserResponse {
                 .userId(user.getUserId())
                 .nickname(user.getNickname())
                 .email(user.getEmail())
-                .profileImage(user.getProfileImage() != null ? "image_url_placeholder" : null)
+                .profileImage(user.getProfileImage() != null ? user.getProfileImage().getImageUrl() : null)
                 .build();
     }
 }

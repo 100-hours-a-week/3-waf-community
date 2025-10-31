@@ -3,7 +3,9 @@ package com.ktb.community.service;
 import com.ktb.community.dto.request.PostCreateRequest;
 import com.ktb.community.dto.request.PostUpdateRequest;
 import com.ktb.community.dto.response.PostResponse;
+import com.ktb.community.entity.Image;
 import com.ktb.community.entity.Post;
+import com.ktb.community.entity.PostImage;
 import com.ktb.community.entity.PostStats;
 import com.ktb.community.entity.User;
 import com.ktb.community.enums.ErrorCode;
@@ -25,6 +27,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,6 +59,12 @@ class PostServiceTest {
 
     @Mock
     private EntityManager entityManager;
+
+    @Mock
+    private com.ktb.community.repository.ImageRepository imageRepository;
+
+    @Mock
+    private com.ktb.community.repository.PostImageRepository postImageRepository;
 
     @InjectMocks
     private PostService postService;
@@ -300,14 +310,14 @@ class PostServiceTest {
                 .user(user)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When
         PostResponse response = postService.updatePost(postId, request, userId);
 
         // Then
         assertThat(response).isNotNull();
-        verify(postRepository, times(1)).findById(postId);
+        verify(postRepository, times(1)).findByIdWithUserAndStats(postId, PostStatus.ACTIVE);
     }
 
     @Test
@@ -320,7 +330,7 @@ class PostServiceTest {
                 .title("Updated Title")
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> postService.updatePost(postId, request, userId))
@@ -354,7 +364,7 @@ class PostServiceTest {
                 .user(owner)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When & Then
         assertThatThrownBy(() -> postService.updatePost(postId, request, requesterId))
@@ -384,13 +394,13 @@ class PostServiceTest {
                 .user(user)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When
         postService.deletePost(postId, userId);
 
         // Then
-        verify(postRepository, times(1)).findById(postId);
+        verify(postRepository, times(1)).findByIdWithUserAndStats(postId, PostStatus.ACTIVE);
         // Soft Delete이므로 실제 삭제 메서드는 호출되지 않음
         verify(postRepository, never()).delete(any(Post.class));
     }
@@ -418,7 +428,7 @@ class PostServiceTest {
                 .user(owner)
                 .build();
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)).thenReturn(Optional.of(post));
 
         // When & Then
         assertThatThrownBy(() -> postService.deletePost(postId, requesterId))
@@ -441,5 +451,219 @@ class PostServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND)
                 .hasMessageContaining("User not found or inactive");
+    }
+
+    @Test
+    @DisplayName("게시글 수정 - 이미지 제거 시 TTL 복원")
+    void updatePost_RemoveImage_ShouldRestoreTTL() {
+        // Given
+        Long postId = 1L;
+        Long userId = 1L;
+
+        // User 생성
+        User user = User.builder()
+                .email("test@example.com")
+                .passwordHash("encoded")
+                .nickname("testuser")
+                .role(UserRole.USER)
+                .build();
+        ReflectionTestUtils.setField(user, "userId", userId);
+
+        // Post 생성
+        Post post = Post.builder()
+                .title("Test Title")
+                .content("Test Content")
+                .status(PostStatus.ACTIVE)
+                .user(user)
+                .build();
+        ReflectionTestUtils.setField(post, "postId", postId);
+
+        // PostStats 생성
+        PostStats stats = PostStats.builder()
+                .post(post)
+                .build();
+        ReflectionTestUtils.setField(stats, "postId", postId);
+        post.updateStats(stats);
+
+        // Image 생성 (expires_at = NULL, 영구 보존 상태)
+        Image image = Image.builder()
+                .imageUrl("https://s3.amazonaws.com/test.jpg")
+                .fileSize(1024)
+                .originalFilename("test.jpg")
+                .expiresAt(null)  // 영구 보존
+                .build();
+        ReflectionTestUtils.setField(image, "imageId", 10L);
+
+        // PostImage 생성
+        PostImage postImage = PostImage.builder()
+                .post(post)
+                .image(image)
+                .displayOrder(1)
+                .build();
+
+        // Request: removeImage = true
+        PostUpdateRequest request = PostUpdateRequest.builder()
+                .removeImage(true)
+                .build();
+
+        // Mocking
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
+                .thenReturn(Optional.of(post));
+        when(postImageRepository.findByPostIdWithImage(postId))
+                .thenReturn(List.of(postImage));
+        when(postImageRepository.deleteByPostId(postId)).thenReturn(1);
+
+        // When
+        PostResponse response = postService.updatePost(postId, request, userId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(image.getExpiresAt()).isNotNull();  // TTL 복원 확인
+        assertThat(image.getExpiresAt()).isAfter(LocalDateTime.now());  // 미래 시간
+
+        verify(postImageRepository).findByPostIdWithImage(postId);
+        verify(postImageRepository).deleteByPostId(postId);
+    }
+
+    @Test
+    @DisplayName("게시글 수정 - 이미지 교체 시 기존 이미지 TTL 복원")
+    void updatePost_ReplaceImage_ShouldRestoreOldImageTTL() {
+        // Given
+        Long postId = 1L;
+        Long userId = 1L;
+        Long oldImageId = 10L;
+        Long newImageId = 20L;
+
+        // User 생성
+        User user = User.builder()
+                .email("test@example.com")
+                .passwordHash("encoded")
+                .nickname("testuser")
+                .role(UserRole.USER)
+                .build();
+        ReflectionTestUtils.setField(user, "userId", userId);
+
+        // Post 생성
+        Post post = Post.builder()
+                .title("Test Title")
+                .content("Test Content")
+                .status(PostStatus.ACTIVE)
+                .user(user)
+                .build();
+        ReflectionTestUtils.setField(post, "postId", postId);
+
+        // PostStats 생성
+        PostStats stats = PostStats.builder()
+                .post(post)
+                .build();
+        ReflectionTestUtils.setField(stats, "postId", postId);
+        post.updateStats(stats);
+
+        // 기존 Image (expires_at = NULL)
+        Image oldImage = Image.builder()
+                .imageUrl("https://s3.amazonaws.com/old.jpg")
+                .fileSize(1024)
+                .originalFilename("old.jpg")
+                .expiresAt(null)
+                .build();
+        ReflectionTestUtils.setField(oldImage, "imageId", oldImageId);
+
+        // PostImage (기존)
+        PostImage oldPostImage = PostImage.builder()
+                .post(post)
+                .image(oldImage)
+                .displayOrder(1)
+                .build();
+
+        // 새 Image (expires_at = now + 1h, 업로드 직후 상태)
+        Image newImage = Image.builder()
+                .imageUrl("https://s3.amazonaws.com/new.jpg")
+                .fileSize(2048)
+                .originalFilename("new.jpg")
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .build();
+        ReflectionTestUtils.setField(newImage, "imageId", newImageId);
+
+        // Request: imageId = 20 (교체)
+        PostUpdateRequest request = PostUpdateRequest.builder()
+                .imageId(newImageId)
+                .build();
+
+        // Mocking
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
+                .thenReturn(Optional.of(post));
+        when(postImageRepository.findByPostIdWithImage(postId))
+                .thenReturn(List.of(oldPostImage));
+        when(postImageRepository.deleteByPostId(postId)).thenReturn(1);
+        when(imageRepository.findById(newImageId)).thenReturn(Optional.of(newImage));
+        when(postImageRepository.save(any(PostImage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        PostResponse response = postService.updatePost(postId, request, userId);
+
+        // Then
+        assertThat(response).isNotNull();
+
+        // 기존 이미지: TTL 복원 확인
+        assertThat(oldImage.getExpiresAt()).isNotNull();
+        assertThat(oldImage.getExpiresAt()).isAfter(LocalDateTime.now());
+
+        // 새 이미지: 영구 보존 (expires_at = NULL)
+        assertThat(newImage.getExpiresAt()).isNull();
+
+        verify(postImageRepository).findByPostIdWithImage(postId);
+        verify(postImageRepository).deleteByPostId(postId);
+        verify(imageRepository).findById(newImageId);
+        verify(postImageRepository).save(any(PostImage.class));
+    }
+
+    @Test
+    @DisplayName("게시글 수정 - 이미지 변경 없음")
+    void updatePost_NoImageChange_ShouldKeepImage() {
+        // Given
+        Long postId = 1L;
+        Long userId = 1L;
+
+        User user = User.builder()
+                .email("test@example.com")
+                .passwordHash("encoded")
+                .nickname("testuser")
+                .role(UserRole.USER)
+                .build();
+        ReflectionTestUtils.setField(user, "userId", userId);
+
+        Post post = Post.builder()
+                .title("Test Title")
+                .content("Test Content")
+                .status(PostStatus.ACTIVE)
+                .user(user)
+                .build();
+        ReflectionTestUtils.setField(post, "postId", postId);
+
+        PostStats stats = PostStats.builder()
+                .post(post)
+                .build();
+        ReflectionTestUtils.setField(stats, "postId", postId);
+        post.updateStats(stats);
+
+        // Request: title만 변경 (이미지 관련 필드 없음)
+        PostUpdateRequest request = PostUpdateRequest.builder()
+                .title("Updated Title")
+                .build();
+
+        when(postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE))
+                .thenReturn(Optional.of(post));
+
+        // When
+        PostResponse response = postService.updatePost(postId, request, userId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getTitle()).isEqualTo("Updated Title");
+
+        // 이미지 관련 메서드 호출 안 됨
+        verify(postImageRepository, never()).findByPostIdWithImage(anyLong());
+        verify(postImageRepository, never()).deleteByPostId(anyLong());
+        verify(imageRepository, never()).findById(anyLong());
     }
 }

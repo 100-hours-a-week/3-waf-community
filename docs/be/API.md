@@ -21,39 +21,101 @@
 **필수:** email(String), password(String)
 
 **응답:**
-- 200: `login_success` → access_token, refresh_token 반환
+- 200: `login_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
+  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 401: AUTH-001 (Invalid credentials), USER-005 (Account inactive)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "login_success",
+  "data": {
+    "userId": 1,
+    "email": "test@startupcode.kr",
+    "nickname": "testuser",
+    "profileImage": "https://..."
+  },
+  "timestamp": "2025-10-21T10:00:00"
+}
+```
+
+**⚠️ Breaking Change**: 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
 
 ---
 
 ### 1.2 로그아웃
 **Endpoint:** `POST /auth/logout`
 
-**헤더:** Authorization: Bearer {access_token}
+**Request:** 없음 (Cookie에서 자동 추출)
 
-**Request:** `{ "refresh_token": "..." }`
-
-**필수:** refresh_token(String)
+**처리:**
+- Cookie에서 refresh_token 추출 → DB 삭제
+- 쿠키 삭제 (access_token, refresh_token MaxAge=0)
 
 **응답:**
 - 200: `logout_success`
-- 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**⚠️ Breaking Change**: Authorization header 불필요, Request body 없음
 
 ---
 
 ### 1.3 액세스 토큰 재발급
 **Endpoint:** `POST /auth/refresh_token`
 
-**Request:** `{ "refresh_token": "..." }`
+**Request:** 없음 (Cookie에서 자동 추출)
 
-**필수:** refresh_token(String)
+**처리:**
+- Cookie에서 refresh_token 추출 → 검증
+- 새 access_token 발급 → httpOnly Cookie로 전달
+- 사용자 정보 반환 (localStorage 동기화용)
 
 **응답:**
-- 200: `token_refreshed` → access_token 반환
+- 200: `token_refreshed` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body**
+  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 401: AUTH-004 (Invalid refresh token)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "token_refreshed",
+  "data": {
+    "userId": 1,
+    "email": "test@startupcode.kr",
+    "nickname": "testuser",
+    "profileImage": "https://..."
+  },
+  "timestamp": "2025-10-21T10:00:00"
+}
+```
+
+**⚠️ Breaking Change**: Request body 없음, 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
+
+**프론트엔드 활용:**
+```javascript
+// api.js - 토큰 갱신 시 localStorage 동기화
+async function refreshAccessToken() {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh_token`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        // userId를 localStorage에 저장 (옵션 3 지원)
+        if (data.data && data.data.userId) {
+            localStorage.setItem('userId', data.data.userId);
+        }
+        return true;
+    }
+    return false;
+}
+```
 
 ---
 
@@ -71,12 +133,31 @@
 - `profileImage` (File, 선택) - 프로필 이미지 (JPG/PNG/GIF, 최대 5MB)
 
 **응답:**
-- 201: `register_success` → access_token, refresh_token 반환 (자동 로그인)
+- 201: `register_success` → **토큰은 httpOnly Cookie, 사용자 정보는 응답 body** (자동 로그인)
+  - Cookie: access_token (30분, HttpOnly, SameSite=Strict)
+  - Cookie: refresh_token (7일, HttpOnly, SameSite=Strict, Path=/auth/refresh_token)
+  - Body: `{ userId, email, nickname, profileImage }` (AuthResponse)
 - 409: USER-002 (Email exists), USER-003 (Nickname exists)
 - 400: USER-004 (Password policy)
 - 413: IMAGE-002 (File too large)
 - 400: IMAGE-003 (Invalid file type)
 - 400/500: [공통 에러 코드](#응답-코드) 참조
+
+**응답 예시:**
+```json
+{
+  "message": "register_success",
+  "data": {
+    "userId": 1,
+    "email": "test@startupcode.kr",
+    "nickname": "testuser",
+    "profileImage": "https://..."
+  },
+  "timestamp": "2025-10-21T10:00:00"
+}
+```
+
+**⚠️ Breaking Change**: 토큰은 Cookie로만 전달, 사용자 정보는 응답 body에 포함
 
 ---
 
@@ -238,6 +319,7 @@
       "likeCount": 42,
       "commentCount": 15
     },
+    "isLikedByCurrentUser": true,  // 현재 사용자의 좋아요 여부 (비로그인 시 null)
     "createdAt": "2025-10-18T10:00:00",
     "updatedAt": "2025-10-18T10:00:00"
   },
@@ -314,10 +396,24 @@ return PostResponse.from(post);
 
 **헤더:** Authorization: Bearer {access_token}
 
-**Request:** `{ "title": "...", "content": "...", "imageId": 1 }`
+**Request:**
+```json
+{
+  "title": "...",
+  "content": "...",
+  "imageId": 1,
+  "removeImage": false
+}
+```
 
-**선택:** title(String), content(String), imageId(Number)
+**선택:** title(String), content(String), imageId(Number), removeImage(Boolean)
 **참고:** PATCH는 부분 업데이트, 최소 1개 필드 필요 , 변경이 없을 경우 WAS 내에서 처리바람.
+
+**이미지 처리:**
+- `removeImage: true` - 기존 이미지 제거 (브릿지 삭제 + TTL 1시간 후 배치 삭제)
+- `imageId: 123` - 새 이미지로 교체 (기존 이미지는 고아 처리 → TTL 복원)
+- 둘 다 없음 - 이미지 유지
+- **주의:** removeImage와 imageId 동시 전달 시 imageId가 우선 적용됨
 
 **응답:**
 - 200: `update_post_success` → 수정된 정보 반환
@@ -499,10 +595,51 @@ return PostResponse.from(post);
 
 ## 7. 공통 사양
 
-### 인증 헤더
+### 인증 방식 (httpOnly Cookie)
+
+**자동 전송**: 브라우저가 모든 요청에 Cookie 자동 포함 (credentials: 'include' 필수)
+
+**Express.js 프론트엔드 예시**:
+```javascript
+// 로그인
+const response = await fetch('http://localhost:8080/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',  // 필수
+  body: JSON.stringify({ email, password })
+});
+
+// API 요청 (토큰 자동 전송)
+const posts = await fetch('http://localhost:8080/posts', {
+  credentials: 'include'  // 필수
+});
+```
+
+**CSRF 토큰 처리 (POST/PATCH/DELETE)**:
+```javascript
+// CSRF 토큰 추출
+const csrfToken = document.cookie
+  .split('; ')
+  .find(row => row.startsWith('XSRF-TOKEN='))
+  ?.split('=')[1];
+
+// POST/PATCH/DELETE 요청 시 헤더 추가
+const response = await fetch('http://localhost:8080/posts', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-XSRF-TOKEN': csrfToken  // 필수
+  },
+  credentials: 'include',
+  body: JSON.stringify(data)
+});
+```
+
+**하위 호환성 (Authorization header)**:
 ```
 Authorization: Bearer {access_token}
 ```
+- Cookie 우선, Authorization header는 하위 호환성 지원
 
 ### 페이지네이션
 ```

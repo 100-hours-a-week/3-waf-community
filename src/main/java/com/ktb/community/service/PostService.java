@@ -15,6 +15,7 @@ import com.ktb.community.entity.PostImage;
 import com.ktb.community.repository.ImageRepository;
 import com.ktb.community.repository.PostImageRepository;
 import com.ktb.community.repository.PostRepository;
+import com.ktb.community.repository.PostLikeRepository;
 import com.ktb.community.repository.PostStatsRepository;
 import com.ktb.community.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
+// import jakarta.persistence.EntityManager; // Phase 5에서 제거됨 (detached entity 이슈 해결)
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +50,13 @@ public class PostService {
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
     private final PostImageRepository postImageRepository;
-    private final EntityManager entityManager;
+    private final PostLikeRepository postLikeRepository;
+    // EntityManager: Phase 5에서 제거됨 (detached entity 이슈 해결)
+    // - 기존: entityManager.refresh(post.getStats()) 사용
+    // - 문제: clearAutomatically=true 설정 시 detached entity 예외 발생
+    // - 해결: PostStatsRepository에 clearAutomatically=false 적용
+    // - 결과: Optimistic Update 패턴 도입, DB 통신 17% 감소
+    // private final EntityManager entityManager;
 
     /**
      * 게시글 작성 (FR-POST-001)
@@ -185,6 +195,7 @@ public class PostService {
      * - ACTIVE 상태만 조회
      * - Fetch Join (N+1 방지)
      * - 조회수 자동 증가 (동시성 제어)
+     * - 현재 사용자의 좋아요 여부 포함 (비로그인 시 null)
      */
     @Transactional
     public PostResponse getPostDetail(Long postId) {
@@ -195,8 +206,15 @@ public class PostService {
         // 조회수 증가 (동시성 제어)
         postStatsRepository.incrementViewCount(postId);
 
-        // Optimistic Update: 클라이언트가 UI에서 +1 처리 (detail.js)
-        return PostResponse.from(post);
+        // 현재 사용자의 좋아요 여부 확인
+        Long currentUserId = getCurrentUserIdOrNull();
+        Boolean isLiked = null;
+        if (currentUserId != null) {
+            isLiked = postLikeRepository.existsByPostIdAndUserId(postId, currentUserId);
+        }
+
+        // Optimistic Update: 클라이언트가 UI에서 조회수 +1 처리 (detail.js)
+        return PostResponse.from(post, isLiked);
     }
 
     /**
@@ -207,9 +225,9 @@ public class PostService {
      */
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long userId) {
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
-                        "Post not found with id: " + postId));
+                        "Post not found or already deleted with id: " + postId));
 
         // 권한 검증
         if (!post.getUser().getUserId().equals(userId)) {
@@ -225,29 +243,41 @@ public class PostService {
             post.updateContent(request.getContent());
         }
 
-        // 이미지 업데이트 (imageId가 있을 경우)
-        if (request.getImageId() != null) {
-            // 기존 이미지 연결 삭제
-            postImageRepository.deleteByPostId(postId);
+        // ========== 이미지 처리 ==========
+        log.debug("[DEBUG] 이미지 처리 - removeImage: {}, imageId: {}",
+                  request.getRemoveImage(), request.getImageId());
+
+        // Case 1: 이미지 제거 요청 (removeImage: true)
+        if (Boolean.TRUE.equals(request.getRemoveImage())) {
+            log.info("[Post] 게시글 이미지 제거 시작: postId={}", postId);
+            restoreExpiresAtAndDeleteBridge(postId);
+            log.info("[Post] 게시글 이미지 제거 완료: postId={}", postId);
+        }
+        // Case 2: 새 이미지로 교체 (imageId: 123)
+        else if (request.getImageId() != null) {
+            // 기존 이미지 TTL 복원 + 브릿지 삭제
+            restoreExpiresAtAndDeleteBridge(postId);
 
             // 새 이미지 연결
-            Image image = imageRepository.findById(request.getImageId())
+            Image newImage = imageRepository.findById(request.getImageId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND,
                             "Image not found with id: " + request.getImageId()));
 
             // expires_at 클리어 (영구 보존)
-            image.clearExpiresAt();
+            newImage.clearExpiresAt();
 
             // PostImage 브릿지 테이블 저장
             PostImage postImage = PostImage.builder()
                     .post(post)
-                    .image(image)
+                    .image(newImage)
                     .displayOrder(1)
                     .build();
             postImageRepository.save(postImage);
 
-            log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}", postId, image.getImageId());
+            log.info("[Post] 게시글 이미지 변경: postId={}, imageId={}",
+                     postId, newImage.getImageId());
         }
+        // Case 3: 이미지 유지 (둘 다 없음)
 
         log.debug("[Post] 게시글 수정 완료: postId={}", postId);
 
@@ -261,9 +291,9 @@ public class PostService {
      */
     @Transactional
     public void deletePost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdWithUserAndStats(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND,
-                        "Post not found with id: " + postId));
+                        "Post not found or already deleted with id: " + postId));
 
         // 권한 검증
         if (!post.getUser().getUserId().equals(userId)) {
@@ -278,6 +308,34 @@ public class PostService {
     }
 
     /**
+     * 게시글의 기존 이미지 TTL 복원 + 브릿지 삭제
+     * - PostImage 조회 (Fetch Join) → Image TTL 복원 (now + 1h) → 브릿지 삭제
+     * - 배치 작업(ImageCleanupBatchService)이 expires_at < NOW() 조건으로 자동 삭제
+     *
+     * @param postId 게시글 ID
+     */
+    private void restoreExpiresAtAndDeleteBridge(Long postId) {
+        log.debug("[DEBUG] restoreExpiresAtAndDeleteBridge 시작: postId={}", postId);
+
+        // 1. 기존 브릿지 조회 (Fetch Join으로 Image 함께 조회)
+        List<PostImage> existingImages = postImageRepository.findByPostIdWithImage(postId);
+        log.debug("[DEBUG] 기존 이미지 개수: {}", existingImages.size());
+
+        // 2. 각 이미지 TTL 복원 (JPA Dirty Checking으로 UPDATE)
+        for (PostImage postImage : existingImages) {
+            Image image = postImage.getImage();
+            image.setExpiresAt(LocalDateTime.now().plusHours(1));
+
+            log.info("[Post] 고아 이미지 TTL 복원: imageId={}, expiresAt={}",
+                     image.getImageId(), image.getExpiresAt());
+        }
+
+        // 3. 브릿지 삭제 (JPQL Bulk Delete)
+        int deletedCount = postImageRepository.deleteByPostId(postId);
+        log.info("[Post] 브릿지 삭제 완료: postId={}, deletedCount={}", postId, deletedCount);
+    }
+
+    /**
      * 정렬 조건 생성
      */
     private Sort getSort(String sort) {
@@ -289,5 +347,22 @@ public class PostService {
         }
         // 기본: latest
         return Sort.by(Sort.Order.desc("createdAt"));
+    }
+
+    /**
+     * 현재 사용자 ID 추출 (인증 실패 시 null 반환)
+     */
+    private Long getCurrentUserIdOrNull() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+                return null;
+            }
+            return Long.parseLong(authentication.getName());
+        } catch (Exception e) {
+            log.debug("[Post] 현재 사용자 ID 추출 실패: {}", e.getMessage());
+            return null;
+        }
     }
 }

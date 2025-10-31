@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -46,6 +47,9 @@ public class ImageService {
      */
     @Transactional
     public ImageResponse uploadImage(MultipartFile file) {
+        log.debug("[Image] 이미지 업로드 시작: filename={}, size={}, contentType={}", 
+            file.getOriginalFilename(), file.getSize(), file.getContentType());
+        
         // 1. 파일 검증
         FileValidator.validateImageFile(file);
 
@@ -78,6 +82,7 @@ public class ImageService {
                     .bucket(bucketName)
                     .key(s3Key)
                     .contentType(file.getContentType())
+                    .acl(ObjectCannedACL.PUBLIC_READ)  // 이미지 객체만 public 설정
                     .build();
 
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
@@ -87,10 +92,12 @@ public class ImageService {
 
         } catch (IOException e) {
             log.error("[Image] S3 업로드 실패 (IOException): s3Key={}", s3Key, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, 
+                "S3 upload failed: " + e.getMessage());
         } catch (Exception e) {
             log.error("[Image] S3 업로드 에러: s3Key={}", s3Key, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, 
+                "S3 upload error: " + e.getMessage());
         }
     }
 }

@@ -28,6 +28,7 @@ public class PostResponse {
     private UserSummary author;
     private PostStatsResponse stats;
     private List<String> images;  // image URLs (display_order 순서)
+    private Boolean isLikedByCurrentUser;  // 현재 사용자의 좋아요 여부 (비로그인 시 null)
 
     /**
      * Entity → DTO 변환
@@ -36,6 +37,17 @@ public class PostResponse {
      * @return PostResponse DTO
      */
     public static PostResponse from(Post post) {
+        return from(post, null);
+    }
+
+    /**
+     * Entity → DTO 변환 (좋아요 여부 포함)
+     *
+     * @param post Post 엔티티 (Fetch Join으로 user, stats, postImages 로드 필요)
+     * @param isLikedByCurrentUser 현재 사용자의 좋아요 여부 (비로그인 시 null)
+     * @return PostResponse DTO
+     */
+    public static PostResponse from(Post post, Boolean isLikedByCurrentUser) {
         return PostResponse.builder()
                 .postId(post.getPostId())
                 .title(post.getTitle())
@@ -48,6 +60,7 @@ public class PostResponse {
                         .sorted(Comparator.comparing(PostImage::getDisplayOrder))
                         .map(pi -> pi.getImage().getImageUrl())
                         .collect(Collectors.toList()))
+                .isLikedByCurrentUser(isLikedByCurrentUser)
                 .build();
     }
 }

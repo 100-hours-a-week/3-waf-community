@@ -43,4 +43,14 @@ public interface UserTokenRepository extends JpaRepository<UserToken, Long> {
     @Modifying
     @Query("DELETE FROM UserToken ut WHERE ut.expiresAt < :now")
     int deleteExpiredTokens(@Param("now") LocalDateTime now);
+    
+    /**
+     * 토큰으로 UserToken 조회 (User + ProfileImage Fetch Join)
+     * LazyInitializationException 방지용
+     */
+    @Query("SELECT ut FROM UserToken ut " +
+           "JOIN FETCH ut.user u " +
+           "LEFT JOIN FETCH u.profileImage " +
+           "WHERE ut.token = :token")
+    Optional<UserToken> findByTokenWithUser(@Param("token") String token);
 }

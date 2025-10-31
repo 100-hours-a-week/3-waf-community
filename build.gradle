@@ -30,6 +30,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
 	// Database
 	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -66,4 +67,12 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// 더미 데이터 SQL 생성 태스크
+task generateDummyData(type: JavaExec) {
+	group = 'development'
+	description = 'Generate dummy data SQL file (scripts/dummy_data.sql)'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'com.ktb.community.util.DummyDataSqlGenerator'
 }

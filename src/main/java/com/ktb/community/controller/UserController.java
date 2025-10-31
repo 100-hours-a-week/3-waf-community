@@ -12,6 +12,8 @@ import com.ktb.community.exception.BusinessException;
 import com.ktb.community.service.AuthService;
 import com.ktb.community.service.UserService;
 import com.ktb.community.util.PasswordValidator;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,22 +41,31 @@ public class UserController {
      * 회원가입 (API.md Section 2.1)
      * POST /users/signup or POST /users
      * Multipart 방식: 이미지와 데이터 함께 전송
+     * httpOnly Cookie 방식으로 토큰 전달 (자동 로그인)
      * Tier 2: 중간 제한 (spam bot 방지, 정상 사용자 재시도 고려)
      */
     @PostMapping(value = {"/signup", ""}, consumes = "multipart/form-data")
     @RateLimit(requestsPerMinute = 10)
     public ResponseEntity<ApiResponse<AuthResponse>> signup(
-            @Valid @ModelAttribute SignupRequest request) {
-        
+            @Valid @ModelAttribute SignupRequest request,
+            HttpServletResponse response) {
+
         // 비밀번호 정책 검증 (Bean Validation 외 추가 정책)
         if (!PasswordValidator.isValid(request.getPassword())) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD_POLICY,
                     PasswordValidator.getPolicyDescription());
         }
-        
-        AuthResponse response = authService.signup(request);
+
+        AuthService.AuthResult result = authService.signup(request);
+
+        // 토큰 → httpOnly Cookie 설정
+        setCookie(response, "access_token", result.tokens().getAccessToken(), 30 * 60, "/");
+        setCookie(response, "refresh_token", result.tokens().getRefreshToken(), 7 * 24 * 60 * 60, "/auth/refresh_token");
+
+        // 사용자 정보 → 응답 body
+        AuthResponse authResponse = AuthResponse.from(result.user());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("register_success", response));
+                .body(ApiResponse.success("register_success", authResponse));
     }
     
     /**
@@ -135,6 +146,23 @@ public class UserController {
     }
     
     /**
+     * Cookie 설정 헬퍼 메서드
+     * @param name 쿠키 이름
+     * @param value 쿠키 값
+     * @param maxAge 만료 시간 (초)
+     * @param path 쿠키 경로
+     */
+    private void setCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);  // TODO: 운영 환경에서는 true (HTTPS)
+        cookie.setPath(path);
+        cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Strict");
+        response.addCookie(cookie);
+    }
+
+    /**
      * Authentication에서 사용자 ID 추출
      * JWT 인증: username = userId (숫자)
      * 기타 인증: username = email (fallback to DB lookup)
@@ -142,7 +170,7 @@ public class UserController {
     private Long extractUserIdFromAuthentication(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String username = userDetails.getUsername();
-        
+
         // JWT 인증 경로: username이 userId인 경우 (빠른 경로)
         try {
             return Long.parseLong(username);

@@ -47,5 +47,9 @@ CLAUDE.md
 AGENTS.md
 .mcp.json
 docs/backup/
+docs/legacy/
 # Environment variables
 .env
+
+# Temporary scripts
+scripts/check_password.sql

@@ -59,5 +59,9 @@ aws:
     bucket: ${AWS_S3_BUCKET:ktb-3-community-images-dev}
     region: ${AWS_REGION:ap-northeast-2}
 
+# Express.js Frontend CORS 설정
+frontend:
+  url: ${FRONTEND_URL:http://localhost:3000}  # Express.js 서버 주소
+
 server:
   port: 8080

@@ -2,6 +2,7 @@ package com.ktb.community.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -55,13 +56,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     
     /**
-     * Authorization 헤더에서 Bearer 토큰 추출
+     * Cookie 또는 Authorization 헤더에서 JWT 토큰 추출
+     * 우선순위: 1) Cookie, 2) Authorization header (하위 호환성)
      */
     private String getJwtFromRequest(HttpServletRequest request) {
+        // 1. Cookie에서 토큰 추출 (우선순위)
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("access_token".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        // 2. Authorization header에서 추출 (하위 호환성)
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
+
         return null;
     }
 }

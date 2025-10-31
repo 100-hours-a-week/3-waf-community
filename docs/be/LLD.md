@@ -5,7 +5,7 @@
 | 항목 | 내용                        |
 |------|---------------------------|
 | 프로젝트명 | KTB Community Platform    |
-| 버전 | 1.6                       |
+| 버전 | 1.7                       |
 | 문서 유형 | Low Level Design Document |
 
 ---
@@ -96,7 +96,7 @@ MySQL Database
 
 ## 5. API 설계
 
-**전체 API 스펙:** `@docs/be/API.md` 참조
+**전체 API 스펙 및 엔드포인트 목록**: **@docs/be/API.md** 참조
 
 ### 공통 응답 구조
 ```json
@@ -106,13 +106,6 @@ MySQL Database
   "timestamp": "2025-10-01T14:30:00"
 }
 ```
-
-### 엔드포인트 분류
-- **Auth:** /auth/login, /auth/logout, /auth/refresh_token
-- **Users:** /users/signup, /users/{userID}, /users/{userID}/password
-- **Posts:** /posts (목록, 작성), /posts/{postId} (상세, 수정, 삭제)
-- **Comments:** /posts/{postId}/comments
-- **Likes:** /posts/{postId}/like, /users/me/likes
 
 ---
 
@@ -134,45 +127,120 @@ MySQL Database
 }
 ```
 
-### 6.2 인증 흐름
+### 6.2 인증 흐름 (httpOnly Cookie)
 
-**로그인:**  
-Client → POST /auth/login → 서버 BCrypt 검증 → Access + Refresh 토큰 반환 → Refresh를 user_tokens에 저장
+**로그인 (Cookie 기반):**
+1. Client → POST /auth/login (credentials: 'include')
+2. 서버 → BCrypt 검증
+3. 서버 → Access + Refresh 토큰 생성
+4. 서버 → httpOnly Cookie 발급 (access_token, refresh_token)
+5. 서버 → Refresh를 user_tokens 테이블에 저장
+6. 클라이언트 → Cookie 자동 저장 (JavaScript 접근 불가)
 
-**API 호출:**  
-Client → Authorization: Bearer {token} → JwtAuthenticationFilter 검증 → SecurityContext 저장 → 비즈니스 로직 실행
+**API 호출 (Cookie 자동 전송):**
+1. Client → API 요청 (credentials: 'include')
+2. 브라우저 → Cookie 자동 포함 (access_token)
+3. JwtAuthenticationFilter → Cookie에서 토큰 추출
+4. JwtAuthenticationFilter → 토큰 검증 및 SecurityContext 저장
+5. 비즈니스 로직 실행
 
-**토큰 갱신:**  
-Client → POST /auth/refresh_token → user_tokens 테이블 검증 → 새 Access Token 반환
+**토큰 갱신 (Cookie 기반):**
+1. Client → POST /auth/refresh_token (credentials: 'include')
+2. 서버 → Cookie에서 refresh_token 추출
+3. 서버 → user_tokens 테이블 검증
+4. 서버 → 새 access_token 발급 → httpOnly Cookie 업데이트
 
-### 6.3 핵심 보안 설정
+**하위 호환성:**
+- Authorization header (Bearer token) 지원 유지
+- Cookie 우선, header는 fallback
+
+### 6.3 핵심 보안 설정 (CORS + CSRF)
 
 **SecurityConfig 핵심:**
 ```java
 @Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(List.of(frontendUrl));  // Express.js
+    config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(List.of("*"));
+    config.setAllowCredentials(true);  // Cookie 전송 허용
+    config.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
+}
+
+@Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> 
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf
+                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                    .ignoringRequestMatchers(
+                            "/auth/**",           // 인증 관련
+                            "/users/**",          // 사용자 관련 (회원가입, 프로필 수정 등)
+                            "/posts/**",          // 게시글 관련 모든 API
+                            "/images/**"          // 이미지 업로드
+                    )
+            )
+            .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    // 공개 엔드포인트
-                    .requestMatchers(
-                            "/auth/login",
-                            "/auth/refresh_token",
-                            "/users/signup",
-                            "/posts",
-                            "/posts/*",
-                            "/posts/*/comments"
+                    // ========== 순서 중요: 구체적인 패턴 먼저! ==========
+
+                    // 1. 특수 케이스 - GET이지만 인증 필요
+                    .requestMatchers(HttpMethod.GET, "/posts/users/me/likes").authenticated()
+                    
+                    // 2. Public GET 엔드포인트
+                    .requestMatchers(HttpMethod.GET, 
+                            "/posts",                // 게시글 목록
+                            "/posts/*",              // 게시글 상세
+                            "/posts/*/comments",     // 댓글 목록
+                            "/users/*"               // 사용자 프로필 (공개)
                     ).permitAll()
-                    // 나머지는 인증 필요
+                    
+                    // 3. 인증 필요 - Posts
+                    .requestMatchers(HttpMethod.POST, "/posts").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/posts/*").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/posts/*").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/posts/*/like").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/posts/*/like").authenticated()
+                    
+                    // 4. 인증 필요 - Comments
+                    .requestMatchers(HttpMethod.POST, "/posts/*/comments").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/posts/*/comments/*").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/posts/*/comments/*").authenticated()
+                    
+                    // 5. 인증 필요 - Users
+                    .requestMatchers(HttpMethod.PATCH, "/users/*").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/users/*/password").authenticated()
+                    
+                    // 6. 인증 필요 - Images
+                    .requestMatchers(HttpMethod.POST, "/images").authenticated()
+                    
+                    // 7. Public - Auth
+                    .requestMatchers("/auth/login", "/auth/refresh_token", "/users/signup").permitAll()
+
+                    // 8. Public - Legal & Static Resources
+                    .requestMatchers("/terms", "/privacy", "/css/**").permitAll()
+
+                    // 9. 나머지는 인증 필요
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-    
+
     return http.build();
 }
 ```
+
+**보안 강화 요소:**
+- **CORS**: Express.js 연동 (allowCredentials: true)
+- **CSRF**: Cookie 기반 토큰, API 엔드포인트는 제외 (/auth/**, /users/**, /posts/**, /images/**)
+  - 제외 이유: JWT httpOnly Cookie 기반 인증이 CSRF 보호 제공
+  - Cross-origin 환경 (localhost:3000 → localhost:8080)에서 CSRF 토큰 접근 불가 해결
+- **Cookie**: httpOnly (XSS 방어), SameSite=Strict (CSRF 방어)
 
 **권한 제어:**
 - Spring Security가 HTTP Method별로 엔드포인트 접근 제어
@@ -332,11 +400,11 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
 
 ### 7.2 좋아요 처리 - 동시성 제어
 
-**문제:** 동시 좋아요 시 Race Condition  
+**문제:** 동시 좋아요 시 Race Condition
 **해결:** DB 레벨 원자적 UPDATE
 
 ```java
-@Modifying(clearAutomatically = true)
+@Modifying(clearAutomatically = false)
 @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount + 1, " +
        "ps.lastUpdated = CURRENT_TIMESTAMP WHERE ps.postId = :postId")
 int incrementLikeCount(@Param("postId") Long postId);
@@ -348,6 +416,13 @@ int incrementLikeCount(@Param("postId") Long postId);
 - `incrementViewCount()`
 
 **선택 이유:** 낙관적 락(재시도 폭증), 비관적 락(과도) 대비 최적
+
+**clearAutomatically = false 사용 이유 (Phase 5 최적화):**
+- **detached entity 방지**: 영속성 컨텍스트와 독립적 동작, LazyInitializationException 해결
+- **Optimistic Update 패턴**: 클라이언트가 UI에서 즉시 업데이트 (+1/-1), 서버는 stale 값 반환
+- **성능 개선**: EntityManager.refresh() 호출 불필요 → DB 통신 17% 감소 (6번 → 5번)
+- **동시성 보장**: 원자적 UPDATE 유지 (100% 데이터 정확도)
+- **상세**: API.md Section 3.2 (조회수), Section 6.1/6.2 (좋아요), PLAN.md Phase 5
 
 ### 7.3 페이지네이션
 
@@ -573,7 +648,7 @@ public PostResponse createPost(PostCreateRequest request, Long userId) {
 
 **ErrorCode 형식:** `{DOMAIN}-{NUMBER}` (예: USER-001, POST-001, AUTH-001)
 
-**참조**: `src/main/java/com/ktb/community/enums/ErrorCode.java` (28개 에러 정의)
+**전체 에러 코드 목록**: **@docs/be/API.md Section 7** (도메인별 28개 에러 코드)
 
 ---
 
@@ -782,12 +857,12 @@ WHERE post_id = ?;
 
 **Repository 구현:**
 ```java
-@Modifying(clearAutomatically = true)
+@Modifying(clearAutomatically = false)
 @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount + 1, " +
        "ps.lastUpdated = CURRENT_TIMESTAMP WHERE ps.postId = :postId")
 int incrementLikeCount(@Param("postId") Long postId);
 
-@Modifying(clearAutomatically = true)
+@Modifying(clearAutomatically = false)
 @Query("UPDATE PostStats ps SET ps.likeCount = ps.likeCount - 1, " +
        "ps.lastUpdated = CURRENT_TIMESTAMP " +
        "WHERE ps.postId = :postId AND ps.likeCount > 0")
@@ -796,13 +871,21 @@ int decrementLikeCount(@Param("postId") Long postId);
 
 **적용 대상:**
 - `likeCount`: 좋아요 증감
-- `commentCount`: 댓글 수 증감  
+- `commentCount`: 댓글 수 증감
 - `viewCount`: 조회수 증가 (가장 빈번)
 
 **대안 검토:**
 - ❌ 낙관적 락 (@Version): 재시도 폭증
 - ❌ 비관적 락 (FOR UPDATE): 과도한 오버헤드
 - ✅ 원자적 UPDATE: 성능과 일관성 최적
+
+**Phase 5 최적화 (clearAutomatically = false):**
+- **문제**: PostStats 조회 후 JPQL UPDATE 실행 시 영속성 컨텍스트의 stale 데이터 유지
+- **기존 방식**: clearAutomatically = true → 1차 캐시 자동 초기화, 이후 조회 시 DB 재조회 필요
+- **최적화**: clearAutomatically = false → 1차 캐시 유지, Optimistic Update 패턴으로 클라이언트가 보정
+- **결과**: DB 통신 17% 감소, detached entity 이슈 해결, 동시성 보장 유지
+- **Trade-off**: 서버 응답값은 stale (증가 전 값), 클라이언트가 UI에서 +1/-1 처리
+- **참조**: PLAN.md Phase 5 (Line 295-306), API.md Section 3.2/6.1/6.2
 
 ---
 
@@ -870,3 +953,6 @@ int decrementLikeCount(@Param("postId") Long postId);
 | 2025-10-10 | 1.4 | HTML 이스케이프 코드 수정 (Section 6.5) |
 | 2025-10-15 | 1.5 | Section 14 로깅 정책 추가, Service Layer 로그 레벨 조정 |
 | 2025-10-15 | 1.6 | Section 12.1 User Soft Delete 필터링 및 Batch Fetch Size 추가 |
+| 2025-10-21 | 1.7 | Section 6.3 SecurityConfig CSRF 설정 업데이트 (API 엔드포인트 제외 반영) |
+| 2025-10-22 | 1.8 | 중복 제거 및 참조 최적화 (Section 5 API 엔드포인트, Section 8.1 에러 코드 - API.md 참조) |
+| 2025-10-22 | 1.9 | Section 7.2, 12.3 clearAutomatically 파라미터 동기화 (true → false, Phase 5 최적화 반영) |
